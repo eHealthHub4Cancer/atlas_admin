@@ -2,7 +2,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import AtlasUser
+from .models import AtlasUser, Permission
 
 class AtlasSignUpForm(forms.ModelForm):
     password1 = forms.CharField(
@@ -18,11 +18,14 @@ class AtlasSignUpForm(forms.ModelForm):
 
     class Meta:
         model = AtlasUser
-        fields = ('username',)
+        fields = ('username', 'role')
         widgets = {
             'username': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Username'
+            }),
+            'role': forms.Select(attrs={
+                'class': 'form-select',
             }),
         }
 
@@ -59,3 +62,85 @@ class AtlasSignUpForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class PasswordChangeForm(forms.Form):
+    current_password = forms.CharField(
+        label='Current Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Current password'})
+    )
+    new_password1 = forms.CharField(
+        label='New Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'New password'})
+    )
+    new_password2 = forms.CharField(
+        label='Confirm New Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password'})
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data.get('current_password')
+        if current_password and not self.user.check_password(current_password):
+            raise ValidationError('Current password is incorrect.')
+        return current_password
+
+    def clean_new_password1(self):
+        password1 = self.cleaned_data.get('new_password1')
+        if password1:
+            try:
+                validate_password(password1)
+            except ValidationError as e:
+                raise ValidationError(e.messages)
+        return password1
+
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("The two password fields didn't match.")
+        return password2
+
+    def save(self, commit=True):
+        self.user.set_password(self.cleaned_data['new_password1'])
+        if commit:
+            self.user.save()
+        return self.user
+
+
+class AdminUserPermissionsForm(forms.Form):
+    user_id = forms.IntegerField(widget=forms.HiddenInput)
+    is_disabled = forms.BooleanField(required=False)
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select form-select-sm'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        permissions_queryset = kwargs.pop('permissions_queryset', Permission.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields['permissions'].queryset = permissions_queryset
+
+
+class BulkGrantPermissionsForm(forms.Form):
+    user_ids = forms.ModelMultipleChoiceField(
+        queryset=AtlasUser.objects.none(),
+        required=True,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+    )
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.none(),
+        required=True,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        users_queryset = kwargs.pop('users_queryset', AtlasUser.objects.none())
+        permissions_queryset = kwargs.pop('permissions_queryset', Permission.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields['user_ids'].queryset = users_queryset
+        self.fields['permissions'].queryset = permissions_queryset

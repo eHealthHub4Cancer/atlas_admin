@@ -2,49 +2,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Atlas Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #1f2937, #0f172a 45%, #020617 100%);
+            color: #e2e8f0;
+            font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(14px);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+        }
+        .brand-pill {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+        }
+        .form-control, .form-select {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #f8fafc;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border: none;
+            font-weight: 600;
+        }
+        .muted-text {
+            color: #94a3b8;
+        }
+        a {
+            color: #7dd3fc;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #bae6fd;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Login</h3>
-                    </div>
-                    <div class="card-body">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }}">
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
+    <header class="container py-4 d-flex align-items-center justify-content-between">
+        <div>
+            <span class="brand-pill">Atlas Access</span>
+            <h1 class="h4 mt-3 mb-1">Welcome back to Atlas Admin</h1>
+            <p class="muted-text mb-0">Secure access with role-aware permissions.</p>
+        </div>
+        <div class="text-end">
+            <a class="btn btn-outline-light btn-sm" href="{% url 'signup' %}">Create account</a>
+        </div>
+    </header>
 
-                        <form method="post">
-                            {% csrf_token %}
-                            
-                            <div class="mb-3">
-                                <label for="username">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
+    <main class="container pb-5">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-lg-6">
+                <div class="glass-card p-4 p-md-5">
+                    <h2 class="h3 mb-3">Sign in</h2>
+                    <p class="muted-text mb-4">Track your permissions, manage your profile, and stay in control.</p>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
                             </div>
+                        {% endfor %}
+                    {% endif %}
 
-                            <div class="mb-3">
-                                <label for="password">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100">Login</button>
-                        </form>
-
-                        <div class="mt-3 text-center">
-                            <p>Don't have an account? <a href="{% url 'signup' %}">Sign up here</a></p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
                         </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+                    </form>
+
+                    <div class="mt-4 text-center">
+                        <p class="muted-text mb-0">Don't have an account? <a href="{% url 'signup' %}">Sign up here</a>.</p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </body>
 </html>
