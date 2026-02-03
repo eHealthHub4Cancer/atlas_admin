@@ -1,9 +1,36 @@
 from django.db import models
 import bcrypt
 
+
+class Permission(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    external_id = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'atlas_permission'
+        managed = True
+        verbose_name = 'Permission'
+        verbose_name_plural = 'Permissions'
+
+    def __str__(self):
+        return self.name
+
 class AtlasUser(models.Model):
+    ROLE_RESEARCHER = 'researcher'
+    ROLE_GUEST = 'guest'
+    ROLE_STUDENT = 'student'
+
+    ROLE_CHOICES = (
+        (ROLE_RESEARCHER, 'Researcher'),
+        (ROLE_GUEST, 'Guest'),
+        (ROLE_STUDENT, 'Student'),
+    )
+
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_GUEST)
+    is_disabled = models.BooleanField(default=False)
+    permissions = models.ManyToManyField(Permission, blank=True, related_name='users')
 
     def set_password(self, raw_password):
         # OHDSI compatibility: prefix=b"2a" and rounds=10
