@@ -10,6 +10,29 @@
             background: radial-gradient(circle at top, #1f2937, #0f172a 45%, #020617 100%);
             color: #e2e8f0;
             font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+            padding-top: 96px;
+        }
+        .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            background: rgba(2, 6, 23, 0.85);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(12px);
+        }
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(129, 140, 248, 0.2);
+            color: #a5b4fc;
+            font-weight: 700;
+            letter-spacing: 0.08em;
         }
         .glass-card {
             background: rgba(15, 23, 42, 0.7);
@@ -33,6 +56,17 @@
             border: 1px solid rgba(148, 163, 184, 0.3);
             color: #f8fafc;
         }
+        .input-group .form-control:focus {
+            z-index: 1;
+        }
+        .toggle-password {
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(15, 23, 42, 0.4);
+            color: #e2e8f0;
+        }
+        .toggle-password:hover {
+            color: #c7d2fe;
+        }
         .form-control:focus, .form-select:focus {
             border-color: #818cf8;
             box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.2);
@@ -52,17 +86,29 @@
         a:hover {
             color: #c7d2fe;
         }
+        .form-help {
+            color: #cbd5f5;
+        }
+        .page-footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
-    <header class="container py-4 d-flex align-items-center justify-content-between">
-        <div>
-            <span class="brand-pill">Create Account</span>
-            <h1 class="h4 mt-3 mb-1">Join Atlas Admin</h1>
-            <p class="muted-text mb-0">Pick your role and get tailored access.</p>
-        </div>
-        <div class="text-end">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Back to login</a>
+    <header class="page-header">
+        <div class="container py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="logo-mark">EH</div>
+                <div>
+                    <span class="brand-pill">Create Account</span>
+                    <h1 class="h4 mt-2 mb-1">Join Atlas Admin</h1>
+                    <p class="muted-text mb-0">Pick your role and get tailored access.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Back to login</a>
+            </div>
         </div>
     </header>
 
@@ -101,8 +147,13 @@
 
                         <div class="mb-3">
                             {{ form.password1.label_tag }}
-                            {{ form.password1 }}
-                            <small class="form-text text-muted">{{ form.password1.help_text }}</small>
+                            <div class="input-group">
+                                {{ form.password1 }}
+                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_password1" aria-label="Show password">
+                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
+                                </button>
+                            </div>
+                            <small class="form-text form-help">{{ form.password1.help_text }}</small>
                             {% if form.password1.errors %}
                                 <div class="text-danger">{{ form.password1.errors }}</div>
                             {% endif %}
@@ -110,7 +161,13 @@
 
                         <div class="mb-4">
                             {{ form.password2.label_tag }}
-                            {{ form.password2 }}
+                            <div class="input-group">
+                                {{ form.password2 }}
+                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_password2" aria-label="Show password confirmation">
+                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
+                                </button>
+                            </div>
+                            <small class="form-text form-help">{{ form.password2.help_text }}</small>
                             {% if form.password2.errors %}
                                 <div class="text-danger">{{ form.password2.errors }}</div>
                             {% endif %}
@@ -126,5 +183,26 @@
             </div>
         </div>
     </main>
+    <footer class="page-footer py-4">
+        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+        </div>
+    </footer>
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) {
+                    return;
+                }
+                const isPassword = input.getAttribute('type') === 'password';
+                input.setAttribute('type', isPassword ? 'text' : 'password');
+                button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                button.querySelector('.toggle-icon').textContent = isPassword ? '🙈' : '👁️';
+            });
+        });
+    </script>
 </body>
 </html>

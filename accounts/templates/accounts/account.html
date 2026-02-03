@@ -10,6 +10,29 @@
             background: linear-gradient(120deg, #0f172a, #1e293b 45%, #0f172a);
             color: #e2e8f0;
             font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+            padding-top: 96px;
+        }
+        .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            background: rgba(2, 6, 23, 0.85);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(12px);
+        }
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(56, 189, 248, 0.2);
+            color: #7dd3fc;
+            font-weight: 700;
+            letter-spacing: 0.08em;
         }
         .glass-card {
             background: rgba(15, 23, 42, 0.75);
@@ -43,6 +66,17 @@
             border: 1px solid rgba(148, 163, 184, 0.3);
             color: #f8fafc;
         }
+        .input-group .form-control:focus {
+            z-index: 1;
+        }
+        .toggle-password {
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(15, 23, 42, 0.4);
+            color: #e2e8f0;
+        }
+        .toggle-password:hover {
+            color: #bae6fd;
+        }
         .form-control:focus {
             border-color: #38bdf8;
             box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.2);
@@ -62,17 +96,26 @@
         a:hover {
             color: #bae6fd;
         }
+        .page-footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
-    <header class="container py-4 d-flex align-items-center justify-content-between">
-        <div>
-            <h1 class="h4 mb-1">Account Center</h1>
-            <p class="muted-text mb-0">Review your access and update credentials.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'admin_dashboard' %}">Admin Console</a>
-            <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
+    <header class="page-header">
+        <div class="container py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="logo-mark">EH</div>
+                <div>
+                    <h1 class="h4 mb-1">Account Center</h1>
+                    <p class="muted-text mb-0">Review your access and update credentials.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-light btn-sm" href="{% url 'admin_dashboard' %}">Admin Console</a>
+                <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
+            </div>
         </div>
     </header>
 
@@ -124,21 +167,36 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             {{ form.current_password.label_tag }}
-                            {{ form.current_password }}
+                            <div class="input-group">
+                                {{ form.current_password }}
+                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_current_password" aria-label="Show current password">
+                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
+                                </button>
+                            </div>
                             {% if form.current_password.errors %}
                                 <div class="text-danger">{{ form.current_password.errors }}</div>
                             {% endif %}
                         </div>
                         <div class="mb-3">
                             {{ form.new_password1.label_tag }}
-                            {{ form.new_password1 }}
+                            <div class="input-group">
+                                {{ form.new_password1 }}
+                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_new_password1" aria-label="Show new password">
+                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
+                                </button>
+                            </div>
                             {% if form.new_password1.errors %}
                                 <div class="text-danger">{{ form.new_password1.errors }}</div>
                             {% endif %}
                         </div>
                         <div class="mb-4">
                             {{ form.new_password2.label_tag }}
-                            {{ form.new_password2 }}
+                            <div class="input-group">
+                                {{ form.new_password2 }}
+                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_new_password2" aria-label="Show new password confirmation">
+                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
+                                </button>
+                            </div>
                             {% if form.new_password2.errors %}
                                 <div class="text-danger">{{ form.new_password2.errors }}</div>
                             {% endif %}
@@ -149,5 +207,26 @@
             </div>
         </div>
     </main>
+    <footer class="page-footer py-4">
+        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+        </div>
+    </footer>
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) {
+                    return;
+                }
+                const isPassword = input.getAttribute('type') === 'password';
+                input.setAttribute('type', isPassword ? 'text' : 'password');
+                button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                button.querySelector('.toggle-icon').textContent = isPassword ? '🙈' : '👁️';
+            });
+        });
+    </script>
 </body>
 </html>

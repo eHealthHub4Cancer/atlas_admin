@@ -10,6 +10,29 @@
             background: radial-gradient(circle at top, #111827, #0f172a 50%, #020617 100%);
             color: #e2e8f0;
             font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+            padding-top: 96px;
+        }
+        .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            background: rgba(2, 6, 23, 0.85);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(12px);
+        }
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(56, 189, 248, 0.2);
+            color: #7dd3fc;
+            font-weight: 700;
+            letter-spacing: 0.08em;
         }
         .glass-card {
             background: rgba(15, 23, 42, 0.78);
@@ -57,17 +80,26 @@
         a:hover {
             color: #bae6fd;
         }
+        .page-footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
-    <header class="container py-4 d-flex align-items-center justify-content-between">
-        <div>
-            <h1 class="h4 mb-1">Admin Console</h1>
-            <p class="muted-text mb-0">Manage users, permissions, and account status.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'account' %}">Account</a>
-            <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
+    <header class="page-header">
+        <div class="container py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="logo-mark">EH</div>
+                <div>
+                    <h1 class="h4 mb-1">Admin Console</h1>
+                    <p class="muted-text mb-0">Manage users, permissions, and account status.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-light btn-sm" href="{% url 'account' %}">Account</a>
+                <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
+            </div>
         </div>
     </header>
 
@@ -169,5 +201,11 @@
             </div>
         </div>
     </main>
+    <footer class="page-footer py-4">
+        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+        </div>
+    </footer>
 </body>
 </html>
