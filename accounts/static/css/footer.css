@@ -5,31 +5,8 @@
   position: relative;
 }
 
-.dashboard-page .site-footer {
-  margin-left: var(--sidebar-width);
-  width: calc(100% - var(--sidebar-width));
-}
-
-.dashboard-page .site-footer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 1px;
-  background: var(--border);
-  opacity: 0.9;
-}
-
-@media (max-width: 860px) {
-  .dashboard-page .site-footer {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .dashboard-page .site-footer::before {
-    display: none;
-  }
+.dashboard__main .site-footer {
+  margin-top: auto;
 }
 
 .footer-inner {
