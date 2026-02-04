@@ -11,6 +11,7 @@ from .forms import (
     AdminUserPermissionsForm,
     BulkGrantPermissionsForm,
     AdminLoginForm,
+    ProfileUpdateForm,
 )
 from .models import AtlasUser, Permission, AdminUser
 
@@ -422,6 +423,36 @@ def account_view(request):
     )
 
 
+def profile_update(request):
+    user = get_current_user(request)
+    if not user:
+        messages.error(request, "Please log in to update your profile.")
+        return redirect("login")
+
+    profile = getattr(user, "profile", None)
+
+    if request.method == "POST":
+        form = ProfileUpdateForm(request.POST, instance=profile)
+        if form.is_valid():
+            updated_profile = form.save(commit=False)
+            updated_profile.user = user
+            updated_profile.save()
+            messages.success(request, "Your profile has been updated.")
+            return redirect("account")
+    else:
+        form = ProfileUpdateForm(
+            instance=profile,
+            initial={
+                "display_name": user.username if not profile else profile.display_name,
+                "email": "" if not profile else profile.email,
+                "affiliation": "" if not profile else profile.affiliation,
+                "prefix": "" if not profile else profile.prefix,
+            },
+        )
+
+    return render(request, "accounts/profile_update.html", {"form": form, "user_profile": user, "profile": profile})
+
+
 def user_dashboard(request):
     user = get_current_user(request)
     if not user:
@@ -439,6 +470,13 @@ def user_dashboard(request):
 
     permissions = user.permissions.order_by("name")
     profile = getattr(user, "profile", None)
+    needs_profile_update = (
+        not profile
+        or not profile.display_name
+        or not profile.email
+        or not profile.affiliation
+        or not profile.prefix
+    )
     return render(
         request,
         "accounts/user_dashboard.html",
@@ -449,6 +487,7 @@ def user_dashboard(request):
             "permissions": permissions,
             "form": form,
             "activity_logs": [],
+            "needs_profile_update": needs_profile_update,
         },
     )
 

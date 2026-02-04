@@ -66,8 +66,20 @@
       const modal = button.closest(".modal");
       if (modal) {
         modal.classList.remove("is-open");
+        const modalKey = modal.getAttribute("data-modal-key");
+        if (modalKey) {
+          localStorage.setItem(`modalDismissed:${modalKey}`, "true");
+        }
       }
     });
+  });
+
+  document.querySelectorAll("[data-modal-auto]").forEach((modal) => {
+    const modalKey = modal.getAttribute("data-modal-key");
+    if (modalKey && localStorage.getItem(`modalDismissed:${modalKey}`) === "true") {
+      return;
+    }
+    modal.classList.add("is-open");
   });
 
   const alerts = Array.from(document.querySelectorAll(".alert"));

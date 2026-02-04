@@ -1,0 +1,11 @@
+.auth-card {
+  width: min(560px, 100%);
+}
+
+.auth-card .section-title {
+  margin-bottom: 0.3rem;
+}
+
+.auth-card .muted {
+  margin-bottom: 1.4rem;
+}

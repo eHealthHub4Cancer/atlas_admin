@@ -1,6 +1,6 @@
 .auth-page {
-  padding-top: clamp(6.5rem, 10vw, 8rem);
-  padding-bottom: clamp(4rem, 9vw, 6rem);
+  padding-top: clamp(5rem, 8vw, 6.5rem);
+  padding-bottom: clamp(3rem, 7vw, 4.5rem);
 }
 
 .auth-header {
@@ -9,7 +9,7 @@
   left: 0;
   right: 0;
   z-index: 20;
-  padding: 1rem 0;
+  padding: 0.6rem 0;
 }
 
 .auth-header .header-inner {
@@ -26,7 +26,7 @@
 }
 
 .auth-card {
-  padding: clamp(2rem, 4vw, 3rem);
+  padding: clamp(1.6rem, 3vw, 2.4rem);
   border-radius: var(--radius-lg);
   width: min(520px, 100%);
   margin: 0 auto;
@@ -44,8 +44,8 @@
 }
 
 .auth-page main.container {
-  margin-top: clamp(1.5rem, 4vw, 2.5rem);
-  margin-bottom: clamp(2rem, 6vw, 3.5rem);
+  margin-top: clamp(1.2rem, 3vw, 2rem);
+  margin-bottom: clamp(1.6rem, 4vw, 2.6rem);
   display: flex;
   justify-content: center;
 }
