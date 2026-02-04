@@ -1,9 +1,12 @@
 # views.py
 import logging
+from urllib.parse import urlencode
 
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db import connections, DatabaseError, transaction
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 from .forms import (
     AtlasSignUpForm,
@@ -405,21 +408,33 @@ def account_view(request):
         messages.error(request, "Please log in to view your account.")
         return redirect("login")
 
-    if request.method == "POST":
-        form = PasswordChangeForm(user, request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Your password has been updated.")
-            return redirect("account")
-    else:
-        form = PasswordChangeForm(user)
-
     permissions = user.permissions.order_by("name")
     profile = getattr(user, "profile", None)
+    missing_profile_fields = []
+    if not profile:
+        missing_profile_fields = ["display name", "email", "affiliation", "prefix"]
+    else:
+        if not profile.display_name:
+            missing_profile_fields.append("display name")
+        if not profile.email:
+            missing_profile_fields.append("email")
+        if not profile.affiliation:
+            missing_profile_fields.append("affiliation")
+        if not profile.prefix:
+            missing_profile_fields.append("prefix")
+    profile_completion = 100
+    if missing_profile_fields:
+        profile_completion = int(((4 - len(missing_profile_fields)) / 4) * 100)
     return render(
         request,
         "accounts/account.html",
-        {"user_profile": user, "profile": profile, "permissions": permissions, "form": form},
+        {
+            "user_profile": user,
+            "profile": profile,
+            "permissions": permissions,
+            "missing_profile_fields": missing_profile_fields,
+            "profile_completion": profile_completion,
+        },
     )
 
 
@@ -470,13 +485,22 @@ def user_dashboard(request):
 
     permissions = user.permissions.order_by("name")
     profile = getattr(user, "profile", None)
-    needs_profile_update = (
-        not profile
-        or not profile.display_name
-        or not profile.email
-        or not profile.affiliation
-        or not profile.prefix
-    )
+    missing_profile_fields = []
+    if not profile:
+        missing_profile_fields = ["display name", "email", "affiliation", "prefix"]
+    else:
+        if not profile.display_name:
+            missing_profile_fields.append("display name")
+        if not profile.email:
+            missing_profile_fields.append("email")
+        if not profile.affiliation:
+            missing_profile_fields.append("affiliation")
+        if not profile.prefix:
+            missing_profile_fields.append("prefix")
+    needs_profile_update = bool(missing_profile_fields)
+    profile_completion = 100
+    if missing_profile_fields:
+        profile_completion = int(((4 - len(missing_profile_fields)) / 4) * 100)
     return render(
         request,
         "accounts/user_dashboard.html",
@@ -488,6 +512,8 @@ def user_dashboard(request):
             "form": form,
             "activity_logs": [],
             "needs_profile_update": needs_profile_update,
+            "missing_profile_fields": missing_profile_fields,
+            "profile_completion": profile_completion,
         },
     )
 
@@ -501,9 +527,19 @@ def admin_dashboard(request):
     is_super_admin = admin_user.is_super_admin
 
     permissions = sync_permissions_from_webapi()
+    permissions_total = permissions.count()
     atlas_users = AtlasUser.objects.select_related("profile").prefetch_related("permissions").order_by("username")
     admin_users = AdminUser.objects.order_by("name")
+    all_admin_users = admin_users
     users = atlas_users
+    all_atlas_users = atlas_users
+
+    user_search = (request.GET.get("user_search") or "").strip()
+    user_filter = (request.GET.get("user_filter") or "all").strip()
+    role_search = (request.GET.get("role_search") or "").strip()
+    role_filter = (request.GET.get("role_filter") or "all").strip()
+    permission_search = (request.GET.get("permission_search") or "").strip()
+    permission_filter = (request.GET.get("permission_filter") or "all").strip()
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -558,22 +594,6 @@ def admin_dashboard(request):
                 messages.success(request, "Granted permissions to selected users.")
                 return redirect("admin_dashboard")
 
-        elif action == "create_role":
-            role_name = (request.POST.get("role_name") or "").strip()
-            if role_name:
-                try:
-                    with transaction.atomic(using=WEBAPI_DB_ALIAS):
-                        with webapi_connection().cursor() as cursor:
-                            ensure_webapi_role(cursor, role_name)
-                    sync_permissions_from_webapi()
-                    messages.success(request, f"Role '{role_name}' created.")
-                except Exception as e:
-                    logger.exception("WebAPI role creation failed")
-                    messages.error(request, f"Role creation failed: {type(e).__name__}: {e}")
-            else:
-                messages.error(request, "Role name cannot be blank.")
-            return redirect("admin_dashboard")
-
         elif action == "promote_admin" and is_super_admin:
             atlas_user_id = request.POST.get("atlas_user_id")
             make_super_admin = bool(request.POST.get("make_super_admin"))
@@ -606,15 +626,118 @@ def admin_dashboard(request):
                         messages.success(request, f"{target_user.username} can now access admin.")
             return redirect("admin_dashboard")
 
-    bulk_form = BulkGrantPermissionsForm(users_queryset=users, permissions_queryset=permissions)
-    user_forms = []
-    for target_user in users:
-        initial_permissions = target_user.permissions.all()
+        elif action == "remove_admin" and is_super_admin:
+            admin_email = (request.POST.get("admin_email") or "").strip()
+            if admin_email:
+                target_admin = AdminUser.objects.filter(email=admin_email).first()
+                if target_admin:
+                    target_admin.is_admin = False
+                    target_admin.is_super_admin = False
+                    target_admin.save()
+                    messages.success(request, f"Removed admin access for {target_admin.email}.")
+            return redirect("admin_dashboard")
+
+    if user_search:
+        atlas_users = atlas_users.filter(
+            Q(username__icontains=user_search)
+            | Q(profile__email__icontains=user_search)
+            | Q(profile__affiliation__icontains=user_search)
+            | Q(profile__display_name__icontains=user_search)
+        )
+        admin_users = admin_users.filter(
+            Q(name__icontains=user_search)
+            | Q(email__icontains=user_search)
+            | Q(affiliation__icontains=user_search)
+        )
+
+    admin_users_by_email = {admin.email: admin for admin in all_admin_users}
+    atlas_email_map = {}
+    combined_users = []
+    for target_user in atlas_users:
         profile = getattr(target_user, "profile", None)
-        user_forms.append(
+        profile_email = getattr(profile, "email", None)
+        if profile_email:
+            atlas_email_map[profile_email] = target_user
+        combined_users.append(
             {
                 "user": target_user,
                 "profile": profile,
+                "admin_user": admin_users_by_email.get(profile_email),
+                "is_atlas": True,
+                "is_admin": profile_email in admin_users_by_email,
+            }
+        )
+
+    for admin in admin_users:
+        if admin.email not in atlas_email_map:
+            combined_users.append(
+                {
+                    "user": None,
+                    "profile": None,
+                    "admin_user": admin,
+                    "is_atlas": False,
+                    "is_admin": True,
+                }
+            )
+
+    if user_filter == "atlas":
+        combined_users = [entry for entry in combined_users if entry["is_atlas"]]
+    elif user_filter == "admin":
+        combined_users = [entry for entry in combined_users if entry["is_admin"]]
+    elif user_filter == "active":
+        combined_users = [
+            entry
+            for entry in combined_users
+            if entry["is_atlas"] and not entry["user"].is_disabled
+        ]
+    elif user_filter == "disabled":
+        combined_users = [
+            entry
+            for entry in combined_users
+            if entry["is_atlas"] and entry["user"].is_disabled
+        ]
+
+    def user_sort_key(entry):
+        if entry["is_atlas"]:
+            profile = entry["profile"]
+            return (getattr(profile, "display_name", "") or entry["user"].username).lower()
+        return (entry["admin_user"].name or entry["admin_user"].email).lower()
+
+    combined_users = sorted(combined_users, key=user_sort_key)
+    users_paginator = Paginator(combined_users, 10)
+    users_page = users_paginator.get_page(request.GET.get("users_page"))
+
+    role_queryset = permissions
+    if role_search:
+        role_queryset = role_queryset.filter(name__icontains=role_search)
+    if role_filter == "with_id":
+        role_queryset = role_queryset.filter(external_id__isnull=False)
+    elif role_filter == "no_id":
+        role_queryset = role_queryset.filter(external_id__isnull=True)
+    roles_paginator = Paginator(role_queryset, 10)
+    roles_page = roles_paginator.get_page(request.GET.get("roles_page"))
+
+    permission_queryset = permissions
+    if permission_search:
+        permission_queryset = permission_queryset.filter(name__icontains=permission_search)
+    if permission_filter == "with_id":
+        permission_queryset = permission_queryset.filter(external_id__isnull=False)
+    elif permission_filter == "no_id":
+        permission_queryset = permission_queryset.filter(external_id__isnull=True)
+    permissions_paginator = Paginator(permission_queryset, 10)
+    permissions_page = permissions_paginator.get_page(request.GET.get("permissions_page"))
+
+    bulk_form = BulkGrantPermissionsForm(users_queryset=all_atlas_users, permissions_queryset=permissions)
+    user_forms = []
+    for entry in users_page:
+        target_user = entry.get("user")
+        if not target_user:
+            user_forms.append({**entry, "form": None})
+            continue
+        initial_permissions = target_user.permissions.all()
+        user_forms.append(
+            {
+                **entry,
                 "form": AdminUserPermissionsForm(
                     initial={
                         "user_id": target_user.id,
@@ -626,6 +749,19 @@ def admin_dashboard(request):
             }
         )
 
+    user_querystring = urlencode(
+        {"user_search": user_search, "user_filter": user_filter},
+        doseq=True,
+    )
+    role_querystring = urlencode(
+        {"role_search": role_search, "role_filter": role_filter},
+        doseq=True,
+    )
+    permission_querystring = urlencode(
+        {"permission_search": permission_search, "permission_filter": permission_filter},
+        doseq=True,
+    )
+
     return render(
         request,
         "accounts/admin_dashboard.html",
@@ -633,10 +769,23 @@ def admin_dashboard(request):
             "user_profile": admin_user,
             "admin_user": admin_user,
             "is_super_admin": is_super_admin,
-            "permissions": permissions,
+            "permissions": permissions_page,
+            "roles_page": roles_page,
+            "permissions_page": permissions_page,
+            "permissions_total": permissions_total,
             "bulk_form": bulk_form,
             "user_forms": user_forms,
-            "atlas_users": atlas_users,
-            "admin_users": admin_users,
+            "atlas_users": all_atlas_users,
+            "admin_users": all_admin_users,
+            "users_page": users_page,
+            "user_search": user_search,
+            "user_filter": user_filter,
+            "role_search": role_search,
+            "role_filter": role_filter,
+            "permission_search": permission_search,
+            "permission_filter": permission_filter,
+            "user_querystring": user_querystring,
+            "role_querystring": role_querystring,
+            "permission_querystring": permission_querystring,
         },
     )

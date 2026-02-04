@@ -195,7 +195,7 @@ class AdminUserPermissionsForm(forms.Form):
     permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(),
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select form-select-sm'})
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"})
     )
 
     def __init__(self, *args, **kwargs):
@@ -208,12 +208,14 @@ class BulkGrantPermissionsForm(forms.Form):
     user_ids = forms.ModelMultipleChoiceField(
         queryset=AtlasUser.objects.none(),
         required=True,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"}),
+        label="Atlas users",
     )
     permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(),
         required=True,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"}),
+        label="Roles",
     )
 
     def __init__(self, *args, **kwargs):

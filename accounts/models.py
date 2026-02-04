@@ -5,6 +5,7 @@ import bcrypt
 class Permission(models.Model):
     name = models.CharField(max_length=100, unique=True)
     external_id = models.IntegerField(blank=True, null=True)
+    description = models.CharField(max_length=255, blank=True)
 
     class Meta:
         db_table = 'atlas_permission'
@@ -31,6 +32,8 @@ class AtlasUser(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_GUEST)
     is_disabled = models.BooleanField(default=False)
     permissions = models.ManyToManyField(Permission, blank=True, related_name='users')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def set_password(self, raw_password):
         # OHDSI compatibility: prefix=b"2a" and rounds=10
@@ -64,6 +67,8 @@ class UserProfile(models.Model):
     email = models.EmailField(unique=True)
     affiliation = models.CharField(max_length=255, blank=True)
     prefix = models.CharField(max_length=10, choices=PREFIX_CHOICES, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "atlas_user_profile"

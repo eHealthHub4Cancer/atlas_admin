@@ -44,7 +44,7 @@
                         <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z"></path>
                         <path d="M9 12l2 2 4-4"></path>
                     </svg>
-                    Permissions
+                    Roles
                 </button>
                 <button class="nav-link" type="button" data-section-target="password">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -91,20 +91,6 @@
                     </button>
                     <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
-                <div class="profile-nav glass">
-                    <div class="profile-nav__identity">
-                        <span class="profile-nav__title">Profile</span>
-                        <strong>{{ profile.display_name|default:user.username }}</strong>
-                    </div>
-                    <div class="profile-nav__meta">
-                        <span>{{ profile.email|default:"No email on file" }}</span>
-                        {% if profile.affiliation %}
-                            <span class="profile-nav__divider">•</span>
-                            <span>{{ profile.affiliation }}</span>
-                        {% endif %}
-                    </div>
-                    <a class="btn btn-ghost" href="{% url 'account' %}">View Profile</a>
-                </div>
             </header>
 
             <main class="dashboard__content">
@@ -127,15 +113,28 @@
                                 <span class="helper-text">Last login updates after each successful sign-in.</span>
                             </div>
                             <div class="card glass stat-card">
-                                <span class="muted">Joined</span>
-                                <strong>{{ user.date_joined|date:"M d, Y" }}</strong>
-                                <div class="progress-bar"><span style="width: 72%"></span></div>
+                                <span class="muted">Profile status</span>
+                                <strong>
+                                    {% if missing_profile_fields %}
+                                        Incomplete
+                                    {% else %}
+                                        Up to date
+                                    {% endif %}
+                                </strong>
+                                <div class="progress-bar" role="progressbar" aria-valuenow="{{ profile_completion }}" aria-valuemin="0" aria-valuemax="100">
+                                    <span style="width: {{ profile_completion }}%"></span>
+                                </div>
+                                {% if missing_profile_fields %}
+                                    <span class="helper-text">Missing {{ missing_profile_fields|join:", " }}.</span>
+                                {% else %}
+                                    <span class="helper-text">All profile fields are complete.</span>
+                                {% endif %}
                             </div>
                             <div class="card glass stat-card">
-                                <span class="muted">Permissions</span>
+                                <span class="muted">Roles</span>
                                 <strong>{{ permissions|length }}</strong>
                                 <span class="tag">Role: {{ user_profile.get_role_display }}</span>
-                                <span class="helper-text">Access is granted by your assigned role and permissions.</span>
+                                <span class="helper-text">Access is granted by your assigned roles.</span>
                             </div>
                         </div>
                     </div>
@@ -143,14 +142,14 @@
 
                 <section class="dashboard-section" id="permissions">
                     <div class="card glass">
-                        <h2 class="section-title">Permissions</h2>
-                        <p class="muted">Permissions currently assigned to your account.</p>
+                        <h2 class="section-title">Roles</h2>
+                        <p class="muted">Roles currently assigned to your account.</p>
                         {% if permissions %}
                             <div class="table-wrapper permissions-table">
                                 <table class="table">
                                     <thead>
                                         <tr>
-                                            <th>Permission</th>
+                                            <th>Role</th>
                                             <th>Access level</th>
                                         </tr>
                                     </thead>
@@ -227,8 +226,23 @@
                     <div class="card glass">
                         <h2 class="section-title">Activity Log</h2>
                         <p class="muted">Recent actions on your account.</p>
-                        <div class="info-banner">
-                            Activity is pulled from sign-ins, password updates, and permission changes tied to your account.
+                        <div class="activity-meta">
+                            <div>
+                                <span class="muted">Atlas user created</span>
+                                <strong>{{ user_profile.created_at|date:"M d, Y" }}</strong>
+                            </div>
+                            <div>
+                                <span class="muted">Atlas user updated</span>
+                                <strong>{{ user_profile.updated_at|date:"M d, Y" }}</strong>
+                            </div>
+                            <div>
+                                <span class="muted">Profile created</span>
+                                <strong>{{ profile.created_at|date:"M d, Y"|default:"Not available" }}</strong>
+                            </div>
+                            <div>
+                                <span class="muted">Profile updated</span>
+                                <strong>{{ profile.updated_at|date:"M d, Y"|default:"Not available" }}</strong>
+                            </div>
                         </div>
                         <div class="table-wrapper">
                             <table class="table">
