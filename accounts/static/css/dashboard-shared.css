@@ -48,6 +48,12 @@
   gap: 0.4rem;
 }
 
+.sidebar__footer {
+  margin-top: auto;
+  display: grid;
+  gap: 0.75rem;
+}
+
 .nav-link {
   display: flex;
   align-items: center;
@@ -151,6 +157,8 @@
 .card {
   padding: 1.5rem;
   border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .card-grid {
@@ -184,12 +192,12 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .table th,
 .table td {
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 0.85rem;
   border-bottom: 1px solid var(--border);
   text-align: left;
 }
@@ -197,6 +205,7 @@
 .table th {
   color: var(--text-secondary);
   font-weight: 600;
+  background: var(--bg-muted);
 }
 
 .table tbody tr:hover {

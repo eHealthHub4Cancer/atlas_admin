@@ -6,7 +6,7 @@
 }
 
 .admin-dashboard .dashboard__header {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(248, 113, 113, 0.1));
+  background: var(--bg-card-strong);
 }
 
 .admin-dashboard .nav-link:hover,
@@ -39,7 +39,7 @@
   border-radius: 12px;
   border: 1px solid var(--border);
   padding: 0.6rem 0.8rem;
-  background: rgba(15, 23, 42, 0.3);
+  background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
@@ -52,9 +52,50 @@
   margin-top: 1rem;
 }
 
+.admin-dashboard .pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-dashboard .page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-weight: 600;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.admin-dashboard .page-number:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.admin-dashboard .page-number.is-active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-strong);
+}
+
 .admin-dashboard .pagination .is-disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.admin-dashboard .table-cell-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-dashboard .table-cell-actions form {
+  margin: 0;
 }
 
 .admin-dashboard .action-details {
@@ -78,6 +119,14 @@
 .admin-dashboard .action-form {
   display: grid;
   gap: 0.6rem;
+}
+
+.admin-dashboard .form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .admin-dashboard .checkbox-grid {

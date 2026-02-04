@@ -73,6 +73,17 @@
                     </button>
                 {% endif %}
             </nav>
+            <div class="sidebar__footer">
+                <button class="theme-toggle theme-toggle--sidebar" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
+                    <span class="theme-toggle__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
+                        </svg>
+                    </span>
+                    <span class="theme-toggle__label">Theme</span>
+                </button>
+            </div>
         </aside>
 
         <div class="dashboard__main">
@@ -86,12 +97,6 @@
                     <span class="muted">Signed in as {{ admin_user.name }} ({{ admin_user.email }})</span>
                 </div>
                 <div class="header-actions">
-                    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
-                        </svg>
-                    </button>
                     <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
             </header>
@@ -171,15 +176,23 @@
                         </div>
                         <div class="pagination">
                             {% if roles_page.has_previous %}
-                                <a class="btn btn-ghost" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.previous_page_number }}">Previous</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.previous_page_number }}">Previous</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Previous</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Previous</span>
                             {% endif %}
-                            <span class="muted">Page {{ roles_page.number }} of {{ roles_page.paginator.num_pages }}</span>
+                            <div class="pagination__pages">
+                                {% for page_num in roles_page.paginator.page_range %}
+                                    {% if page_num == roles_page.number %}
+                                        <span class="page-number is-active">{{ page_num }}</span>
+                                    {% else %}
+                                        <a class="page-number" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ page_num }}">{{ page_num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                             {% if roles_page.has_next %}
-                                <a class="btn btn-ghost" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.next_page_number }}">Next</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.next_page_number }}">Next</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Next</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Next</span>
                             {% endif %}
                         </div>
                     </div>
@@ -249,19 +262,18 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if item.is_atlas %}
-                                                    {% if item.user.permissions.all|length %}
-                                                        {{ item.user.permissions.all|join:", " }}
+                                                <div class="table-cell-actions">
+                                                    {% if item.is_atlas %}
+                                                        <button class="btn btn-ghost btn-sm" type="button" data-modal-open="roles-modal-{{ item.user.id }}">View roles</button>
+                                                        <span class="muted">{{ item.user.permissions.all|length }} assigned</span>
                                                     {% else %}
-                                                        <span class="muted">No roles</span>
+                                                        {% if item.admin_user.is_super_admin %}
+                                                            <span class="tag">Superadmin</span>
+                                                        {% else %}
+                                                            <span class="tag">Admin</span>
+                                                        {% endif %}
                                                     {% endif %}
-                                                {% else %}
-                                                    {% if item.admin_user.is_super_admin %}
-                                                        <span class="tag">Superadmin</span>
-                                                    {% else %}
-                                                        <span class="tag">Admin</span>
-                                                    {% endif %}
-                                                {% endif %}
+                                                </div>
                                             </td>
                                             <td>
                                                 {% if item.is_atlas %}
@@ -278,51 +290,27 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <details class="action-details">
-                                                    <summary class="btn btn-ghost btn-sm">View actions</summary>
-                                                    <div class="action-panel">
-                                                        {% if item.is_atlas %}
-                                                            <form method="post" class="action-form">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="action" value="update_user">
-                                                                {{ item.form.user_id }}
-                                                                <div class="form-field">
-                                                                    <label>Assign roles</label>
-                                                                    {{ item.form.permissions }}
-                                                                </div>
-                                                                <div class="form-field">
-                                                                    <label>
-                                                                        {{ item.form.is_disabled }}
-                                                                        Deactivate user
-                                                                    </label>
-                                                                </div>
-                                                                <button class="btn btn-primary" type="submit">Save updates</button>
-                                                            </form>
-                                                        {% endif %}
-                                                        {% if is_super_admin and item.is_atlas %}
-                                                            <form method="post" class="action-form">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="action" value="promote_admin">
-                                                                <input type="hidden" name="atlas_user_id" value="{{ item.user.id }}">
-                                                                <div class="form-field">
-                                                                    <label>
-                                                                        <input type="checkbox" name="make_super_admin">
-                                                                        Grant superadmin access
-                                                                    </label>
-                                                                </div>
-                                                                <button class="btn btn-ghost" type="submit">Promote to admin</button>
-                                                            </form>
-                                                        {% endif %}
-                                                        {% if is_super_admin and item.is_admin %}
-                                                            <form method="post" class="action-form">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="action" value="remove_admin">
-                                                                <input type="hidden" name="admin_email" value="{{ item.admin_user.email }}">
-                                                                <button class="btn btn-ghost" type="submit">Remove admin access</button>
-                                                            </form>
-                                                        {% endif %}
-                                                    </div>
-                                                </details>
+                                                <div class="table-cell-actions">
+                                                    {% if is_super_admin and item.is_atlas %}
+                                                        <form method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="action" value="promote_admin">
+                                                            <input type="hidden" name="atlas_user_id" value="{{ item.user.id }}">
+                                                            <button class="btn btn-ghost btn-sm" type="submit">Promote admin</button>
+                                                        </form>
+                                                    {% endif %}
+                                                    {% if is_super_admin and item.is_admin %}
+                                                        <form method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="action" value="remove_admin">
+                                                            <input type="hidden" name="admin_email" value="{{ item.admin_user.email }}">
+                                                            <button class="btn btn-ghost btn-sm" type="submit">Remove admin</button>
+                                                        </form>
+                                                    {% endif %}
+                                                    {% if not is_super_admin %}
+                                                        <span class="muted">No actions</span>
+                                                    {% endif %}
+                                                </div>
                                             </td>
                                         </tr>
                                     {% empty %}
@@ -333,17 +321,54 @@
                                 </tbody>
                             </table>
                         </div>
+                        {% for item in user_forms %}
+                            {% if item.is_atlas %}
+                                <div class="modal" id="roles-modal-{{ item.user.id }}" role="dialog" aria-modal="true" aria-labelledby="roles-title-{{ item.user.id }}">
+                                    <div class="modal__panel glass">
+                                        <h3 class="section-title" id="roles-title-{{ item.user.id }}">Manage roles</h3>
+                                        <p class="muted">Add, edit, or remove roles for {{ item.profile.display_name|default:item.user.username }}.</p>
+                                        <form method="post" class="action-form">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="update_user">
+                                            {{ item.form.user_id }}
+                                            <div class="form-field">
+                                                <label>Assign roles</label>
+                                                {{ item.form.permissions }}
+                                            </div>
+                                            <div class="form-field">
+                                                <label class="form-check">
+                                                    {{ item.form.is_disabled }}
+                                                    Deactivate user
+                                                </label>
+                                            </div>
+                                            <div class="modal__actions">
+                                                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+                                                <button class="btn btn-primary" type="submit">Save roles</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
                         <div class="pagination">
                             {% if users_page.has_previous %}
-                                <a class="btn btn-ghost" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.previous_page_number }}">Previous</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.previous_page_number }}">Previous</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Previous</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Previous</span>
                             {% endif %}
-                            <span class="muted">Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}</span>
+                            <div class="pagination__pages">
+                                {% for page_num in users_page.paginator.page_range %}
+                                    {% if page_num == users_page.number %}
+                                        <span class="page-number is-active">{{ page_num }}</span>
+                                    {% else %}
+                                        <a class="page-number" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ page_num }}">{{ page_num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                             {% if users_page.has_next %}
-                                <a class="btn btn-ghost" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.next_page_number }}">Next</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.next_page_number }}">Next</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Next</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Next</span>
                             {% endif %}
                         </div>
                     </div>
@@ -394,15 +419,23 @@
                         </div>
                         <div class="pagination">
                             {% if permissions_page.has_previous %}
-                                <a class="btn btn-ghost" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.previous_page_number }}">Previous</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.previous_page_number }}">Previous</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Previous</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Previous</span>
                             {% endif %}
-                            <span class="muted">Page {{ permissions_page.number }} of {{ permissions_page.paginator.num_pages }}</span>
+                            <div class="pagination__pages">
+                                {% for page_num in permissions_page.paginator.page_range %}
+                                    {% if page_num == permissions_page.number %}
+                                        <span class="page-number is-active">{{ page_num }}</span>
+                                    {% else %}
+                                        <a class="page-number" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ page_num }}">{{ page_num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                             {% if permissions_page.has_next %}
-                                <a class="btn btn-ghost" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.next_page_number }}">Next</a>
+                                <a class="btn btn-ghost btn-sm" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.next_page_number }}">Next</a>
                             {% else %}
-                                <span class="btn btn-ghost is-disabled">Next</span>
+                                <span class="btn btn-ghost btn-sm is-disabled">Next</span>
                             {% endif %}
                         </div>
                     </div>
@@ -491,16 +524,16 @@
                 {% endif %}
             </main>
         </div>
-    </div>
-
-    <footer class="site-footer">
-        <div class="container footer-inner">
-            <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
-            <div class="footer-links">
-                <a href="mailto:support@ehealthhub.org">Support</a>
-            </div>
+            <footer class="site-footer">
+                <div class="container footer-inner">
+                    <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+                    <div class="footer-links">
+                        <a href="mailto:support@ehealthhub.org">Support</a>
+                    </div>
+                </div>
+            </footer>
         </div>
-    </footer>
+    </div>
 
     <script src="{% static 'js/shared.js' %}" defer></script>
     <script src="{% static 'js/admin_dashboard.js' %}" defer></script>
