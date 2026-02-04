@@ -2,6 +2,24 @@
   padding: 2rem 0;
   border-top: 1px solid var(--border);
   margin-top: 3rem;
+  position: relative;
+}
+
+.dashboard-page .site-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--sidebar-width);
+  width: 1px;
+  background: var(--border);
+  opacity: 0.9;
+}
+
+@media (max-width: 860px) {
+  .dashboard-page .site-footer::before {
+    display: none;
+  }
 }
 
 .footer-inner {

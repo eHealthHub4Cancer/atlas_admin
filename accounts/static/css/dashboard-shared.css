@@ -1,5 +1,6 @@
 .dashboard-page {
   padding: 0;
+  --sidebar-width: 260px;
 }
 
 .dashboard {
@@ -97,6 +98,14 @@
   gap: 0.2rem;
 }
 
+.dashboard__header .header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
 .dashboard__header .header-actions {
   display: flex;
   align-items: center;
@@ -106,6 +115,15 @@
 .dashboard__content {
   padding: 2rem 2.5rem 3rem;
   flex: 1;
+}
+
+.dashboard-page .auth-form {
+  width: 100%;
+  max-width: 520px;
+}
+
+.dashboard-page .form-field {
+  max-width: 520px;
 }
 
 .dashboard-section {
@@ -132,6 +150,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.stat-card .helper-text {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .stat-card strong {
@@ -176,6 +199,65 @@
   border: 1px solid var(--border);
   font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  color: #c7d2fe;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status-badge--active {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
+.status-badge--inactive {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+.info-banner {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.4);
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.settings-grid {
+  align-content: start;
+}
+
+.permissions-table .table th:last-child,
+.permissions-table .table td:last-child {
+  width: 160px;
 }
 
 .progress-bar {
@@ -231,6 +313,10 @@
 }
 
 @media (max-width: 1024px) {
+  .dashboard-page {
+    --sidebar-width: 220px;
+  }
+
   .dashboard {
     grid-template-columns: 220px 1fr;
   }
@@ -242,6 +328,10 @@
 }
 
 @media (max-width: 860px) {
+  .dashboard-page {
+    --sidebar-width: 0px;
+  }
+
   .dashboard {
     grid-template-columns: 1fr;
   }
@@ -259,6 +349,10 @@
 
   .sidebar__nav {
     display: none;
+  }
+
+  .settings-layout {
+    grid-template-columns: 1fr;
   }
 
   .sidebar.is-open .sidebar__nav {
