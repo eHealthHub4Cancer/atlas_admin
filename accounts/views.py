@@ -344,7 +344,7 @@ def login_view(request):
                 request.session["user_id"] = user.id
                 request.session["username"] = user.username
                 request.session["role"] = user.role
-                messages.success(request, f"Welcome back, {username}!")
+                messages.success(request, "Signed in successfully.")
                 return redirect("user_dashboard")
 
             messages.error(request, "Invalid username or password.")

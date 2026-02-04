@@ -291,6 +291,48 @@ button {
   color: #bfdbfe;
 }
 
+.toast-stack {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 60;
+}
+
+.toast {
+  min-width: min(320px, 90vw);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.3);
+  animation: toastIn 0.35s ease;
+}
+
+.toast.is-hiding {
+  animation: toastOut 0.35s ease forwards;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 .muted {
   color: var(--text-secondary);
 }

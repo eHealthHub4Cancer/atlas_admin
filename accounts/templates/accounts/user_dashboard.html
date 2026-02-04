@@ -81,9 +81,13 @@
         <div class="dashboard__main">
             <header class="dashboard__header glass-strong">
                 <div class="header-info">
-                    <span class="pill">User Dashboard</span>
                     <h1 class="section-title">Welcome, {{ user.username }}</h1>
-                    <span class="muted">Role: {{ user_profile.get_role_display }}</span>
+                    <div class="header-badges">
+                        <span class="role-badge">Role: {{ user_profile.get_role_display }}</span>
+                        <span class="status-badge {% if user_profile.is_disabled %}status-badge--inactive{% else %}status-badge--active{% endif %}">
+                            {% if user_profile.is_disabled %}Disabled{% else %}Active{% endif %}
+                        </span>
+                    </div>
                 </div>
                 <div class="header-actions">
                     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
@@ -105,7 +109,15 @@
                             <div class="card glass stat-card">
                                 <span class="muted">Account Status</span>
                                 <strong>{% if user_profile.is_disabled %}Disabled{% else %}Active{% endif %}</strong>
-                                <span class="tag">Last login: {{ user.last_login|date:"M d, Y" }}</span>
+                                <span class="tag">
+                                    Last login:
+                                    {% if user.last_login %}
+                                        {{ user.last_login|date:"M d, Y" }}
+                                    {% else %}
+                                        Not yet
+                                    {% endif %}
+                                </span>
+                                <span class="helper-text">Last login updates after each successful sign-in.</span>
                             </div>
                             <div class="card glass stat-card">
                                 <span class="muted">Joined</span>
@@ -116,6 +128,7 @@
                                 <span class="muted">Permissions</span>
                                 <strong>{{ permissions|length }}</strong>
                                 <span class="tag">Role: {{ user_profile.get_role_display }}</span>
+                                <span class="helper-text">Access is granted by your assigned role and permissions.</span>
                             </div>
                         </div>
                     </div>
@@ -125,22 +138,35 @@
                     <div class="card glass">
                         <h2 class="section-title">Permissions</h2>
                         <p class="muted">Permissions currently assigned to your account.</p>
-                        <div>
-                            {% if permissions %}
-                                {% for permission in permissions %}
-                                    <span class="tag">{{ permission.name }}</span>
-                                {% endfor %}
-                            {% else %}
-                                <p class="muted">No permissions assigned yet.</p>
-                            {% endif %}
-                        </div>
+                        {% if permissions %}
+                            <div class="table-wrapper permissions-table">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Permission</th>
+                                            <th>Access level</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for permission in permissions %}
+                                            <tr>
+                                                <td>{{ permission.name }}</td>
+                                                <td><span class="tag">Granted</span></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="muted">No permissions assigned yet.</p>
+                        {% endif %}
                     </div>
                 </section>
 
                 <section class="dashboard-section" id="password">
                     <div class="card glass">
                         <h2 class="section-title">Change Password</h2>
-                        <p class="muted">Refresh your credentials to keep things secure.</p>
+                        <p class="muted">Update your password to keep your account secure.</p>
                         {% if messages %}
                             {% for message in messages %}
                                 <div class="alert alert-{{ message.tags }}">{{ message }}</div>
@@ -193,18 +219,37 @@
                     <div class="card glass">
                         <h2 class="section-title">Profile Settings</h2>
                         <p class="muted">Update profile preferences and contact details.</p>
-                        <form method="post" class="auth-form">
-                            {% csrf_token %}
-                            <div class="form-field">
-                                <label for="display_name">Display name</label>
-                                <input id="display_name" name="display_name" type="text" value="{{ user.get_full_name }}">
+                        <div class="settings-layout">
+                            <form method="post" class="auth-form">
+                                {% csrf_token %}
+                                <div class="form-field">
+                                    <label for="display_name">Display name</label>
+                                    <input id="display_name" name="display_name" type="text" value="{{ user.get_full_name }}">
+                                </div>
+                                <div class="form-field">
+                                    <label for="email">Email</label>
+                                    <input id="email" name="email" type="email" value="{{ user.email }}">
+                                </div>
+                                <button class="btn btn-primary" type="submit">Save settings</button>
+                            </form>
+                            <div class="card-grid settings-grid">
+                                <div class="card glass stat-card">
+                                    <span class="muted">Profile completeness</span>
+                                    <strong>80%</strong>
+                                    <span class="tag">Add phone &amp; location</span>
+                                </div>
+                                <div class="card glass stat-card">
+                                    <span class="muted">Security checks</span>
+                                    <strong>2 of 3</strong>
+                                    <span class="tag">Enable MFA</span>
+                                </div>
+                                <div class="card glass stat-card">
+                                    <span class="muted">Notification preferences</span>
+                                    <strong>Email + In-app</strong>
+                                    <span class="tag">Weekly digest</span>
+                                </div>
                             </div>
-                            <div class="form-field">
-                                <label for="email">Email</label>
-                                <input id="email" name="email" type="email" value="{{ user.email }}">
-                            </div>
-                            <button class="btn btn-primary" type="submit">Save settings</button>
-                        </form>
+                        </div>
                     </div>
                 </section>
 
@@ -212,6 +257,9 @@
                     <div class="card glass">
                         <h2 class="section-title">Activity Log</h2>
                         <p class="muted">Recent actions on your account.</p>
+                        <div class="info-banner">
+                            Activity is pulled from sign-ins, password updates, and permission changes tied to your account.
+                        </div>
                         <div class="table-wrapper">
                             <table class="table">
                                 <thead>
@@ -253,6 +301,16 @@
                                 <span class="muted">Updates</span>
                                 <strong>3 new tips</strong>
                                 <span class="tag">Preview available</span>
+                            </div>
+                            <div class="card glass stat-card">
+                                <span class="muted">Messages</span>
+                                <strong>2 unread</strong>
+                                <span class="tag">Review inbox</span>
+                            </div>
+                            <div class="card glass stat-card">
+                                <span class="muted">System status</span>
+                                <strong>Operational</strong>
+                                <span class="tag">No incidents</span>
                             </div>
                         </div>
                     </div>
