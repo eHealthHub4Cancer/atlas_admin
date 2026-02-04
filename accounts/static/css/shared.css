@@ -236,6 +236,9 @@ button {
 }
 
 .input-group .input-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: rgba(15, 23, 42, 0.35);
@@ -243,6 +246,11 @@ button {
   padding: 0 0.85rem;
   cursor: pointer;
   transition: transform var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.input-group .input-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .input-group .input-button:hover {

@@ -345,7 +345,7 @@ def login_view(request):
                 request.session["username"] = user.username
                 request.session["role"] = user.role
                 messages.success(request, f"Welcome back, {username}!")
-                return redirect("account")
+                return redirect("user_dashboard")
 
             messages.error(request, "Invalid username or password.")
         except AtlasUser.DoesNotExist:
@@ -380,6 +380,35 @@ def account_view(request):
         request,
         "accounts/account.html",
         {"user_profile": user, "permissions": permissions, "form": form},
+    )
+
+
+def user_dashboard(request):
+    user = get_current_user(request)
+    if not user:
+        messages.error(request, "Please log in to view your dashboard.")
+        return redirect("login")
+
+    if request.method == "POST":
+        form = PasswordChangeForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your password has been updated.")
+            return redirect("user_dashboard")
+    else:
+        form = PasswordChangeForm(user)
+
+    permissions = user.permissions.order_by("name")
+    return render(
+        request,
+        "accounts/user_dashboard.html",
+        {
+            "user": user,
+            "user_profile": user,
+            "permissions": permissions,
+            "form": form,
+            "activity_logs": [],
+        },
     )
 
 
