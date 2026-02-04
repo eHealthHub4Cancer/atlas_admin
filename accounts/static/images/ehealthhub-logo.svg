@@ -1,0 +1,18 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="eHealthHub For Cancer logo">
+  <defs>
+    <linearGradient id="brandBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="74" stroke="#cbd5f5" stroke-width="2" opacity="0.5"/>
+  <circle cx="58" cy="56" r="22" fill="#2563eb" opacity="0.85"/>
+  <circle cx="103" cy="56" r="22" fill="url(#brandBlue)" opacity="0.9"/>
+  <rect x="46" y="42" width="24" height="28" rx="4" fill="#f8fafc" opacity="0.9"/>
+  <rect x="50" y="46" width="16" height="4" rx="2" fill="#94a3b8"/>
+  <rect x="50" y="54" width="16" height="4" rx="2" fill="#94a3b8"/>
+  <path d="M94 62c0-6 5-11 11-11 3 0 6 1 8 3l6-6 4 4-6 6c2 2 3 5 3 8 0 6-5 11-11 11-6 0-11-5-11-11z" fill="#f8fafc" opacity="0.9"/>
+  <circle cx="104" cy="62" r="5" fill="#0f172a" opacity="0.7"/>
+  <text x="80" y="114" text-anchor="middle" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#0f172a" font-weight="600">eHealthHub</text>
+  <text x="80" y="134" text-anchor="middle" font-family="Inter, Segoe UI, sans-serif" font-size="12" fill="#64748b">For Cancer</text>
+</svg>

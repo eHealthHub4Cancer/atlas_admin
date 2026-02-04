@@ -1,27 +1,28 @@
-<!-- templates/accounts/login.html -->
+<!-- templates/accounts/admin_login.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atlas Login</title>
+    <title>Admin Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/shared.css' %}">
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_login.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body class="page auth-page">
+<body class="page auth-page admin-auth">
     <header class="auth-header glass">
         <div class="container header-inner">
             <div class="auth-title">
                 <img class="logo" src="{% static 'images/ehealthhub-logo.svg' %}" alt="eHealthHub For Cancer">
                 <div>
-                    <span class="pill">Atlas Access</span>
-                    <h1 class="section-title">Welcome back to Atlas Admin</h1>
-                    <p class="muted">Secure access with role-aware permissions.</p>
+                    <span class="pill">Secure Admin</span>
+                    <h1 class="section-title">Admin Console Access</h1>
+                    <p class="muted">Restricted to authorized superusers only.</p>
                 </div>
             </div>
             <div class="auth-actions">
@@ -31,15 +32,21 @@
                         <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
                     </svg>
                 </button>
-                <a class="btn btn-ghost" href="{% url 'signup' %}">Create account</a>
+                <span class="tag">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="4" y="11" width="16" height="10" rx="2"></rect>
+                        <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+                    </svg>
+                    Verified Access
+                </span>
             </div>
         </div>
     </header>
 
     <main class="container">
         <div class="auth-card glass">
-            <h2 class="section-title">Sign in</h2>
-            <p class="muted">Track your permissions, manage your profile, and stay in control.</p>
+            <h2 class="section-title">Admin sign in</h2>
+            <p class="muted">Use your superuser credentials to continue.</p>
 
             {% if messages %}
                 {% for message in messages %}
@@ -47,17 +54,21 @@
                 {% endfor %}
             {% endif %}
 
+            {% if form.non_field_errors %}
+                <div class="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
             <form method="post" class="auth-form">
                 {% csrf_token %}
                 <div class="form-field">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" autocomplete="username" required>
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
                 </div>
                 <div class="form-field">
-                    <label for="password">Password</label>
+                    {{ form.password.label_tag }}
                     <div class="input-group">
-                        <input type="password" id="password" name="password" autocomplete="current-password" required>
-                        <button class="input-button" type="button" data-password-toggle data-target="password" aria-label="Show password">
+                        {{ form.password }}
+                        <button class="input-button" type="button" data-password-toggle data-target="id_password" aria-label="Show password">
                             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" data-password-icon>
                                 <path d="M2.1 12c1.6-4.4 5.8-7.5 10.4-7.5 4.6 0 8.8 3.1 10.4 7.5-1.6 4.4-5.8 7.5-10.4 7.5-4.6 0-8.8-3.1-10.4-7.5z" stroke="currentColor" stroke-width="1.5" fill="none"></path>
                                 <circle cx="12.5" cy="12" r="3.2" stroke="currentColor" stroke-width="1.5" fill="none"></circle>
@@ -65,12 +76,8 @@
                         </button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary">Login to Console</button>
             </form>
-
-            <div class="auth-footer-note">
-                <p class="muted">Don't have an account? <a class="link" href="{% url 'signup' %}">Sign up here</a>.</p>
-            </div>
         </div>
     </main>
 
@@ -100,6 +107,6 @@
     </footer>
 
     <script src="{% static 'js/shared.js' %}" defer></script>
-    <script src="{% static 'js/login.js' %}" defer></script>
+    <script src="{% static 'js/admin_login.js' %}" defer></script>
 </body>
 </html>

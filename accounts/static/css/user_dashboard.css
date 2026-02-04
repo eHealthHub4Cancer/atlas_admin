@@ -1,0 +1,8 @@
+.user-dashboard .dashboard__header {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(56, 189, 248, 0.12));
+}
+
+.user-dashboard .welcome-card {
+  display: grid;
+  gap: 0.8rem;
+}
