@@ -88,15 +88,40 @@
 
         <div class="dashboard__main">
             <header class="dashboard__header glass-strong">
-                <div class="header-info">
-                    <span class="pill">
-                        {% if is_super_admin %}Superadmin{% else %}Admin{% endif %}
-                    </span>
-                    <h1 class="section-title">Admin Dashboard</h1>
-                    <span class="muted">Manage roles, users, and permissions.</span>
-                    <span class="muted">Signed in as {{ admin_user.name }} ({{ admin_user.email }})</span>
+                <div class="header-left">
+                    <div class="header-brand">
+                        <img src="{% static 'images/ehealthhub-logo.svg' %}" alt="Atlas Admin">
+                        <span>Atlas Admin</span>
+                    </div>
+                    <div class="breadcrumb">
+                        <span>Admin</span>
+                        <span class="breadcrumb__divider">/</span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="header-title">
+                        <h1 class="section-title">Admin Console</h1>
+                        <span class="muted">Manage roles, users, and permissions.</span>
+                    </div>
                 </div>
-                <div class="header-actions">
+                <div class="header-right">
+                    <label class="header-search" aria-label="Search the admin console">
+                        <span class="header-search__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="M20 20l-3.5-3.5"></path>
+                            </svg>
+                        </span>
+                        <input type="search" placeholder="Search users, roles, permissions...">
+                    </label>
+                    <button class="icon-button" type="button" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
+                            <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
+                        </svg>
+                    </button>
+                    <button class="avatar-button" type="button" aria-label="Open user menu">
+                        <span class="avatar-initials">{{ admin_user.name|default:"Admin"|slice:":2" }}</span>
+                    </button>
                     <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
             </header>
@@ -133,67 +158,65 @@
 
                 <section class="dashboard-section" id="roles">
                     <div class="card glass">
-                        <h2 class="section-title">All Roles</h2>
-                        <p class="muted">Role definitions synced from WebAPI.</p>
-                        <form method="get" class="filter-bar">
-                            <div class="filter-field">
-                                <label for="role_search">Search roles</label>
-                                <input id="role_search" name="role_search" type="text" value="{{ role_search }}" placeholder="Search by role name">
+                        <div class="card-header">
+                            <div>
+                                <h2 class="section-title">All Roles</h2>
+                                <p class="muted">Role definitions synced from WebAPI.</p>
                             </div>
-                            <div class="filter-field">
-                                <label for="role_filter">Filter</label>
-                                <select id="role_filter" name="role_filter">
-                                    <option value="all" {% if role_filter == "all" %}selected{% endif %}>All roles</option>
-                                    <option value="with_id" {% if role_filter == "with_id" %}selected{% endif %}>With WebAPI ID</option>
-                                    <option value="no_id" {% if role_filter == "no_id" %}selected{% endif %}>Missing WebAPI ID</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-ghost" type="submit">Apply</button>
-                        </form>
-                        <div class="table-wrapper">
-                            <table class="table" data-sort-table>
-                                <thead>
-                                    <tr>
-                                        <th data-sort-key="role">Role name</th>
-                                        <th data-sort-key="permissions">ID</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for role in roles_page %}
-                                        <tr>
-                                            <td data-cell="role">{{ role.name }}</td>
-                                            <td data-cell="permissions">{{ role.external_id|default:"-" }}</td>
-                                            <td>{{ role.description|default:"-" }}</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="3" class="muted">No roles available.</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <button class="btn btn-ghost btn-sm" type="button">Export</button>
                         </div>
-                        <div class="pagination">
-                            {% if roles_page.has_previous %}
-                                <a class="btn btn-ghost btn-sm" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.previous_page_number }}">Previous</a>
-                            {% else %}
-                                <span class="btn btn-ghost btn-sm is-disabled">Previous</span>
-                            {% endif %}
-                            <div class="pagination__pages">
-                                {% for page_num in roles_page.paginator.page_range %}
-                                    {% if page_num == roles_page.number %}
-                                        <span class="page-number is-active">{{ page_num }}</span>
-                                    {% else %}
-                                        <a class="page-number" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ page_num }}">{{ page_num }}</a>
-                                    {% endif %}
-                                {% endfor %}
+                        <div class="data-table" data-table-api="{% url 'admin_roles_api' %}" data-table-prefix="roles" data-table-page-size="10">
+                            <div class="filter-bar" data-table-filters>
+                                <div class="filter-field">
+                                    <label for="role_search">Search roles</label>
+                                    <div class="input-with-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="M20 20l-3.5-3.5"></path>
+                                        </svg>
+                                        <input id="role_search" type="search" placeholder="Search by role name" data-filter="search">
+                                    </div>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="role_filter">Filter</label>
+                                    <select id="role_filter" data-filter="filter">
+                                        <option value="all">All roles</option>
+                                        <option value="with_id">With WebAPI ID</option>
+                                        <option value="no_id">Missing WebAPI ID</option>
+                                    </select>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="role_page_size">Rows</label>
+                                    <select id="role_page_size" data-filter="page_size">
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                                <div class="filter-chip-group" data-filter-chips="filter">
+                                    <button class="chip is-active" type="button" data-filter-value="all">All</button>
+                                    <button class="chip" type="button" data-filter-value="with_id">Synced</button>
+                                    <button class="chip" type="button" data-filter-value="no_id">Missing ID</button>
+                                </div>
                             </div>
-                            {% if roles_page.has_next %}
-                                <a class="btn btn-ghost btn-sm" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.next_page_number }}">Next</a>
-                            {% else %}
-                                <span class="btn btn-ghost btn-sm is-disabled">Next</span>
-                            {% endif %}
+                            <div class="table-wrapper">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" data-ordering="name">Role name</th>
+                                            <th scope="col" data-ordering="external_id">ID</th>
+                                            <th scope="col">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody data-table-body>
+                                        <tr>
+                                            <td colspan="3" class="muted">Loading roles...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-state" data-table-state></div>
+                            <div class="pagination" data-table-pagination></div>
                         </div>
                     </div>
                 </section>
@@ -300,7 +323,7 @@
                                                         </form>
                                                     {% endif %}
                                                     {% if is_super_admin and item.is_admin %}
-                                                        <form method="post">
+                                                        <form method="post" data-confirm="Remove admin access for {{ item.admin_user.email }}?">
                                                             {% csrf_token %}
                                                             <input type="hidden" name="action" value="remove_admin">
                                                             <input type="hidden" name="admin_email" value="{{ item.admin_user.email }}">
@@ -376,67 +399,65 @@
 
                 <section class="dashboard-section" id="permissions">
                     <div class="card glass">
-                        <h2 class="section-title">Permissions</h2>
-                        <p class="muted">Browse permission records and descriptions.</p>
-                        <form method="get" class="filter-bar">
-                            <div class="filter-field">
-                                <label for="permission_search">Search permissions</label>
-                                <input id="permission_search" name="permission_search" type="text" value="{{ permission_search }}" placeholder="Search by permission name">
+                        <div class="card-header">
+                            <div>
+                                <h2 class="section-title">Permissions</h2>
+                                <p class="muted">Browse permission records and descriptions.</p>
                             </div>
-                            <div class="filter-field">
-                                <label for="permission_filter">Filter</label>
-                                <select id="permission_filter" name="permission_filter">
-                                    <option value="all" {% if permission_filter == "all" %}selected{% endif %}>All permissions</option>
-                                    <option value="with_id" {% if permission_filter == "with_id" %}selected{% endif %}>With WebAPI ID</option>
-                                    <option value="no_id" {% if permission_filter == "no_id" %}selected{% endif %}>Missing WebAPI ID</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-ghost" type="submit">Apply</button>
-                        </form>
-                        <div class="table-wrapper">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Permission name</th>
-                                        <th>ID</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for permission in permissions_page %}
-                                        <tr>
-                                            <td>{{ permission.name }}</td>
-                                            <td>{{ permission.external_id|default:"-" }}</td>
-                                            <td>{{ permission.description|default:"-" }}</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="3" class="muted">No permissions available.</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <button class="btn btn-ghost btn-sm" type="button">Add permission</button>
                         </div>
-                        <div class="pagination">
-                            {% if permissions_page.has_previous %}
-                                <a class="btn btn-ghost btn-sm" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.previous_page_number }}">Previous</a>
-                            {% else %}
-                                <span class="btn btn-ghost btn-sm is-disabled">Previous</span>
-                            {% endif %}
-                            <div class="pagination__pages">
-                                {% for page_num in permissions_page.paginator.page_range %}
-                                    {% if page_num == permissions_page.number %}
-                                        <span class="page-number is-active">{{ page_num }}</span>
-                                    {% else %}
-                                        <a class="page-number" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ page_num }}">{{ page_num }}</a>
-                                    {% endif %}
-                                {% endfor %}
+                        <div class="data-table" data-table-api="{% url 'admin_permissions_api' %}" data-table-prefix="permissions" data-table-page-size="10">
+                            <div class="filter-bar" data-table-filters>
+                                <div class="filter-field">
+                                    <label for="permission_search">Search permissions</label>
+                                    <div class="input-with-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="M20 20l-3.5-3.5"></path>
+                                        </svg>
+                                        <input id="permission_search" type="search" placeholder="Search by permission name" data-filter="search">
+                                    </div>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="permission_filter">Filter</label>
+                                    <select id="permission_filter" data-filter="filter">
+                                        <option value="all">All permissions</option>
+                                        <option value="with_id">With WebAPI ID</option>
+                                        <option value="no_id">Missing WebAPI ID</option>
+                                    </select>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="permission_page_size">Rows</label>
+                                    <select id="permission_page_size" data-filter="page_size">
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                                <div class="filter-chip-group" data-filter-chips="filter">
+                                    <button class="chip is-active" type="button" data-filter-value="all">All</button>
+                                    <button class="chip" type="button" data-filter-value="with_id">Synced</button>
+                                    <button class="chip" type="button" data-filter-value="no_id">Missing ID</button>
+                                </div>
                             </div>
-                            {% if permissions_page.has_next %}
-                                <a class="btn btn-ghost btn-sm" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.next_page_number }}">Next</a>
-                            {% else %}
-                                <span class="btn btn-ghost btn-sm is-disabled">Next</span>
-                            {% endif %}
+                            <div class="table-wrapper">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" data-ordering="name">Permission</th>
+                                            <th scope="col" data-ordering="external_id">ID</th>
+                                            <th scope="col">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody data-table-body>
+                                        <tr>
+                                            <td colspan="3" class="muted">Loading permissions...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-state" data-table-state></div>
+                            <div class="pagination" data-table-pagination></div>
                         </div>
                     </div>
                 </section>
@@ -526,16 +547,48 @@
         </div>
             <footer class="site-footer">
                 <div class="container footer-inner">
-                    <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+                    <div class="footer-brand">
+                        <span>&copy; {% now "Y" %} Atlas Admin Suite.</span>
+                    </div>
+                    <div class="footer-social">
+                        <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.9.6-3.5-1.4-3.5-1.4-.5-1.3-1.3-1.6-1.3-1.6-1.1-.7.1-.7.1-.7 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.8 1.4 3.5 1.1.1-.8.4-1.4.7-1.7-2.3-.3-4.8-1.1-4.8-5a4 4 0 0 1 1.1-2.8 3.7 3.7 0 0 1 .1-2.8s.9-.3 2.9 1.1a10 10 0 0 1 5.2 0c2-1.4 2.9-1.1 2.9-1.1.6 1.5.2 2.6.1 2.8a4 4 0 0 1 1.1 2.8c0 3.9-2.5 4.7-4.8 5 .4.3.8 1 .8 2.1v3.2c0 .3.2.6.7.5A10 10 0 0 0 12 2z"></path>
+                            </svg>
+                        </a>
+                        <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.6h.1c.5-.9 1.7-1.9 3.6-1.9 3.8 0 4.5 2.5 4.5 5.7V21h-4v-5.4c0-1.3 0-3-1.9-3-1.9 0-2.2 1.4-2.2 2.9V21H9z"></path>
+                            </svg>
+                        </a>
+                        <a href="https://x.com" target="_blank" rel="noreferrer" aria-label="X">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M18.9 2H22l-7.4 8.5L23 22h-6.9l-5.4-6.6L4.7 22H1.6l7.9-9.1L1 2h7l5 6.1L18.9 2zm-1.2 18h1.9L7.2 4H5.3l12.4 16z"></path>
+                            </svg>
+                        </a>
+                    </div>
                     <div class="footer-links">
                         <a href="mailto:support@ehealthhub.org">Support</a>
+                        <a href="#">Privacy</a>
                     </div>
                 </div>
             </footer>
         </div>
     </div>
 
+    <div class="modal" id="confirm-dialog" data-confirm-modal role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+        <div class="modal__panel glass">
+            <h3 class="section-title" id="confirm-dialog-title">Confirm action</h3>
+            <p class="muted" data-confirm-message>Are you sure you want to continue?</p>
+            <div class="modal__actions">
+                <button class="btn btn-ghost" type="button" data-confirm-cancel>Cancel</button>
+                <button class="btn btn-primary" type="button" data-confirm-accept>Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{% static 'js/shared.js' %}" defer></script>
+    <script src="{% static 'js/data_tables.js' %}" defer></script>
     <script src="{% static 'js/admin_dashboard.js' %}" defer></script>
 </body>
 </html>
