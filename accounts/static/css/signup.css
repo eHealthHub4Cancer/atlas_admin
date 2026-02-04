@@ -1,63 +1,39 @@
-.auth-page {
-  padding-top: clamp(5rem, 8vw, 6.5rem);
-  padding-bottom: clamp(3rem, 7vw, 4.5rem);
+/* Signup page specific styles */
+.signup-page .auth-wrapper {
+  max-width: 560px;
 }
 
-.auth-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
-  padding: 0.6rem 0;
+.signup-page .auth-card {
+  padding: clamp(1.5rem, 3.5vw, 2.25rem);
 }
 
-.auth-header .header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+.signup-page .auth-hero {
+  margin-bottom: 1.75rem;
 }
 
-.auth-title {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
+.signup-page .auth-subtitle {
+  max-width: 420px;
 }
 
-.auth-card {
-  padding: clamp(1.6rem, 3vw, 2.4rem);
-  border-radius: var(--radius-lg);
-  width: min(520px, 100%);
-  margin: 0 auto;
+/* Adjust form fields for signup */
+.signup-page .form-field {
+  margin-bottom: 1rem;
 }
 
-.auth-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.signup-page .form-field:last-of-type {
+  margin-bottom: 1.25rem;
 }
 
-.auth-footer-note {
-  margin-top: 1.5rem;
-  text-align: center;
+/* Compact password hints */
+.signup-page .field-hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-top: 0.25rem;
 }
 
-.auth-page main.container {
-  margin-top: clamp(1.2rem, 3vw, 2rem);
-  margin-bottom: clamp(1.6rem, 4vw, 2.6rem);
-  display: flex;
-  justify-content: center;
-}
-
-@media (max-width: 720px) {
-  .auth-header .header-inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .auth-actions {
-    width: 100%;
-    justify-content: flex-start;
+/* Responsive adjustments for signup */
+@media (max-width: 640px) {
+  .signup-page .auth-wrapper {
+    max-width: 100%;
   }
 }
