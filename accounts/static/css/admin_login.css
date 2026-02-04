@@ -18,3 +18,22 @@
 .admin-auth .btn-primary:hover {
   box-shadow: 0 16px 28px rgba(248, 113, 113, 0.45);
 }
+
+.admin-auth .auth-header {
+  padding: 0.4rem 0;
+}
+
+.admin-auth .auth-header .header-inner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.admin-auth .auth-actions .tag {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.admin-auth .auth-actions .tag svg {
+  width: 14px;
+  height: 14px;
+}

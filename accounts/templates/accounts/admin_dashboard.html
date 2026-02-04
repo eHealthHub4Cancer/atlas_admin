@@ -37,7 +37,7 @@
                         <path d="M4 7h10a4 4 0 0 1 0 8H4"></path>
                         <path d="M14 11a4 4 0 0 1 0 8H4"></path>
                     </svg>
-                    All Roles
+                    Roles
                 </button>
                 <button class="nav-link" type="button" data-section-target="users">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -47,14 +47,21 @@
                         <path d="M23 21v-2a4 4 0 0 0-2-3.4"></path>
                         <circle cx="16" cy="7" r="3"></circle>
                     </svg>
-                    All Users
+                    Users
                 </button>
-                <button class="nav-link" type="button" data-section-target="details">
+                <button class="nav-link" type="button" data-section-target="permissions">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z"></path>
+                        <path d="M9 12l2 2 4-4"></path>
                     </svg>
-                    User Details
+                    Permissions
+                </button>
+                <button class="nav-link" type="button" data-section-target="bulk">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                    Bulk Roles
                 </button>
                 {% if is_super_admin %}
                     <button class="nav-link" type="button" data-section-target="assign">
@@ -106,8 +113,8 @@
                                 <div class="progress-bar"><span style="width: 55%"></span></div>
                             </div>
                             <div class="card glass stat-card">
-                                <span class="muted">Permissions</span>
-                                <strong>{{ permissions|length }}</strong>
+                                <span class="muted">Roles</span>
+                                <strong>{{ permissions_total }}</strong>
                                 <div class="progress-bar"><span style="width: 65%"></span></div>
                             </div>
                             <div class="card glass stat-card">
@@ -122,101 +129,301 @@
                 <section class="dashboard-section" id="roles">
                     <div class="card glass">
                         <h2 class="section-title">All Roles</h2>
-                        <p class="muted">Manage role definitions sourced from WebAPI sec_role.</p>
-                        <form method="post" class="auth-form mb-4">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="create_role">
-                            <div class="form-field">
-                                <label for="role_name">New role name</label>
-                                <input id="role_name" name="role_name" type="text" placeholder="Role name">
+                        <p class="muted">Role definitions synced from WebAPI.</p>
+                        <form method="get" class="filter-bar">
+                            <div class="filter-field">
+                                <label for="role_search">Search roles</label>
+                                <input id="role_search" name="role_search" type="text" value="{{ role_search }}" placeholder="Search by role name">
                             </div>
-                            <button class="btn btn-primary" type="submit">Add role</button>
+                            <div class="filter-field">
+                                <label for="role_filter">Filter</label>
+                                <select id="role_filter" name="role_filter">
+                                    <option value="all" {% if role_filter == "all" %}selected{% endif %}>All roles</option>
+                                    <option value="with_id" {% if role_filter == "with_id" %}selected{% endif %}>With WebAPI ID</option>
+                                    <option value="no_id" {% if role_filter == "no_id" %}selected{% endif %}>Missing WebAPI ID</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-ghost" type="submit">Apply</button>
                         </form>
                         <div class="table-wrapper">
                             <table class="table" data-sort-table>
                                 <thead>
                                     <tr>
-                                        <th data-sort-key="role">Role</th>
-                                        <th data-sort-key="permissions">WebAPI ID</th>
+                                        <th data-sort-key="role">Role name</th>
+                                        <th data-sort-key="permissions">ID</th>
+                                        <th>Description</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for role in permissions %}
+                                    {% for role in roles_page %}
                                         <tr>
                                             <td data-cell="role">{{ role.name }}</td>
                                             <td data-cell="permissions">{{ role.external_id|default:"-" }}</td>
+                                            <td>{{ role.description|default:"-" }}</td>
                                         </tr>
                                     {% empty %}
                                         <tr>
-                                            <td colspan="2" class="muted">No roles available.</td>
+                                            <td colspan="3" class="muted">No roles available.</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="pagination">
+                            {% if roles_page.has_previous %}
+                                <a class="btn btn-ghost" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.previous_page_number }}">Previous</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Previous</span>
+                            {% endif %}
+                            <span class="muted">Page {{ roles_page.number }} of {{ roles_page.paginator.num_pages }}</span>
+                            {% if roles_page.has_next %}
+                                <a class="btn btn-ghost" href="?{{ role_querystring }}{% if role_querystring %}&{% endif %}roles_page={{ roles_page.next_page_number }}">Next</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Next</span>
+                            {% endif %}
                         </div>
                     </div>
                 </section>
 
                 <section class="dashboard-section" id="users">
                     <div class="card glass">
-                        <h2 class="section-title">Atlas Users</h2>
-                        <p class="muted">Review profiles, assign roles, and deactivate accounts.</p>
-                        <div class="stacked-list">
-                            {% for item in user_forms %}
-                                <div class="glass card mb-3 p-3">
-                                    <div class="d-flex flex-wrap justify-content-between gap-3">
-                                        <div>
-                                            <strong>{{ item.user.username }}</strong>
-                                            <span class="tag ms-2">Atlas User</span>
-                                            <div class="muted">
-                                                Email: {{ item.profile.email|default:"Not provided" }} |
-                                                Affiliation: {{ item.profile.affiliation|default:"Not provided" }}
-                                            </div>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="status-badge {% if item.user.is_disabled %}status-badge--inactive{% else %}status-badge--active{% endif %}">
-                                                {% if item.user.is_disabled %}Disabled{% else %}Active{% endif %}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <form method="post" class="auth-form mt-3">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="update_user">
-                                        {{ item.form.user_id }}
-                                        <div class="form-field">
-                                            <label>Assign roles</label>
-                                            {{ item.form.permissions }}
-                                        </div>
-                                        <div class="form-field">
-                                            <label>
-                                                {{ item.form.is_disabled }}
-                                                Deactivate user
-                                            </label>
-                                        </div>
-                                        <button class="btn btn-primary" type="submit">Save updates</button>
-                                    </form>
-                                </div>
-                            {% empty %}
-                                <p class="muted">No Atlas users found.</p>
-                            {% endfor %}
+                        <h2 class="section-title">Users</h2>
+                        <p class="muted">Review user roles, admin access, and deactivate accounts.</p>
+                        <form method="get" class="filter-bar">
+                            <div class="filter-field">
+                                <label for="user_search">Search users</label>
+                                <input id="user_search" name="user_search" type="text" value="{{ user_search }}" placeholder="Search by name, email, affiliation">
+                            </div>
+                            <div class="filter-field">
+                                <label for="user_filter">Filter</label>
+                                <select id="user_filter" name="user_filter">
+                                    <option value="all" {% if user_filter == "all" %}selected{% endif %}>All users</option>
+                                    <option value="atlas" {% if user_filter == "atlas" %}selected{% endif %}>Atlas users</option>
+                                    <option value="admin" {% if user_filter == "admin" %}selected{% endif %}>Admin users</option>
+                                    <option value="active" {% if user_filter == "active" %}selected{% endif %}>Active Atlas users</option>
+                                    <option value="disabled" {% if user_filter == "disabled" %}selected{% endif %}>Disabled Atlas users</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-ghost" type="submit">Apply</button>
+                        </form>
+                        <div class="table-wrapper">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Email</th>
+                                        <th>Affiliation</th>
+                                        <th>Roles</th>
+                                        <th>Atlas user</th>
+                                        <th>Admin user</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in user_forms %}
+                                        <tr>
+                                            <td>
+                                                <strong>
+                                                    {% if item.is_atlas %}
+                                                        {{ item.profile.display_name|default:item.user.username }}
+                                                    {% else %}
+                                                        {{ item.admin_user.name|default:item.admin_user.email }}
+                                                    {% endif %}
+                                                </strong>
+                                                {% if item.is_atlas %}
+                                                    <div class="muted">Username: {{ item.user.username }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.is_atlas %}
+                                                    {{ item.profile.email|default:"Not provided" }}
+                                                {% else %}
+                                                    {{ item.admin_user.email }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.is_atlas %}
+                                                    {{ item.profile.affiliation|default:"-" }}
+                                                {% else %}
+                                                    {{ item.admin_user.affiliation|default:"-" }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.is_atlas %}
+                                                    {% if item.user.permissions.all|length %}
+                                                        {{ item.user.permissions.all|join:", " }}
+                                                    {% else %}
+                                                        <span class="muted">No roles</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if item.admin_user.is_super_admin %}
+                                                        <span class="tag">Superadmin</span>
+                                                    {% else %}
+                                                        <span class="tag">Admin</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.is_atlas %}
+                                                    <span class="tag">True</span>
+                                                {% else %}
+                                                    <span class="tag">False</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.is_admin %}
+                                                    <span class="tag">True</span>
+                                                {% else %}
+                                                    <span class="tag">False</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <details class="action-details">
+                                                    <summary class="btn btn-ghost btn-sm">View actions</summary>
+                                                    <div class="action-panel">
+                                                        {% if item.is_atlas %}
+                                                            <form method="post" class="action-form">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="action" value="update_user">
+                                                                {{ item.form.user_id }}
+                                                                <div class="form-field">
+                                                                    <label>Assign roles</label>
+                                                                    {{ item.form.permissions }}
+                                                                </div>
+                                                                <div class="form-field">
+                                                                    <label>
+                                                                        {{ item.form.is_disabled }}
+                                                                        Deactivate user
+                                                                    </label>
+                                                                </div>
+                                                                <button class="btn btn-primary" type="submit">Save updates</button>
+                                                            </form>
+                                                        {% endif %}
+                                                        {% if is_super_admin and item.is_atlas %}
+                                                            <form method="post" class="action-form">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="action" value="promote_admin">
+                                                                <input type="hidden" name="atlas_user_id" value="{{ item.user.id }}">
+                                                                <div class="form-field">
+                                                                    <label>
+                                                                        <input type="checkbox" name="make_super_admin">
+                                                                        Grant superadmin access
+                                                                    </label>
+                                                                </div>
+                                                                <button class="btn btn-ghost" type="submit">Promote to admin</button>
+                                                            </form>
+                                                        {% endif %}
+                                                        {% if is_super_admin and item.is_admin %}
+                                                            <form method="post" class="action-form">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="action" value="remove_admin">
+                                                                <input type="hidden" name="admin_email" value="{{ item.admin_user.email }}">
+                                                                <button class="btn btn-ghost" type="submit">Remove admin access</button>
+                                                            </form>
+                                                        {% endif %}
+                                                    </div>
+                                                </details>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="muted">No users found.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination">
+                            {% if users_page.has_previous %}
+                                <a class="btn btn-ghost" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.previous_page_number }}">Previous</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Previous</span>
+                            {% endif %}
+                            <span class="muted">Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}</span>
+                            {% if users_page.has_next %}
+                                <a class="btn btn-ghost" href="?{{ user_querystring }}{% if user_querystring %}&{% endif %}users_page={{ users_page.next_page_number }}">Next</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Next</span>
+                            {% endif %}
                         </div>
                     </div>
                 </section>
 
-                <section class="dashboard-section" id="details">
+                <section class="dashboard-section" id="permissions">
+                    <div class="card glass">
+                        <h2 class="section-title">Permissions</h2>
+                        <p class="muted">Browse permission records and descriptions.</p>
+                        <form method="get" class="filter-bar">
+                            <div class="filter-field">
+                                <label for="permission_search">Search permissions</label>
+                                <input id="permission_search" name="permission_search" type="text" value="{{ permission_search }}" placeholder="Search by permission name">
+                            </div>
+                            <div class="filter-field">
+                                <label for="permission_filter">Filter</label>
+                                <select id="permission_filter" name="permission_filter">
+                                    <option value="all" {% if permission_filter == "all" %}selected{% endif %}>All permissions</option>
+                                    <option value="with_id" {% if permission_filter == "with_id" %}selected{% endif %}>With WebAPI ID</option>
+                                    <option value="no_id" {% if permission_filter == "no_id" %}selected{% endif %}>Missing WebAPI ID</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-ghost" type="submit">Apply</button>
+                        </form>
+                        <div class="table-wrapper">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Permission name</th>
+                                        <th>ID</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for permission in permissions_page %}
+                                        <tr>
+                                            <td>{{ permission.name }}</td>
+                                            <td>{{ permission.external_id|default:"-" }}</td>
+                                            <td>{{ permission.description|default:"-" }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="muted">No permissions available.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination">
+                            {% if permissions_page.has_previous %}
+                                <a class="btn btn-ghost" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.previous_page_number }}">Previous</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Previous</span>
+                            {% endif %}
+                            <span class="muted">Page {{ permissions_page.number }} of {{ permissions_page.paginator.num_pages }}</span>
+                            {% if permissions_page.has_next %}
+                                <a class="btn btn-ghost" href="?{{ permission_querystring }}{% if permission_querystring %}&{% endif %}permissions_page={{ permissions_page.next_page_number }}">Next</a>
+                            {% else %}
+                                <span class="btn btn-ghost is-disabled">Next</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-section" id="bulk">
                     <div class="card glass">
                         <h2 class="section-title">Bulk Grant Roles</h2>
                         <p class="muted">Assign roles to multiple Atlas users in one action.</p>
                         <form method="post" class="auth-form">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="bulk_grant">
-                            <div class="form-field">
-                                {{ bulk_form.user_ids.label_tag }}
-                                {{ bulk_form.user_ids }}
-                            </div>
-                            <div class="form-field">
-                                {{ bulk_form.permissions.label_tag }}
-                                {{ bulk_form.permissions }}
+                            <div class="split-panel">
+                                <div class="form-field">
+                                    {{ bulk_form.user_ids.label_tag }}
+                                    {{ bulk_form.user_ids }}
+                                </div>
+                                <div class="form-field">
+                                    {{ bulk_form.permissions.label_tag }}
+                                    {{ bulk_form.permissions }}
+                                </div>
                             </div>
                             <button class="btn btn-primary" type="submit">Grant roles</button>
                         </form>

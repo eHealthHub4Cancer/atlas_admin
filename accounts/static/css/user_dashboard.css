@@ -41,3 +41,28 @@
 .user-dashboard .profile-nav__divider {
   opacity: 0.6;
 }
+
+.user-dashboard .activity-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.user-dashboard .activity-meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.user-dashboard #password .card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-dashboard #password .auth-form {
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+}
