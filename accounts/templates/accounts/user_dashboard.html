@@ -46,26 +46,12 @@
                     </svg>
                     Change Password
                 </button>
-                <button class="nav-link" type="button" data-section-target="settings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V22a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H2a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1A1.7 1.7 0 0 0 9 2.2V2a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"></path>
-                    </svg>
-                    Settings
-                </button>
                 <button class="nav-link" type="button" data-section-target="activity">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M4 19h16"></path>
                         <path d="M6 15l3-4 4 3 5-7"></path>
                     </svg>
                     Activity Log
-                </button>
-                <button class="nav-link" type="button" data-section-target="notifications">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
-                    </svg>
-                    Notifications
                 </button>
                 <button class="nav-link" type="button" data-section-target="help">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -81,7 +67,7 @@
         <div class="dashboard__main">
             <header class="dashboard__header glass-strong">
                 <div class="header-info">
-                    <h1 class="section-title">Welcome, {{ user.username }}</h1>
+                    <h1 class="section-title">Account Overview</h1>
                     <div class="header-badges">
                         <span class="role-badge">Role: {{ user_profile.get_role_display }}</span>
                         <span class="status-badge {% if user_profile.is_disabled %}status-badge--inactive{% else %}status-badge--active{% endif %}">
@@ -215,43 +201,6 @@
                     </div>
                 </section>
 
-                <section class="dashboard-section" id="settings">
-                    <div class="card glass">
-                        <h2 class="section-title">Profile Settings</h2>
-                        <p class="muted">Update profile preferences and contact details.</p>
-                        <div class="settings-layout">
-                            <form method="post" class="auth-form">
-                                {% csrf_token %}
-                                <div class="form-field">
-                                    <label for="display_name">Display name</label>
-                                    <input id="display_name" name="display_name" type="text" value="{{ user.get_full_name }}">
-                                </div>
-                                <div class="form-field">
-                                    <label for="email">Email</label>
-                                    <input id="email" name="email" type="email" value="{{ user.email }}">
-                                </div>
-                                <button class="btn btn-primary" type="submit">Save settings</button>
-                            </form>
-                            <div class="card-grid settings-grid">
-                                <div class="card glass stat-card">
-                                    <span class="muted">Profile completeness</span>
-                                    <strong>80%</strong>
-                                    <span class="tag">Add phone &amp; location</span>
-                                </div>
-                                <div class="card glass stat-card">
-                                    <span class="muted">Security checks</span>
-                                    <strong>2 of 3</strong>
-                                    <span class="tag">Enable MFA</span>
-                                </div>
-                                <div class="card glass stat-card">
-                                    <span class="muted">Notification preferences</span>
-                                    <strong>Email + In-app</strong>
-                                    <span class="tag">Weekly digest</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 <section class="dashboard-section" id="activity">
                     <div class="card glass">
@@ -287,34 +236,6 @@
                     </div>
                 </section>
 
-                <section class="dashboard-section" id="notifications">
-                    <div class="card glass">
-                        <h2 class="section-title">Notifications</h2>
-                        <p class="muted">Stay updated with account alerts.</p>
-                        <div class="card-grid">
-                            <div class="card glass stat-card">
-                                <span class="muted">Security</span>
-                                <strong>All clear</strong>
-                                <span class="tag">Last scan: Today</span>
-                            </div>
-                            <div class="card glass stat-card">
-                                <span class="muted">Updates</span>
-                                <strong>3 new tips</strong>
-                                <span class="tag">Preview available</span>
-                            </div>
-                            <div class="card glass stat-card">
-                                <span class="muted">Messages</span>
-                                <strong>2 unread</strong>
-                                <span class="tag">Review inbox</span>
-                            </div>
-                            <div class="card glass stat-card">
-                                <span class="muted">System status</span>
-                                <strong>Operational</strong>
-                                <span class="tag">No incidents</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 <section class="dashboard-section" id="help">
                     <div class="card glass">
