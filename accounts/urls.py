@@ -12,4 +12,7 @@ urlpatterns = [
     path('profile/', views.profile_update, name='profile_update'),
     path('user-dashboard/', views.user_dashboard, name='user_dashboard'),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('api/admin/roles/', views.admin_roles_api, name='admin_roles_api'),
+    path('api/admin/permissions/', views.admin_permissions_api, name='admin_permissions_api'),
+    path('api/user/activity/', views.user_activity_api, name='user_activity_api'),
 ]

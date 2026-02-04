@@ -3,6 +3,7 @@ import logging
 from urllib.parse import urlencode
 
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib import messages
 from django.db import connections, DatabaseError, transaction
 from django.core.paginator import Paginator
@@ -515,6 +516,186 @@ def user_dashboard(request):
             "missing_profile_fields": missing_profile_fields,
             "profile_completion": profile_completion,
         },
+    )
+
+
+def _parse_positive_int(value, default=1, max_value=100):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(parsed, max_value))
+
+
+def _paginate_queryset(queryset, page, page_size):
+    paginator = Paginator(queryset, page_size)
+    page_obj = paginator.get_page(page)
+    return page_obj, paginator.count
+
+
+def admin_roles_api(request):
+    admin_user = get_current_admin(request)
+    if not admin_user:
+        return JsonResponse({"detail": "Unauthorized"}, status=401)
+
+    sync_permissions_from_webapi()
+    search = (request.GET.get("search") or "").strip()
+    filter_value = (request.GET.get("filter") or "all").strip()
+    ordering = (request.GET.get("ordering") or "name").strip()
+    page = _parse_positive_int(request.GET.get("page"), default=1)
+    page_size = _parse_positive_int(request.GET.get("page_size"), default=10, max_value=50)
+
+    queryset = Permission.objects.all()
+    if search:
+        queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
+    if filter_value == "with_id":
+        queryset = queryset.filter(external_id__isnull=False)
+    elif filter_value == "no_id":
+        queryset = queryset.filter(external_id__isnull=True)
+
+    allowed_ordering = {"name", "-name", "external_id", "-external_id"}
+    if ordering not in allowed_ordering:
+        ordering = "name"
+    queryset = queryset.order_by(ordering)
+
+    page_obj, count = _paginate_queryset(queryset, page, page_size)
+    results = [
+        {
+            "name": role.name,
+            "external_id": role.external_id,
+            "description": role.description,
+        }
+        for role in page_obj
+    ]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "count": count,
+            "page": page_obj.number,
+            "page_size": page_size,
+        }
+    )
+
+
+def admin_permissions_api(request):
+    admin_user = get_current_admin(request)
+    if not admin_user:
+        return JsonResponse({"detail": "Unauthorized"}, status=401)
+
+    sync_permissions_from_webapi()
+    search = (request.GET.get("search") or "").strip()
+    filter_value = (request.GET.get("filter") or "all").strip()
+    ordering = (request.GET.get("ordering") or "name").strip()
+    page = _parse_positive_int(request.GET.get("page"), default=1)
+    page_size = _parse_positive_int(request.GET.get("page_size"), default=10, max_value=50)
+
+    queryset = Permission.objects.all()
+    if search:
+        queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
+    if filter_value == "with_id":
+        queryset = queryset.filter(external_id__isnull=False)
+    elif filter_value == "no_id":
+        queryset = queryset.filter(external_id__isnull=True)
+
+    allowed_ordering = {"name", "-name", "external_id", "-external_id"}
+    if ordering not in allowed_ordering:
+        ordering = "name"
+    queryset = queryset.order_by(ordering)
+
+    page_obj, count = _paginate_queryset(queryset, page, page_size)
+    results = [
+        {
+            "name": permission.name,
+            "external_id": permission.external_id,
+            "description": permission.description,
+        }
+        for permission in page_obj
+    ]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "count": count,
+            "page": page_obj.number,
+            "page_size": page_size,
+        }
+    )
+
+
+def user_activity_api(request):
+    user = get_current_user(request)
+    if not user:
+        return JsonResponse({"detail": "Unauthorized"}, status=401)
+
+    profile = getattr(user, "profile", None)
+    entries = [
+        {
+            "summary": "Account created",
+            "status": "Success",
+            "created_at": user.created_at,
+        },
+        {
+            "summary": "Account updated",
+            "status": "Info",
+            "created_at": user.updated_at,
+        },
+    ]
+    if profile:
+        entries.extend(
+            [
+                {
+                    "summary": "Profile created",
+                    "status": "Success",
+                    "created_at": profile.created_at,
+                },
+                {
+                    "summary": "Profile updated",
+                    "status": "Info",
+                    "created_at": profile.updated_at,
+                },
+            ]
+        )
+
+    search = (request.GET.get("search") or "").strip().lower()
+    status_filter = (request.GET.get("status") or "all").strip().lower()
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    ordering = (request.GET.get("ordering") or "-created_at").strip()
+    page = _parse_positive_int(request.GET.get("page"), default=1)
+    page_size = _parse_positive_int(request.GET.get("page_size"), default=8, max_value=50)
+
+    if search:
+        entries = [entry for entry in entries if search in entry["summary"].lower()]
+    if status_filter != "all":
+        entries = [entry for entry in entries if entry["status"].lower() == status_filter]
+    if start_date:
+        entries = [entry for entry in entries if str(entry["created_at"].date()) >= start_date]
+    if end_date:
+        entries = [entry for entry in entries if str(entry["created_at"].date()) <= end_date]
+
+    reverse = ordering.startswith("-")
+    entries.sort(key=lambda entry: entry["created_at"], reverse=reverse)
+
+    paginator = Paginator(entries, page_size)
+    page_obj = paginator.get_page(page)
+
+    results = [
+        {
+            "summary": entry["summary"],
+            "status": entry["status"],
+            "created_at": entry["created_at"].isoformat(),
+        }
+        for entry in page_obj
+    ]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "count": paginator.count,
+            "page": page_obj.number,
+            "page_size": page_size,
+        }
     )
 
 

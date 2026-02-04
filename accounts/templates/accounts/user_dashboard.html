@@ -84,8 +84,20 @@
 
         <div class="dashboard__main">
             <header class="dashboard__header glass-strong">
-                <div class="header-info">
-                    <h1 class="section-title">Account Overview</h1>
+                <div class="header-left">
+                    <div class="header-brand">
+                        <img src="{% static 'images/ehealthhub-logo.svg' %}" alt="Atlas User">
+                        <span>Atlas Workspace</span>
+                    </div>
+                    <div class="breadcrumb">
+                        <span>User</span>
+                        <span class="breadcrumb__divider">/</span>
+                        <span>Overview</span>
+                    </div>
+                    <div class="header-title">
+                        <h1 class="section-title">Account Overview</h1>
+                        <span class="muted">Welcome back, {{ user_profile.username }}.</span>
+                    </div>
                     <div class="header-badges">
                         <span class="role-badge">Role: {{ user_profile.get_role_display }}</span>
                         <span class="status-badge {% if user_profile.is_disabled %}status-badge--inactive{% else %}status-badge--active{% endif %}">
@@ -93,7 +105,25 @@
                         </span>
                     </div>
                 </div>
-                <div class="header-actions">
+                <div class="header-right">
+                    <label class="header-search" aria-label="Search your dashboard">
+                        <span class="header-search__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="M20 20l-3.5-3.5"></path>
+                            </svg>
+                        </span>
+                        <input type="search" placeholder="Search activity, roles, help...">
+                    </label>
+                    <button class="icon-button" type="button" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
+                            <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
+                        </svg>
+                    </button>
+                    <button class="avatar-button" type="button" aria-label="Open user menu">
+                        <span class="avatar-initials">{{ user_profile.username|slice:":2" }}</span>
+                    </button>
                     <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
             </header>
@@ -229,8 +259,13 @@
 
                 <section class="dashboard-section" id="activity">
                     <div class="card glass">
-                        <h2 class="section-title">Activity Log</h2>
-                        <p class="muted">Recent actions on your account.</p>
+                        <div class="card-header">
+                            <div>
+                                <h2 class="section-title">Activity Log</h2>
+                                <p class="muted">Recent actions on your account.</p>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" type="button">Export</button>
+                        </div>
                         <div class="activity-meta">
                             <div>
                                 <span class="muted">Atlas user created</span>
@@ -249,29 +284,66 @@
                                 <strong>{{ profile.updated_at|date:"M d, Y"|default:"Not available" }}</strong>
                             </div>
                         </div>
-                        <div class="table-wrapper">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Activity</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for entry in activity_logs %}
+                        <div class="data-table" data-table-api="{% url 'user_activity_api' %}" data-table-prefix="activity" data-table-page-size="8">
+                            <div class="filter-bar" data-table-filters>
+                                <div class="filter-field">
+                                    <label for="activity_search">Search activity</label>
+                                    <div class="input-with-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="M20 20l-3.5-3.5"></path>
+                                        </svg>
+                                        <input id="activity_search" type="search" placeholder="Search activity" data-filter="search">
+                                    </div>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="activity_status">Status</label>
+                                    <select id="activity_status" data-filter="status">
+                                        <option value="all">All statuses</option>
+                                        <option value="success">Success</option>
+                                        <option value="info">Info</option>
+                                    </select>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="activity_start">Date range</label>
+                                    <div class="date-range">
+                                        <input id="activity_start" type="date" data-filter="start_date">
+                                        <span class="muted">to</span>
+                                        <input id="activity_end" type="date" data-filter="end_date">
+                                    </div>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="activity_page_size">Rows</label>
+                                    <select id="activity_page_size" data-filter="page_size">
+                                        <option value="8">8</option>
+                                        <option value="12">12</option>
+                                        <option value="20">20</option>
+                                    </select>
+                                </div>
+                                <div class="filter-chip-group" data-filter-chips="status">
+                                    <button class="chip is-active" type="button" data-filter-value="all">All</button>
+                                    <button class="chip" type="button" data-filter-value="success">Success</button>
+                                    <button class="chip" type="button" data-filter-value="info">Info</button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="table">
+                                    <thead>
                                         <tr>
-                                            <td>{{ entry.summary }}</td>
-                                            <td>{{ entry.created_at|date:"M d, Y" }}</td>
-                                            <td><span class="tag">{{ entry.status }}</span></td>
+                                            <th scope="col">Activity</th>
+                                            <th scope="col" data-ordering="created_at">Date</th>
+                                            <th scope="col">Status</th>
                                         </tr>
-                                    {% empty %}
+                                    </thead>
+                                    <tbody data-table-body>
                                         <tr>
-                                            <td colspan="3" class="muted">No recent activity logged.</td>
+                                            <td colspan="3" class="muted">Loading activity...</td>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-state" data-table-state></div>
+                            <div class="pagination" data-table-pagination></div>
                         </div>
                     </div>
                 </section>
@@ -298,9 +370,29 @@
             </main>
             <footer class="site-footer">
                 <div class="container footer-inner">
-                    <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+                    <div class="footer-brand">
+                        <span>&copy; {% now "Y" %} Atlas User Workspace.</span>
+                    </div>
+                    <div class="footer-social">
+                        <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.9.6-3.5-1.4-3.5-1.4-.5-1.3-1.3-1.6-1.3-1.6-1.1-.7.1-.7.1-.7 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.8 1.4 3.5 1.1.1-.8.4-1.4.7-1.7-2.3-.3-4.8-1.1-4.8-5a4 4 0 0 1 1.1-2.8 3.7 3.7 0 0 1 .1-2.8s.9-.3 2.9 1.1a10 10 0 0 1 5.2 0c2-1.4 2.9-1.1 2.9-1.1.6 1.5.2 2.6.1 2.8a4 4 0 0 1 1.1 2.8c0 3.9-2.5 4.7-4.8 5 .4.3.8 1 .8 2.1v3.2c0 .3.2.6.7.5A10 10 0 0 0 12 2z"></path>
+                            </svg>
+                        </a>
+                        <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.6h.1c.5-.9 1.7-1.9 3.6-1.9 3.8 0 4.5 2.5 4.5 5.7V21h-4v-5.4c0-1.3 0-3-1.9-3-1.9 0-2.2 1.4-2.2 2.9V21H9z"></path>
+                            </svg>
+                        </a>
+                        <a href="https://x.com" target="_blank" rel="noreferrer" aria-label="X">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M18.9 2H22l-7.4 8.5L23 22h-6.9l-5.4-6.6L4.7 22H1.6l7.9-9.1L1 2h7l5 6.1L18.9 2zm-1.2 18h1.9L7.2 4H5.3l12.4 16z"></path>
+                            </svg>
+                        </a>
+                    </div>
                     <div class="footer-links">
                         <a href="mailto:support@ehealthhub.org">Support</a>
+                        <a href="#">Privacy</a>
                     </div>
                 </div>
             </footer>
@@ -321,6 +413,7 @@
     {% endif %}
 
     <script src="{% static 'js/shared.js' %}" defer></script>
+    <script src="{% static 'js/data_tables.js' %}" defer></script>
     <script src="{% static 'js/user_dashboard.js' %}" defer></script>
 </body>
 </html>

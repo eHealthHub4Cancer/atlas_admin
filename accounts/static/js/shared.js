@@ -85,6 +85,53 @@
     modal.classList.add("is-open");
   });
 
+  // Confirm dialog functionality
+  const confirmModal = document.querySelector("[data-confirm-modal]");
+  if (confirmModal) {
+    const confirmMessage = confirmModal.querySelector("[data-confirm-message]");
+    const confirmAccept = confirmModal.querySelector("[data-confirm-accept]");
+    const confirmCancel = confirmModal.querySelector("[data-confirm-cancel]");
+    let pendingForm = null;
+
+    const closeConfirm = () => {
+      confirmModal.classList.remove("is-open");
+      pendingForm = null;
+    };
+
+    document.querySelectorAll("form[data-confirm]").forEach((form) => {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        pendingForm = form;
+        if (confirmMessage) {
+          confirmMessage.textContent = form.getAttribute("data-confirm") || "Are you sure?";
+        }
+        confirmModal.classList.add("is-open");
+        if (confirmAccept) {
+          confirmAccept.focus();
+        }
+      });
+    });
+
+    if (confirmCancel) {
+      confirmCancel.addEventListener("click", closeConfirm);
+    }
+
+    if (confirmAccept) {
+      confirmAccept.addEventListener("click", () => {
+        if (pendingForm) {
+          pendingForm.submit();
+        }
+        closeConfirm();
+      });
+    }
+
+    confirmModal.addEventListener("click", (event) => {
+      if (event.target === confirmModal) {
+        closeConfirm();
+      }
+    });
+  }
+
   // Toast notifications
   const alerts = Array.from(document.querySelectorAll(".alert"));
   if (alerts.length) {
