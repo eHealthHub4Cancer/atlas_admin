@@ -1,144 +1,295 @@
 # views.py
+import logging
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import AtlasSignUpForm, PasswordChangeForm, AdminUserPermissionsForm, BulkGrantPermissionsForm
-from .models import AtlasUser, Permission
-from django.db import connection, DatabaseError
+from django.db import connections, DatabaseError, transaction
 
+from .forms import (
+    AtlasSignUpForm,
+    PasswordChangeForm,
+    AdminUserPermissionsForm,
+    BulkGrantPermissionsForm,
+)
+from .models import AtlasUser, Permission
+
+
+logger = logging.getLogger(__name__)
 
 WEBAPI_SCHEMA = "bioc_webapi3_schema_v3"
 
+# If your Django app uses a DIFFERENT DB than WebAPI tables, define a second DB in settings.py
+# and set WEBAPI_DB_ALIAS = "webapi". Otherwise keep "default".
+WEBAPI_DB_ALIAS = "default"
 
-def get_webapi_permissions():
-    with connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            SELECT id, name
-            FROM {WEBAPI_SCHEMA}.sec_role
-            ORDER BY name;
-            """
-        )
-        return cursor.fetchall()
+PUBLIC_ROLE_NAME = "public"
 
 
-def get_webapi_roles():
-    with connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            SELECT id, name
-            FROM {WEBAPI_SCHEMA}.sec_role
-            ORDER BY name;
-            """
-        )
-        return cursor.fetchall()
+# ──────────────────────────────────────────────────────────────────────────────
+# DB helpers
+# ──────────────────────────────────────────────────────────────────────────────
+
+def webapi_connection():
+    return connections[WEBAPI_DB_ALIAS]
 
 
-def get_webapi_role_id(role_name):
-    with connection.cursor() as cursor:
-        cursor.execute(
+def fetchone_value(cursor, sql, params=None):
+    cursor.execute(sql, params or [])
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# WebAPI Security Helpers (NO ON CONFLICT TARGETS REQUIRED)
+#
+# IMPORTANT: Your DB currently does NOT have a UNIQUE constraint on sec_role.name,
+# so using "ON CONFLICT (name)" fails.
+#
+# This implementation avoids ON CONFLICT(...) entirely by doing:
+#   SELECT -> if missing then INSERT -> if race then SELECT again.
+#
+# This is the safest approach WITHOUT changing DB schema.
+# If you later add UNIQUE constraints, you can switch to ON CONFLICT targets.
+# ──────────────────────────────────────────────────────────────────────────────
+
+def get_webapi_role_id(role_name: str):
+    with webapi_connection().cursor() as cursor:
+        return fetchone_value(
+            cursor,
             f"""
             SELECT id
             FROM {WEBAPI_SCHEMA}.sec_role
             WHERE LOWER(name) = LOWER(%s)
+            ORDER BY id
             LIMIT 1;
             """,
             [role_name],
         )
-        result = cursor.fetchone()
-        return result[0] if result else None
 
 
-def ensure_webapi_user(user):
-    login = user.username.lower()
-    with connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            SELECT id
-            FROM {WEBAPI_SCHEMA}.sec_user
-            WHERE login = %s;
-            """,
-            [login],
-        )
-        result = cursor.fetchone()
-        if result:
-            return result[0]
+def ensure_webapi_role(cursor, role_name: str) -> int:
+    """
+    Ensure a role exists and return its id.
 
+    No ON CONFLICT targets, so it works even if sec_role.name isn't unique.
+    """
+    role_name = (role_name or "").strip()
+    if not role_name:
+        raise ValueError("role_name cannot be blank")
+
+    # 1) Try find existing
+    role_id = fetchone_value(
+        cursor,
+        f"""
+        SELECT id
+        FROM {WEBAPI_SCHEMA}.sec_role
+        WHERE LOWER(name) = LOWER(%s)
+        ORDER BY id
+        LIMIT 1;
+        """,
+        [role_name],
+    )
+    if role_id is not None:
+        return role_id
+
+    # 2) Insert new
+    cursor.execute(
+        f"""
+        INSERT INTO {WEBAPI_SCHEMA}.sec_role (id, name)
+        VALUES (nextval('{WEBAPI_SCHEMA}.sec_role_sequence'), %s)
+        RETURNING id;
+        """,
+        [role_name],
+    )
+    role_id = cursor.fetchone()[0]
+    return role_id
+
+
+def get_webapi_user_id_by_login(cursor, login: str):
+    return fetchone_value(
+        cursor,
+        f"""
+        SELECT id
+        FROM {WEBAPI_SCHEMA}.sec_user
+        WHERE LOWER(login) = LOWER(%s)
+        ORDER BY id
+        LIMIT 1;
+        """,
+        [login],
+    )
+
+
+def ensure_webapi_user(cursor, user) -> int:
+    """
+    Ensure sec_user exists and base roles are assigned:
+      - public
+      - personal role (name == login)
+
+    Returns sec_user.id.
+    """
+    login = (user.username or "").strip().lower()
+    display_name = (user.username or "").strip()
+
+    if not login:
+        raise ValueError("username cannot be blank")
+
+    # 1) Ensure sec_user row
+    webapi_user_id = get_webapi_user_id_by_login(cursor, login)
+    if webapi_user_id is None:
         cursor.execute(
             f"""
             INSERT INTO {WEBAPI_SCHEMA}.sec_user (id, login, name)
             VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_sequence'), %s, %s)
             RETURNING id;
             """,
-            [login, user.username],
+            [login, display_name],
         )
-        return cursor.fetchone()[0]
+        webapi_user_id = cursor.fetchone()[0]
+
+    # 2) Ensure base roles exist
+    public_role_id = ensure_webapi_role(cursor, PUBLIC_ROLE_NAME)
+    personal_role_id = ensure_webapi_role(cursor, login)
+
+    # 3) Ensure sec_user_role links exist (NO ON CONFLICT)
+    ensure_user_role_link(cursor, webapi_user_id, public_role_id)
+    ensure_user_role_link(cursor, webapi_user_id, personal_role_id)
+
+    return webapi_user_id
+
+
+def ensure_user_role_link(cursor, user_id: int, role_id: int):
+    """
+    Ensure link exists in sec_user_role, without ON CONFLICT targets.
+
+    Handles schema variants with/without "origin" column.
+    """
+    # First check existence
+    exists = fetchone_value(
+        cursor,
+        f"""
+        SELECT 1
+        FROM {WEBAPI_SCHEMA}.sec_user_role
+        WHERE user_id = %s AND role_id = %s
+        LIMIT 1;
+        """,
+        [user_id, role_id],
+    )
+    if exists:
+        return
+
+    # Try insert with origin, fallback without origin
+    try:
+        cursor.execute(
+            f"""
+            INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id, origin)
+            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s, 'SYSTEM');
+            """,
+            [user_id, role_id],
+        )
+    except Exception:
+        cursor.execute(
+            f"""
+            INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
+            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s);
+            """,
+            [user_id, role_id],
+        )
+
+
+def set_webapi_user_roles_preserving_base(cursor, user, role_names):
+    """
+    Replace user's NON-base roles with provided roles,
+    preserving:
+      - public
+      - personal (login)
+    """
+    login = (user.username or "").strip().lower()
+    if not login:
+        raise ValueError("username cannot be blank")
+
+    webapi_user_id = ensure_webapi_user(cursor, user)
+
+    # Resolve base roles
+    public_role_id = ensure_webapi_role(cursor, PUBLIC_ROLE_NAME)
+    personal_role_id = ensure_webapi_role(cursor, login)
+
+    # Resolve desired role ids
+    desired_ids = set()
+    for rn in (role_names or []):
+        rn = (rn or "").strip()
+        if rn:
+            desired_ids.add(ensure_webapi_role(cursor, rn))
+
+    # Do not manage base roles here
+    desired_ids.discard(public_role_id)
+    desired_ids.discard(personal_role_id)
+
+    # Delete only non-base role links
+    cursor.execute(
+        f"""
+        DELETE FROM {WEBAPI_SCHEMA}.sec_user_role
+        WHERE user_id = %s
+          AND role_id NOT IN (%s, %s);
+        """,
+        [webapi_user_id, public_role_id, personal_role_id],
+    )
+
+    # Insert desired roles (ensure link)
+    for rid in desired_ids:
+        ensure_user_role_link(cursor, webapi_user_id, rid)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# "Permissions" Sync (your original design uses sec_role as permissions)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def get_webapi_permissions():
+    with webapi_connection().cursor() as cursor:
+        cursor.execute(
+            f"""
+            SELECT id, name
+            FROM {WEBAPI_SCHEMA}.sec_role
+            ORDER BY name;
+            """
+        )
+        return cursor.fetchall()
 
 
 def sync_permissions_from_webapi():
     try:
         webapi_permissions = get_webapi_permissions()
     except DatabaseError:
-        return Permission.objects.order_by('name')
+        return Permission.objects.order_by("name")
 
     for external_id, name in webapi_permissions:
         Permission.objects.update_or_create(
             name=name,
-            defaults={'external_id': external_id},
+            defaults={"external_id": external_id},
         )
-    return Permission.objects.order_by('name')
+    return Permission.objects.order_by("name")
 
 
-def sync_user_permissions_to_webapi(user, permissions):
+def sync_user_permissions_to_webapi(cursor, user, permissions):
     if not permissions:
         return
-    webapi_user_id = ensure_webapi_user(user)
-    permission_ids = [permission.external_id for permission in permissions if permission.external_id]
-    if not permission_ids:
+    # You are treating Permission.name as a WebAPI role name
+    role_names = [p.name for p in permissions if getattr(p, "name", None)]
+    set_webapi_user_roles_preserving_base(cursor, user, role_names)
+
+
+def sync_user_role_to_webapi(cursor, user):
+    role_name = getattr(user, "role", None)
+    if not role_name:
         return
-    with connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            DELETE FROM {WEBAPI_SCHEMA}.sec_user_role
-            WHERE user_id = %s;
-            """,
-            [webapi_user_id],
-        )
-        for permission_id in permission_ids:
-            cursor.execute(
-                f"""
-                INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
-                VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s)
-                ON CONFLICT DO NOTHING;
-                """,
-                [webapi_user_id, permission_id],
-            )
+    set_webapi_user_roles_preserving_base(cursor, user, [role_name])
 
 
-def sync_user_role_to_webapi(user):
-    role_id = get_webapi_role_id(user.role)
-    if not role_id:
-        return
-    webapi_user_id = ensure_webapi_user(user)
-    with connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            DELETE FROM {WEBAPI_SCHEMA}.sec_user_role
-            WHERE user_id = %s;
-            """,
-            [webapi_user_id],
-        )
-        cursor.execute(
-            f"""
-            INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
-            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s)
-            ON CONFLICT DO NOTHING;
-            """,
-            [webapi_user_id, role_id],
-        )
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Local app session helper
+# ──────────────────────────────────────────────────────────────────────────────
 
 def get_current_user(request):
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
     if not user_id:
         return None
     try:
@@ -147,147 +298,152 @@ def get_current_user(request):
         return None
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Views
+# ──────────────────────────────────────────────────────────────────────────────
+
 def signup(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = AtlasSignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # if the user is a superuser, please dump into sec_user and sec_user_role tables
-            role_id = 2 if getattr(user, 'is_superuser', False) else 2
 
             try:
-                ensure_webapi_user(user)
-                sync_user_role_to_webapi(user)
-            except DatabaseError:
-                messages.warning(request, 'Account created, but WebAPI sync was unavailable.')
+                # Atomic transaction in WebAPI DB
+                with transaction.atomic(using=WEBAPI_DB_ALIAS):
+                    with webapi_connection().cursor() as cursor:
+                        ensure_webapi_user(cursor, user)
+                        sync_user_role_to_webapi(cursor, user)
+            except Exception as e:
+                logger.exception("WebAPI sync failed during signup")
+                messages.warning(
+                    request,
+                    f"Account created, but WebAPI sync failed: {type(e).__name__}: {e}"
+                )
 
-            # with connection.cursor() as cursor:
-            #     schema = "bioc_webapi3_schema_v3"
-
-            #     # STEP A: Create the Identity record in sec_user
-            #     cursor.execute(f"""
-            #         INSERT INTO {schema}.sec_user (id, login, name) 
-            #         VALUES (nextval('{schema}.sec_user_sequence'), %s, %s)
-            #         ON CONFLICT (login) DO UPDATE SET name = EXCLUDED.name
-            #         RETURNING id;
-            #     """, [user.username, user.username])
-                
-            #     atlas_id = cursor.fetchone()[0]
-
-            #     # STEP B: Grant the appropriate role (2 for Admin, 10 for User)
-            #     cursor.execute(f"""
-            #         INSERT INTO {schema}.sec_user_role (id, user_id, role_id) 
-            #         VALUES (nextval('{schema}.sec_user_role_sequence'), %s, %s)
-            #         ON CONFLICT DO NOTHING;
-            #     """, [atlas_id, role_id])
-
-            messages.success(request, f'Account created for {user.username} with Role ID {role_id}!')
-            return redirect('login')
+            messages.success(request, f"Account created for {user.username}!")
+            return redirect("login")
     else:
         form = AtlasSignUpForm()
-    
-    return render(request, 'accounts/signup.html', {'form': form})
+
+    return render(request, "accounts/signup.html", {"form": form})
 
 
 def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
         try:
             user = AtlasUser.objects.get(username=username)
             if user.is_disabled:
-                messages.error(request, 'Your account has been disabled. Please contact an admin.')
-                return render(request, 'accounts/login.html')
+                messages.error(request, "Your account has been disabled. Please contact an admin.")
+                return render(request, "accounts/login.html")
+
             if user.check_password(password):
-                # Store user info in session
-                request.session['user_id'] = user.id
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                messages.success(request, f'Welcome back, {username}!')
-                return redirect('account')
-            else:
-                messages.error(request, 'Invalid username or password.')
+                request.session["user_id"] = user.id
+                request.session["username"] = user.username
+                request.session["role"] = user.role
+                messages.success(request, f"Welcome back, {username}!")
+                return redirect("account")
+
+            messages.error(request, "Invalid username or password.")
         except AtlasUser.DoesNotExist:
-            messages.error(request, 'Invalid username or password.')
-    
-    return render(request, 'accounts/login.html')
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, "accounts/login.html")
+
 
 def logout_view(request):
     request.session.flush()
-    messages.success(request, 'You have been logged out successfully.')
-    return redirect('login')
+    messages.success(request, "You have been logged out successfully.")
+    return redirect("login")
 
 
 def account_view(request):
     user = get_current_user(request)
     if not user:
-        messages.error(request, 'Please log in to view your account.')
-        return redirect('login')
+        messages.error(request, "Please log in to view your account.")
+        return redirect("login")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PasswordChangeForm(user, request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Your password has been updated.')
-            return redirect('account')
+            messages.success(request, "Your password has been updated.")
+            return redirect("account")
     else:
         form = PasswordChangeForm(user)
 
-    permissions = user.permissions.order_by('name')
+    permissions = user.permissions.order_by("name")
     return render(
         request,
-        'accounts/account.html',
-        {
-            'user_profile': user,
-            'permissions': permissions,
-            'form': form,
-        },
+        "accounts/account.html",
+        {"user_profile": user, "permissions": permissions, "form": form},
     )
 
 
 def admin_dashboard(request):
     user = get_current_user(request)
     if not user:
-        messages.error(request, 'Please log in to access the admin dashboard.')
-        return redirect('login')
+        messages.error(request, "Please log in to access the admin dashboard.")
+        return redirect("login")
 
     permissions = sync_permissions_from_webapi()
-    users = AtlasUser.objects.prefetch_related('permissions').order_by('username')
+    users = AtlasUser.objects.prefetch_related("permissions").order_by("username")
 
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'update_user':
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "update_user":
             form = AdminUserPermissionsForm(request.POST, permissions_queryset=permissions)
             if form.is_valid():
-                target_user = AtlasUser.objects.get(id=form.cleaned_data['user_id'])
-                target_user.is_disabled = form.cleaned_data['is_disabled']
+                target_user = AtlasUser.objects.get(id=form.cleaned_data["user_id"])
+                target_user.is_disabled = form.cleaned_data["is_disabled"]
                 target_user.save()
-                selected_permissions = form.cleaned_data['permissions']
+
+                selected_permissions = form.cleaned_data["permissions"]
                 target_user.permissions.set(selected_permissions)
+
                 try:
-                    sync_user_permissions_to_webapi(target_user, selected_permissions)
-                except DatabaseError:
-                    messages.warning(request, 'Saved locally, but WebAPI permission sync failed.')
-                messages.success(request, f'Updated {target_user.username}.')
-                return redirect('admin_dashboard')
-        elif action == 'bulk_grant':
+                    with transaction.atomic(using=WEBAPI_DB_ALIAS):
+                        with webapi_connection().cursor() as cursor:
+                            sync_user_permissions_to_webapi(cursor, target_user, selected_permissions)
+                except Exception as e:
+                    logger.exception("WebAPI permission sync failed")
+                    messages.warning(
+                        request,
+                        f"Saved locally, but WebAPI permission sync failed: {type(e).__name__}: {e}"
+                    )
+
+                messages.success(request, f"Updated {target_user.username}.")
+                return redirect("admin_dashboard")
+
+        elif action == "bulk_grant":
             form = BulkGrantPermissionsForm(
                 request.POST,
                 users_queryset=users,
                 permissions_queryset=permissions,
             )
             if form.is_valid():
-                selected_users = form.cleaned_data['user_ids']
-                selected_permissions = form.cleaned_data['permissions']
+                selected_users = form.cleaned_data["user_ids"]
+                selected_permissions = form.cleaned_data["permissions"]
+
                 for target_user in selected_users:
                     target_user.permissions.add(*selected_permissions)
                     try:
-                        sync_user_permissions_to_webapi(target_user, target_user.permissions.all())
-                    except DatabaseError:
-                        messages.warning(request, f'Local update for {target_user.username} saved, but WebAPI sync failed.')
-                messages.success(request, 'Granted permissions to selected users.')
-                return redirect('admin_dashboard')
+                        with transaction.atomic(using=WEBAPI_DB_ALIAS):
+                            with webapi_connection().cursor() as cursor:
+                                sync_user_permissions_to_webapi(cursor, target_user, target_user.permissions.all())
+                    except Exception as e:
+                        logger.exception("WebAPI permission sync failed (bulk)")
+                        messages.warning(
+                            request,
+                            f"Local update for {target_user.username} saved, but WebAPI sync failed: {type(e).__name__}: {e}"
+                        )
+
+                messages.success(request, "Granted permissions to selected users.")
+                return redirect("admin_dashboard")
 
     bulk_form = BulkGrantPermissionsForm(users_queryset=users, permissions_queryset=permissions)
     user_forms = []
@@ -295,12 +451,12 @@ def admin_dashboard(request):
         initial_permissions = target_user.permissions.all()
         user_forms.append(
             {
-                'user': target_user,
-                'form': AdminUserPermissionsForm(
+                "user": target_user,
+                "form": AdminUserPermissionsForm(
                     initial={
-                        'user_id': target_user.id,
-                        'is_disabled': target_user.is_disabled,
-                        'permissions': initial_permissions,
+                        "user_id": target_user.id,
+                        "is_disabled": target_user.is_disabled,
+                        "permissions": initial_permissions,
                     },
                     permissions_queryset=permissions,
                 ),
@@ -309,11 +465,11 @@ def admin_dashboard(request):
 
     return render(
         request,
-        'accounts/admin_dashboard.html',
+        "accounts/admin_dashboard.html",
         {
-            'user_profile': user,
-            'permissions': permissions,
-            'bulk_form': bulk_form,
-            'user_forms': user_forms,
+            "user_profile": user,
+            "permissions": permissions,
+            "bulk_form": bulk_form,
+            "user_forms": user_forms,
         },
     )

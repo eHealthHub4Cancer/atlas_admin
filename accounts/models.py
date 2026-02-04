@@ -34,18 +34,8 @@ class AtlasUser(models.Model):
 
     def set_password(self, raw_password):
         # OHDSI compatibility: prefix=b"2a" and rounds=10
-        salt = self._get_bcrypt_salt()
+        salt = bcrypt.gensalt(rounds=10, prefix=b"2a")
         self.password = bcrypt.hashpw(raw_password.encode('utf-8'), salt).decode('utf-8')
-
-    @staticmethod
-    def _get_bcrypt_salt():
-        try:
-            return bcrypt.gensalt(10, b"2a")
-        except TypeError:
-            try:
-                return bcrypt.gensalt(10)
-            except TypeError:
-                return bcrypt.gensalt()
 
     def check_password(self, raw_password):
         return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
