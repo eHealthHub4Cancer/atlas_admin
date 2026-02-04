@@ -113,7 +113,8 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a class="btn btn-outline-light btn-sm" href="{% url 'admin_dashboard' %}">Admin Console</a>
+                <a class="btn btn-outline-light btn-sm" href="{% url 'user_dashboard' %}">Dashboard</a>
+                <a class="btn btn-outline-light btn-sm" href="{% url 'profile_update' %}">Update Profile</a>
                 <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
             </div>
         </div>
@@ -138,8 +139,10 @@
                     <div class="mb-4">
                         <h3 class="h6 text-uppercase muted-text">Profile Details</h3>
                         <p class="mb-1"><strong>Name:</strong> {{ profile.display_name|default:user_profile.username }}</p>
+                        <p class="mb-1"><strong>Prefix:</strong> {{ profile.get_prefix_display|default:"Not provided" }}</p>
                         <p class="mb-1"><strong>Email:</strong> {{ profile.email|default:"Not provided" }}</p>
                         <p class="mb-0"><strong>Affiliation:</strong> {{ profile.affiliation|default:"Not provided" }}</p>
+                        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'profile_update' %}">Update profile</a>
                     </div>
                     <div>
                         <h3 class="h6 text-uppercase muted-text">Permissions</h3>
@@ -158,6 +161,29 @@
 
             <div class="col-lg-7">
                 <div class="glass-card p-4 h-100">
+                    <h2 class="h5 mb-3">Account Summary</h2>
+                    <p class="muted-text mb-4">Review all of your account details and access.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 glass-card">
+                                <h3 class="h6 text-uppercase muted-text">Account Details</h3>
+                                <p class="mb-1"><strong>Username:</strong> {{ user_profile.username }}</p>
+                                <p class="mb-1"><strong>Role:</strong> {{ user_profile.get_role_display }}</p>
+                                <p class="mb-1"><strong>Status:</strong> {% if user_profile.is_disabled %}Disabled{% else %}Active{% endif %}</p>
+                                <p class="mb-0"><strong>Account:</strong> Atlas user profile</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 glass-card">
+                                <h3 class="h6 text-uppercase muted-text">Contact</h3>
+                                <p class="mb-1"><strong>Email:</strong> {{ profile.email|default:"Not provided" }}</p>
+                                <p class="mb-1"><strong>Affiliation:</strong> {{ profile.affiliation|default:"Not provided" }}</p>
+                                <p class="mb-0"><strong>Prefix:</strong> {{ profile.get_prefix_display|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <h2 class="h5 mb-3">Update Password</h2>
                     <p class="muted-text mb-4">Choose a new password to keep your account secure.</p>
 
@@ -216,7 +242,7 @@
     <footer class="page-footer py-4">
         <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
             <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
-            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            <a href="mailto:support@ehealthhub.org">Support</a>
         </div>
     </footer>
     <script>

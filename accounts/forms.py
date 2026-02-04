@@ -154,6 +154,41 @@ class PasswordChangeForm(forms.Form):
         return self.user
 
 
+class ProfileUpdateForm(forms.ModelForm):
+    display_name = forms.CharField(
+        label="Full name",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Full name"}),
+    )
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email address"}),
+    )
+    affiliation = forms.CharField(
+        label="Affiliation",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Affiliation"}),
+    )
+    prefix = forms.ChoiceField(
+        label="Prefix",
+        required=False,
+        choices=UserProfile.PREFIX_CHOICES,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ("display_name", "email", "affiliation", "prefix")
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        existing = UserProfile.objects.filter(email=email)
+        if self.instance and self.instance.pk:
+            existing = existing.exclude(pk=self.instance.pk)
+        if email and existing.exists():
+            raise ValidationError("A user with that email already exists.")
+        return email
+
+
 class AdminUserPermissionsForm(forms.Form):
     user_id = forms.IntegerField(widget=forms.HiddenInput)
     is_disabled = forms.BooleanField(required=False)

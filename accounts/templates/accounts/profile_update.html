@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/shared.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+</head>
+<body class="page auth-page">
+    <header class="auth-header glass">
+        <div class="container header-inner">
+            <div class="auth-title">
+                <img src="{% static 'images/ehealthhub-logo.svg' %}" alt="eHealthHub" width="40" height="40">
+                <div>
+                    <h1 class="section-title">Update your profile</h1>
+                    <p class="muted">Keep your contact details up to date.</p>
+                </div>
+            </div>
+            <div class="auth-actions">
+                <a class="btn btn-ghost" href="{% url 'account' %}">Back to profile</a>
+                <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="auth-card glass">
+            <h2 class="section-title">Profile details</h2>
+            <p class="muted">These details appear on your account summary.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <div class="form-field">
+                    {{ form.display_name.label_tag }}
+                    {{ form.display_name }}
+                    {% if form.display_name.errors %}
+                        <div class="alert alert-error">{{ form.display_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="alert alert-error">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    {{ form.affiliation.label_tag }}
+                    {{ form.affiliation }}
+                    {% if form.affiliation.errors %}
+                        <div class="alert alert-error">{{ form.affiliation.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    {{ form.prefix.label_tag }}
+                    {{ form.prefix }}
+                    {% if form.prefix.errors %}
+                        <div class="alert alert-error">{{ form.prefix.errors }}</div>
+                    {% endif %}
+                </div>
+                <button class="btn btn-primary" type="submit">Save profile</button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
+            <div class="footer-links">
+                <a href="mailto:support@ehealthhub.org">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/shared.js' %}" defer></script>
+</body>
+</html>

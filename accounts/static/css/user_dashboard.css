@@ -24,7 +24,7 @@
 }
 
 .user-dashboard .profile-nav__title {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted-text, #9ca3af);
@@ -35,7 +35,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   color: var(--muted-text, #9ca3af);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .user-dashboard .profile-nav__divider {

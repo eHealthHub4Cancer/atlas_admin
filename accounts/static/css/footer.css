@@ -1,8 +1,13 @@
 .site-footer {
-  padding: 2rem 0;
+  padding: 1.5rem 0;
   border-top: 1px solid var(--border);
   margin-top: 3rem;
   position: relative;
+}
+
+.dashboard-page .site-footer {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
 }
 
 .dashboard-page .site-footer::before {
@@ -10,13 +15,18 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: var(--sidebar-width);
+  left: 0;
   width: 1px;
   background: var(--border);
   opacity: 0.9;
 }
 
 @media (max-width: 860px) {
+  .dashboard-page .site-footer {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .dashboard-page .site-footer::before {
     display: none;
   }
@@ -29,7 +39,7 @@
   justify-content: space-between;
   gap: 1rem;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .footer-links {
