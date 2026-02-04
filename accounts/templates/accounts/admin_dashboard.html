@@ -1,211 +1,315 @@
 <!-- templates/accounts/admin_dashboard.html -->
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="dark">
 <head>
-    <title>Admin Console</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            min-height: 100vh;
-            background: radial-gradient(circle at top, #111827, #0f172a 50%, #020617 100%);
-            color: #e2e8f0;
-            font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-            padding-top: 96px;
-        }
-        .page-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1030;
-            background: rgba(2, 6, 23, 0.85);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            backdrop-filter: blur(12px);
-        }
-        .logo-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(56, 189, 248, 0.2);
-            color: #7dd3fc;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-        }
-        .glass-card {
-            background: rgba(15, 23, 42, 0.78);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 18px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
-        }
-        .table {
-            color: #e2e8f0;
-        }
-        .table thead th {
-            color: #94a3b8;
-            border-color: rgba(148, 163, 184, 0.2);
-        }
-        .table tbody td {
-            border-color: rgba(148, 163, 184, 0.2);
-        }
-        .form-select, .form-control {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            color: #f8fafc;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #38bdf8, #6366f1);
-            border: none;
-            font-weight: 600;
-        }
-        .badge-permission {
-            background: rgba(59, 130, 246, 0.2);
-            color: #93c5fd;
-            border: 1px solid rgba(59, 130, 246, 0.35);
-            padding: 6px 12px;
-            border-radius: 999px;
-            margin: 4px 6px 4px 0;
-            display: inline-block;
-        }
-        .muted-text {
-            color: #94a3b8;
-        }
-        a {
-            color: #7dd3fc;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #bae6fd;
-        }
-        .page-footer {
-            border-top: 1px solid rgba(148, 163, 184, 0.2);
-            color: #94a3b8;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/shared.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard-shared.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body>
-    <header class="page-header">
-        <div class="container py-3 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-3">
-                <div class="logo-mark">EH</div>
-                <div>
-                    <h1 class="h4 mb-1">Admin Console</h1>
-                    <p class="muted-text mb-0">Manage users, permissions, and account status.</p>
-                </div>
+<body class="page dashboard-page admin-dashboard">
+    <div class="dashboard">
+        <aside class="sidebar glass">
+            <div class="sidebar__brand">
+                <img class="logo" src="{% static 'images/ehealthhub-logo.svg' %}" alt="eHealthHub For Cancer">
+                <span>Admin Console</span>
             </div>
-            <div class="d-flex gap-2">
-                <a class="btn btn-outline-light btn-sm" href="{% url 'account' %}">Account</a>
-                <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
-            </div>
-        </div>
-    </header>
+            <button class="sidebar__toggle" type="button" data-sidebar-toggle aria-label="Toggle navigation" aria-expanded="false">
+                Menu
+            </button>
+            <nav class="sidebar__nav">
+                <button class="nav-link is-active" type="button" data-section-target="stats">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 3v18h18"></path>
+                        <path d="M7 13l3-3 4 4 5-6"></path>
+                    </svg>
+                    Stats
+                </button>
+                <button class="nav-link" type="button" data-section-target="roles">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 7h10a4 4 0 0 1 0 8H4"></path>
+                        <path d="M14 11a4 4 0 0 1 0 8H4"></path>
+                    </svg>
+                    All Roles
+                </button>
+                <button class="nav-link" type="button" data-section-target="users">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.8"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M9 11a4 4 0 0 0-4 4v2"></path>
+                        <path d="M23 21v-2a4 4 0 0 0-2-3.4"></path>
+                        <circle cx="16" cy="7" r="3"></circle>
+                    </svg>
+                    All Users
+                </button>
+                <button class="nav-link" type="button" data-section-target="details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    User Details
+                </button>
+                <button class="nav-link" type="button" data-section-target="assign">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                    Add Role to User
+                </button>
+                <button class="nav-link" type="button" data-section-target="deactivate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M4.9 4.9l14.2 14.2"></path>
+                    </svg>
+                    Deactivate User
+                </button>
+            </nav>
+        </aside>
 
-    <main class="container pb-5">
-        <div class="row g-4">
-            <div class="col-lg-4">
-                <div class="glass-card p-4 mb-4">
-                    <h2 class="h5 mb-3">System Permissions</h2>
-                    <p class="muted-text">Current permissions available to assign.</p>
-                    <div>
-                        {% for permission in permissions %}
-                            <span class="badge-permission">{{ permission.name }}</span>
-                        {% endfor %}
-                    </div>
+        <div class="dashboard__main">
+            <header class="dashboard__header glass-strong">
+                <div class="header-info">
+                    <span class="pill">Superuser</span>
+                    <h1 class="section-title">Admin Dashboard</h1>
+                    <span class="muted">Manage roles, users, and permissions.</span>
                 </div>
-
-                <div class="glass-card p-4">
-                    <h2 class="h5 mb-3">Bulk Grant</h2>
-                    <p class="muted-text mb-4">Assign one or more permissions to selected users.</p>
-                    <form method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="bulk_grant">
-                        <div class="mb-3">
-                            <label class="form-label">Select users</label>
-                            {{ bulk_form.user_ids }}
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Select permissions</label>
-                            {{ bulk_form.permissions }}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Grant permissions</button>
-                    </form>
+                <div class="header-actions">
+                    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
+                        </svg>
+                    </button>
+                    <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
-            </div>
+            </header>
 
-            <div class="col-lg-8">
-                <div class="glass-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h2 class="h5 mb-1">User Management</h2>
-                            <p class="muted-text mb-0">Assign permissions or disable accounts.</p>
-                        </div>
-                    </div>
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
+            <main class="dashboard__content">
+                <section class="dashboard-section is-active" id="stats">
+                    <div class="card glass">
+                        <h2 class="section-title">Platform Stats</h2>
+                        <p class="muted">High-level overview of your access system.</p>
+                        <div class="card-grid">
+                            <div class="card glass stat-card">
+                                <span class="muted">Total Users</span>
+                                <strong>{{ users|length }}</strong>
+                                <div class="progress-bar"><span style="width: 78%"></span></div>
                             </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                    <th>Permissions</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for user_form in user_forms %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ user_form.user.username }}</strong>
-                                        </td>
-                                        <td>{{ user_form.user.get_role_display }}</td>
-                                        <td>
-                                            {% if user_form.user.is_disabled %}
-                                                <span class="badge bg-danger">Disabled</span>
-                                            {% else %}
-                                                <span class="badge bg-success">Active</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <form method="post" class="d-grid gap-2">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="update_user">
-                                                {{ user_form.form.user_id }}
-                                                {{ user_form.form.permissions }}
-                                        </td>
-                                        <td>
-                                                <div class="form-check mb-2">
-                                                    {{ user_form.form.is_disabled }}
-                                                    <label class="form-check-label">Disable</label>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                            <div class="card glass stat-card">
+                                <span class="muted">Roles</span>
+                                <strong>{{ roles|length }}</strong>
+                                <div class="progress-bar"><span style="width: 55%"></span></div>
+                            </div>
+                            <div class="card glass stat-card">
+                                <span class="muted">Permissions</span>
+                                <strong>{{ permissions|length }}</strong>
+                                <div class="progress-bar"><span style="width: 65%"></span></div>
+                            </div>
+                            <div class="card glass stat-card">
+                                <span class="muted">Active Users</span>
+                                <strong>{{ active_users }}</strong>
+                                <div class="progress-bar"><span style="width: 82%"></span></div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                <section class="dashboard-section" id="roles">
+                    <div class="card glass">
+                        <h2 class="section-title">All Roles</h2>
+                        <p class="muted">Manage role definitions and their permissions.</p>
+                        <div class="table-wrapper">
+                            <table class="table" data-sort-table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort-key="role">Role</th>
+                                        <th data-sort-key="permissions">Permissions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for role in roles %}
+                                        <tr>
+                                            <td data-cell="role">{{ role.name }}</td>
+                                            <td data-cell="permissions">{{ role.permissions.count }}</td>
+                                            <td>
+                                                <button class="btn btn-ghost" type="button">Edit</button>
+                                                <button class="btn btn-ghost" type="button" data-modal-open="roleModal">Delete</button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="muted">No roles available.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-section" id="users">
+                    <div class="card glass">
+                        <h2 class="section-title">All Users</h2>
+                        <p class="muted">Search, filter, and manage user access.</p>
+                        <div class="table-wrapper">
+                            <table class="table" data-sort-table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort-key="username">Username</th>
+                                        <th data-sort-key="role">Role</th>
+                                        <th data-sort-key="active">Active</th>
+                                        <th data-sort-key="joined">Joined</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user_item in users %}
+                                        <tr>
+                                            <td data-cell="username">{{ user_item.username }}</td>
+                                            <td data-cell="role">{{ user_item.get_role_display }}</td>
+                                            <td data-cell="active">{% if user_item.is_active %}Yes{% else %}No{% endif %}</td>
+                                            <td data-cell="joined">{{ user_item.date_joined|date:"M d, Y" }}</td>
+                                            <td>
+                                                <button class="btn btn-ghost" type="button">View</button>
+                                                <button class="btn btn-ghost" type="button">Edit</button>
+                                                <button class="btn btn-ghost" type="button" data-modal-open="deactivateModal">Deactivate</button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="muted">No users found.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-section" id="details">
+                    <div class="card glass">
+                        <h2 class="section-title">User Details</h2>
+                        <p class="muted">Select a user to review assigned roles and permissions.</p>
+                        <form method="post" class="auth-form">
+                            {% csrf_token %}
+                            <div class="form-field">
+                                <label for="detail_user">Select user</label>
+                                <select id="detail_user" name="detail_user">
+                                    {% for user_item in users %}
+                                        <option value="{{ user_item.id }}">{{ user_item.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Load details</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="dashboard-section" id="assign">
+                    <div class="card glass">
+                        <h2 class="section-title">Add Role to User</h2>
+                        <p class="muted">Assign one or more roles to a user.</p>
+                        <form method="post" class="auth-form">
+                            {% csrf_token %}
+                            <div class="form-field">
+                                <label for="assign_user">Select user</label>
+                                <select id="assign_user" name="assign_user">
+                                    {% for user_item in users %}
+                                        <option value="{{ user_item.id }}">{{ user_item.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="assign_roles">Select roles</label>
+                                <select id="assign_roles" name="assign_roles" multiple>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}">{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Assign roles</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="dashboard-section" id="deactivate">
+                    <div class="card glass">
+                        <h2 class="section-title">Deactivate User</h2>
+                        <p class="muted">Quickly disable an account and revoke access.</p>
+                        <form method="post" class="auth-form">
+                            {% csrf_token %}
+                            <div class="form-field">
+                                <label for="deactivate_user">Select user</label>
+                                <select id="deactivate_user" name="deactivate_user">
+                                    {% for user_item in users %}
+                                        <option value="{{ user_item.id }}">{{ user_item.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit" data-modal-open="deactivateModal">Deactivate</button>
+                        </form>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal" id="roleModal" role="dialog" aria-modal="true">
+        <div class="modal__panel glass">
+            <h3 class="section-title">Delete role?</h3>
+            <p class="muted">This action cannot be undone.</p>
+            <div class="modal__actions">
+                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+                <button class="btn btn-primary" type="button">Confirm</button>
             </div>
         </div>
-    </main>
-    <footer class="page-footer py-4">
-        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+    </div>
+
+    <div class="modal" id="deactivateModal" role="dialog" aria-modal="true">
+        <div class="modal__panel glass">
+            <h3 class="section-title">Deactivate user?</h3>
+            <p class="muted">The selected user will lose access immediately.</p>
+            <div class="modal__actions">
+                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+                <button class="btn btn-primary" type="button">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
             <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
-            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            <div class="footer-links">
+                <a href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6-1.5 6-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.3 1.3a11.4 11.4 0 0 0-6 0C8.1 2 7 2.3 7 2.3a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 5.6 8c0 4.5 3 5.7 6 6a3.4 3.4 0 0 0-.9 2.6V22"></path>
+                    </svg>
+                </a>
+                <a href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                        <rect x="2" y="9" width="4" height="12"></rect>
+                        <circle cx="4" cy="4" r="2"></circle>
+                    </svg>
+                </a>
+                <a href="https://x.com/" target="_blank" rel="noopener" aria-label="X">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 4l7.3 9.4L4.8 20H7l5-5.8L17 20h3l-7.6-9.9L19.4 4h-2.1l-4.2 4.9L9 4H4z"></path>
+                    </svg>
+                </a>
+            </div>
         </div>
     </footer>
+
+    <script src="{% static 'js/shared.js' %}" defer></script>
+    <script src="{% static 'js/admin_dashboard.js' %}" defer></script>
 </body>
 </html>

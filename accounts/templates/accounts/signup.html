@@ -1,208 +1,139 @@
 <!-- templates/accounts/signup.html -->
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="dark">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Atlas Account</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            min-height: 100vh;
-            background: radial-gradient(circle at top, #1f2937, #0f172a 45%, #020617 100%);
-            color: #e2e8f0;
-            font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-            padding-top: 96px;
-        }
-        .page-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1030;
-            background: rgba(2, 6, 23, 0.85);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            backdrop-filter: blur(12px);
-        }
-        .logo-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(129, 140, 248, 0.2);
-            color: #a5b4fc;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-        }
-        .glass-card {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            backdrop-filter: blur(14px);
-            border-radius: 20px;
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
-        }
-        .brand-pill {
-            background: rgba(129, 140, 248, 0.2);
-            color: #a5b4fc;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            padding: 6px 14px;
-            border-radius: 999px;
-            font-size: 0.75rem;
-        }
-        .form-control, .form-select {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            color: #f8fafc;
-        }
-        .input-group .form-control:focus {
-            z-index: 1;
-        }
-        .toggle-password {
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            background: rgba(15, 23, 42, 0.4);
-            color: #e2e8f0;
-        }
-        .toggle-password:hover {
-            color: #c7d2fe;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #818cf8;
-            box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.2);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #6366f1, #38bdf8);
-            border: none;
-            font-weight: 600;
-        }
-        .muted-text {
-            color: #94a3b8;
-        }
-        a {
-            color: #a5b4fc;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #c7d2fe;
-        }
-        .form-help {
-            color: #cbd5f5;
-        }
-        .page-footer {
-            border-top: 1px solid rgba(148, 163, 184, 0.2);
-            color: #94a3b8;
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/shared.css' %}">
+    <link rel="stylesheet" href="{% static 'css/signup.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body>
-    <header class="page-header">
-        <div class="container py-3 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-3">
-                <div class="logo-mark">EH</div>
+<body class="page auth-page">
+    <header class="auth-header glass">
+        <div class="container header-inner">
+            <div class="auth-title">
+                <img class="logo" src="{% static 'images/ehealthhub-logo.svg' %}" alt="eHealthHub For Cancer">
                 <div>
-                    <span class="brand-pill">Create Account</span>
-                    <h1 class="h4 mt-2 mb-1">Join Atlas Admin</h1>
-                    <p class="muted-text mb-0">Pick your role and get tailored access.</p>
+                    <span class="pill">Create Account</span>
+                    <h1 class="section-title">Join Atlas Admin</h1>
+                    <p class="muted">Pick your role and get tailored access.</p>
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Back to login</a>
+            <div class="auth-actions">
+                <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
+                    </svg>
+                </button>
+                <a class="btn btn-ghost" href="{% url 'login' %}">Back to login</a>
             </div>
         </div>
     </header>
 
-    <main class="container pb-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="glass-card p-4 p-md-5">
-                    <h2 class="h3 mb-3">Sign up</h2>
-                    <p class="muted-text mb-4">Create your account and select a role to get started.</p>
+    <main class="container">
+        <div class="auth-card glass">
+            <h2 class="section-title">Sign up</h2>
+            <p class="muted">Create your account and select a role to get started.</p>
 
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <div class="form-field">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="alert">{{ form.username.errors }}</div>
                     {% endif %}
-
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            {{ form.username.label_tag }}
-                            {{ form.username }}
-                            {% if form.username.errors %}
-                                <div class="text-danger">{{ form.username.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.role.label_tag }}
-                            {{ form.role }}
-                            {% if form.role.errors %}
-                                <div class="text-danger">{{ form.role.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.password1.label_tag }}
-                            <div class="input-group">
-                                {{ form.password1 }}
-                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_password1" aria-label="Show password">
-                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
-                                </button>
-                            </div>
-                            <small class="form-text form-help">{{ form.password1.help_text }}</small>
-                            {% if form.password1.errors %}
-                                <div class="text-danger">{{ form.password1.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-4">
-                            {{ form.password2.label_tag }}
-                            <div class="input-group">
-                                {{ form.password2 }}
-                                <button class="btn toggle-password" type="button" data-toggle-password data-target="id_password2" aria-label="Show password confirmation">
-                                    <span class="toggle-icon" aria-hidden="true">👁️</span>
-                                </button>
-                            </div>
-                            <small class="form-text form-help">{{ form.password2.help_text }}</small>
-                            {% if form.password2.errors %}
-                                <div class="text-danger">{{ form.password2.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 py-2">Create Account</button>
-                    </form>
-
-                    <div class="mt-4 text-center">
-                        <p class="muted-text mb-0">Already have an account? <a href="{% url 'login' %}">Login here</a>.</p>
-                    </div>
                 </div>
+
+                <div class="form-field">
+                    {{ form.role.label_tag }}
+                    {{ form.role }}
+                    {% if form.role.errors %}
+                        <div class="alert">{{ form.role.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.password1.label_tag }}
+                    <div class="input-group">
+                        {{ form.password1 }}
+                        <button class="input-button" type="button" data-password-toggle data-target="id_password1" aria-label="Show password">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" data-password-icon>
+                                <path d="M2.1 12c1.6-4.4 5.8-7.5 10.4-7.5 4.6 0 8.8 3.1 10.4 7.5-1.6 4.4-5.8 7.5-10.4 7.5-4.6 0-8.8-3.1-10.4-7.5z" stroke="currentColor" stroke-width="1.5" fill="none"></path>
+                                <circle cx="12.5" cy="12" r="3.2" stroke="currentColor" stroke-width="1.5" fill="none"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="muted">{{ form.password1.help_text }}</small>
+                    {% if form.password1.errors %}
+                        <div class="alert">{{ form.password1.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.password2.label_tag }}
+                    <div class="input-group">
+                        {{ form.password2 }}
+                        <button class="input-button" type="button" data-password-toggle data-target="id_password2" aria-label="Show password confirmation">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" data-password-icon>
+                                <path d="M2.1 12c1.6-4.4 5.8-7.5 10.4-7.5 4.6 0 8.8 3.1 10.4 7.5-1.6 4.4-5.8 7.5-10.4 7.5-4.6 0-8.8-3.1-10.4-7.5z" stroke="currentColor" stroke-width="1.5" fill="none"></path>
+                                <circle cx="12.5" cy="12" r="3.2" stroke="currentColor" stroke-width="1.5" fill="none"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="muted">{{ form.password2.help_text }}</small>
+                    {% if form.password2.errors %}
+                        <div class="alert">{{ form.password2.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+
+            <div class="auth-footer-note">
+                <p class="muted">Already have an account? <a class="link" href="{% url 'login' %}">Login here</a>.</p>
             </div>
         </div>
     </main>
-    <footer class="page-footer py-4">
-        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
             <span>&copy; {% now "Y" %} eHealth Hub for Cancer Research.</span>
-            <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            <div class="footer-links">
+                <a href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6-1.5 6-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.3 1.3a11.4 11.4 0 0 0-6 0C8.1 2 7 2.3 7 2.3a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 5.6 8c0 4.5 3 5.7 6 6a3.4 3.4 0 0 0-.9 2.6V22"></path>
+                    </svg>
+                </a>
+                <a href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                        <rect x="2" y="9" width="4" height="12"></rect>
+                        <circle cx="4" cy="4" r="2"></circle>
+                    </svg>
+                </a>
+                <a href="https://x.com/" target="_blank" rel="noopener" aria-label="X">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 4l7.3 9.4L4.8 20H7l5-5.8L17 20h3l-7.6-9.9L19.4 4h-2.1l-4.2 4.9L9 4H4z"></path>
+                    </svg>
+                </a>
+            </div>
         </div>
     </footer>
-    <script>
-        document.querySelectorAll('[data-toggle-password]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const targetId = button.getAttribute('data-target');
-                const input = document.getElementById(targetId);
-                if (!input) {
-                    return;
-                }
-                const isPassword = input.getAttribute('type') === 'password';
-                input.setAttribute('type', isPassword ? 'text' : 'password');
-                button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-                button.querySelector('.toggle-icon').textContent = isPassword ? '🙈' : '👁️';
-            });
-        });
-    </script>
+
+    <script src="{% static 'js/shared.js' %}" defer></script>
+    <script src="{% static 'js/signup.js' %}" defer></script>
 </body>
 </html>

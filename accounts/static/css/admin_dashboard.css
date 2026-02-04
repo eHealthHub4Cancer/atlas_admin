@@ -1,0 +1,19 @@
+.admin-dashboard {
+  --accent: #ef4444;
+  --accent-strong: #fca5a5;
+  --accent-hover: #f87171;
+  --focus-ring: 0 0 0 3px rgba(248, 113, 113, 0.35);
+}
+
+.admin-dashboard .dashboard__header {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(248, 113, 113, 0.1));
+}
+
+.admin-dashboard .nav-link:hover,
+.admin-dashboard .nav-link.is-active {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.admin-dashboard .progress-bar span {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+}
