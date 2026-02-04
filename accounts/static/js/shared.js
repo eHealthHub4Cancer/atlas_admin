@@ -69,4 +69,54 @@
       }
     });
   });
+
+  const alerts = Array.from(document.querySelectorAll(".alert"));
+  if (alerts.length) {
+    let toastStack = document.querySelector(".toast-stack");
+    if (!toastStack) {
+      toastStack = document.createElement("div");
+      toastStack.classList.add("toast-stack");
+      document.body.appendChild(toastStack);
+    }
+
+    const dismissToast = (toast) => {
+      if (toast.classList.contains("is-hiding")) {
+        return;
+      }
+      toast.classList.add("is-hiding");
+      toast.addEventListener(
+        "animationend",
+        () => {
+          toast.remove();
+        },
+        { once: true }
+      );
+    };
+
+    alerts.forEach((alert) => {
+      alert.classList.add("toast");
+      toastStack.appendChild(alert);
+
+      let dismissTimer = null;
+      const scheduleDismiss = (delay) => {
+        if (dismissTimer) {
+          window.clearTimeout(dismissTimer);
+        }
+        dismissTimer = window.setTimeout(() => dismissToast(alert), delay);
+      };
+
+      scheduleDismiss(4500);
+
+      alert.addEventListener("mouseenter", () => {
+        if (dismissTimer) {
+          window.clearTimeout(dismissTimer);
+          dismissTimer = null;
+        }
+      });
+
+      alert.addEventListener("mouseleave", () => {
+        scheduleDismiss(1000);
+      });
+    });
+  }
 })();

@@ -48,3 +48,27 @@ class AtlasUser(models.Model):
 
     def __str__(self):
         return self.username
+
+
+class UserProfile(models.Model):
+    PREFIX_CHOICES = (
+        ("mr", "Mr."),
+        ("mrs", "Mrs."),
+        ("ms", "Ms."),
+        ("dr", "Dr."),
+        ("prof", "Prof."),
+    )
+
+    user = models.OneToOneField(AtlasUser, on_delete=models.CASCADE, related_name="profile")
+    display_name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    prefix = models.CharField(max_length=10, choices=PREFIX_CHOICES, blank=True)
+
+    class Meta:
+        db_table = "atlas_user_profile"
+        managed = True
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+
+    def __str__(self):
+        return self.display_name
