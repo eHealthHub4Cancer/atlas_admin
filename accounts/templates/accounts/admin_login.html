@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Admin Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
                 <div>
                     <span class="pill">Secure Admin</span>
                     <h1 class="section-title">Admin Console Access</h1>
-                    <p class="muted">Restricted to authorized superusers only.</p>
+                    <p class="muted">Restricted to authorized admins and superadmins.</p>
                 </div>
             </div>
             <div class="auth-actions">
@@ -46,7 +46,7 @@
     <main class="container">
         <div class="auth-card glass">
             <h2 class="section-title">Admin sign in</h2>
-            <p class="muted">Use your superuser credentials to continue.</p>
+            <p class="muted">Use your admin or superadmin credentials to continue.</p>
 
             {% if messages %}
                 {% for message in messages %}
@@ -61,8 +61,8 @@
             <form method="post" class="auth-form">
                 {% csrf_token %}
                 <div class="form-field">
-                    {{ form.username.label_tag }}
-                    {{ form.username }}
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
                 </div>
                 <div class="form-field">
                     {{ form.password.label_tag }}
