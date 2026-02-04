@@ -130,6 +130,15 @@
   max-width: 520px;
 }
 
+.dashboard-page .auth-form {
+  width: 100%;
+  max-width: 520px;
+}
+
+.dashboard-page .form-field {
+  max-width: 520px;
+}
+
 .dashboard-section {
   display: none;
   animation: fadeIn 0.4s ease;
@@ -343,6 +352,10 @@
 
   .sidebar__nav {
     display: none;
+  }
+
+  .settings-layout {
+    grid-template-columns: 1fr;
   }
 
   .sidebar.is-open .sidebar__nav {
