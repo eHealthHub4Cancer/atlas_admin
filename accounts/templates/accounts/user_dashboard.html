@@ -84,6 +84,20 @@
                     </button>
                     <a class="btn btn-ghost" href="{% url 'logout' %}">Logout</a>
                 </div>
+                <div class="profile-nav glass">
+                    <div class="profile-nav__identity">
+                        <span class="profile-nav__title">Profile</span>
+                        <strong>{{ profile.display_name|default:user.username }}</strong>
+                    </div>
+                    <div class="profile-nav__meta">
+                        <span>{{ profile.email|default:"No email on file" }}</span>
+                        {% if profile.affiliation %}
+                            <span class="profile-nav__divider">•</span>
+                            <span>{{ profile.affiliation }}</span>
+                        {% endif %}
+                    </div>
+                    <a class="btn btn-ghost" href="{% url 'account' %}">View Profile</a>
+                </div>
             </header>
 
             <main class="dashboard__content">

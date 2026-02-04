@@ -135,6 +135,12 @@
                             <span class="badge badge-status">Active</span>
                         {% endif %}
                     </div>
+                    <div class="mb-4">
+                        <h3 class="h6 text-uppercase muted-text">Profile Details</h3>
+                        <p class="mb-1"><strong>Name:</strong> {{ profile.display_name|default:user_profile.username }}</p>
+                        <p class="mb-1"><strong>Email:</strong> {{ profile.email|default:"Not provided" }}</p>
+                        <p class="mb-0"><strong>Affiliation:</strong> {{ profile.affiliation|default:"Not provided" }}</p>
+                    </div>
                     <div>
                         <h3 class="h6 text-uppercase muted-text">Permissions</h3>
                         <div>

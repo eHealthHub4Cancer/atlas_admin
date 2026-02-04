@@ -50,6 +50,38 @@
             <form method="post" class="auth-form">
                 {% csrf_token %}
                 <div class="form-field">
+                    {{ form.display_name.label_tag }}
+                    {{ form.display_name }}
+                    {% if form.display_name.errors %}
+                        <div class="alert">{{ form.display_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="alert">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.affiliation.label_tag }}
+                    {{ form.affiliation }}
+                    {% if form.affiliation.errors %}
+                        <div class="alert">{{ form.affiliation.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.prefix.label_tag }}
+                    {{ form.prefix }}
+                    {% if form.prefix.errors %}
+                        <div class="alert">{{ form.prefix.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
                     {{ form.username.label_tag }}
                     {{ form.username }}
                     {% if form.username.errors %}

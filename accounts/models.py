@@ -62,6 +62,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(AtlasUser, on_delete=models.CASCADE, related_name="profile")
     display_name = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
+    affiliation = models.CharField(max_length=255, blank=True)
     prefix = models.CharField(max_length=10, choices=PREFIX_CHOICES, blank=True)
 
     class Meta:
@@ -72,3 +73,28 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.display_name
+
+
+class AdminUser(models.Model):
+    name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    affiliation = models.CharField(max_length=255, blank=True)
+    is_admin = models.BooleanField(default=True)
+    is_super_admin = models.BooleanField(default=False)
+
+    def set_password(self, raw_password):
+        salt = bcrypt.gensalt(rounds=10, prefix=b"2a")
+        self.password = bcrypt.hashpw(raw_password.encode("utf-8"), salt).decode("utf-8")
+
+    def check_password(self, raw_password):
+        return bcrypt.checkpw(raw_password.encode("utf-8"), self.password.encode("utf-8"))
+
+    class Meta:
+        db_table = "atlas_admin_user"
+        managed = True
+        verbose_name = "Admin User"
+        verbose_name_plural = "Admin Users"
+
+    def __str__(self):
+        return self.name

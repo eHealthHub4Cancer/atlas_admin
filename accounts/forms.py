@@ -2,9 +2,28 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import AtlasUser, Permission
+from .models import AtlasUser, Permission, UserProfile
 
 class AtlasSignUpForm(forms.ModelForm):
+    display_name = forms.CharField(
+        label="Full name",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Full name"}),
+    )
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email address"}),
+    )
+    affiliation = forms.CharField(
+        label="Affiliation",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Affiliation"}),
+    )
+    prefix = forms.ChoiceField(
+        label="Prefix",
+        required=False,
+        choices=UserProfile.PREFIX_CHOICES,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
     password1 = forms.CharField(
         label='Password',
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}),
@@ -36,6 +55,12 @@ class AtlasSignUpForm(forms.ModelForm):
             raise ValidationError('A user with that username already exists.')
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if email and UserProfile.objects.filter(email=email).exists():
+            raise ValidationError("A user with that email already exists.")
+        return email
+
     def clean_password1(self):
         """Validate password strength"""
         password1 = self.cleaned_data.get('password1')
@@ -61,7 +86,25 @@ class AtlasSignUpForm(forms.ModelForm):
         user.set_password(self.cleaned_data['password1'])
         if commit:
             user.save()
+            UserProfile.objects.create(
+                user=user,
+                display_name=self.cleaned_data["display_name"],
+                email=self.cleaned_data["email"],
+                affiliation=self.cleaned_data.get("affiliation", ""),
+                prefix=self.cleaned_data.get("prefix", ""),
+            )
         return user
+
+
+class AdminLoginForm(forms.Form):
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Admin email"}),
+    )
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Password"}),
+    )
 
 
 class PasswordChangeForm(forms.Form):

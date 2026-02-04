@@ -56,29 +56,27 @@
                     </svg>
                     User Details
                 </button>
-                <button class="nav-link" type="button" data-section-target="assign">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 5v14"></path>
-                        <path d="M5 12h14"></path>
-                    </svg>
-                    Add Role to User
-                </button>
-                <button class="nav-link" type="button" data-section-target="deactivate">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M4.9 4.9l14.2 14.2"></path>
-                    </svg>
-                    Deactivate User
-                </button>
+                {% if is_super_admin %}
+                    <button class="nav-link" type="button" data-section-target="assign">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 5v14"></path>
+                            <path d="M5 12h14"></path>
+                        </svg>
+                        Admin Users
+                    </button>
+                {% endif %}
             </nav>
         </aside>
 
         <div class="dashboard__main">
             <header class="dashboard__header glass-strong">
                 <div class="header-info">
-                    <span class="pill">Superuser</span>
+                    <span class="pill">
+                        {% if is_super_admin %}Superadmin{% else %}Admin{% endif %}
+                    </span>
                     <h1 class="section-title">Admin Dashboard</h1>
                     <span class="muted">Manage roles, users, and permissions.</span>
+                    <span class="muted">Signed in as {{ admin_user.name }} ({{ admin_user.email }})</span>
                 </div>
                 <div class="header-actions">
                     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" aria-pressed="false">
@@ -98,13 +96,13 @@
                         <p class="muted">High-level overview of your access system.</p>
                         <div class="card-grid">
                             <div class="card glass stat-card">
-                                <span class="muted">Total Users</span>
-                                <strong>{{ users|length }}</strong>
+                                <span class="muted">Atlas Users</span>
+                                <strong>{{ atlas_users|length }}</strong>
                                 <div class="progress-bar"><span style="width: 78%"></span></div>
                             </div>
                             <div class="card glass stat-card">
-                                <span class="muted">Roles</span>
-                                <strong>{{ roles|length }}</strong>
+                                <span class="muted">Admin Users</span>
+                                <strong>{{ admin_users|length }}</strong>
                                 <div class="progress-bar"><span style="width: 55%"></span></div>
                             </div>
                             <div class="card glass stat-card">
@@ -113,8 +111,8 @@
                                 <div class="progress-bar"><span style="width: 65%"></span></div>
                             </div>
                             <div class="card glass stat-card">
-                                <span class="muted">Active Users</span>
-                                <strong>{{ active_users }}</strong>
+                                <span class="muted">Admin Level</span>
+                                <strong>{% if is_super_admin %}Superadmin{% else %}Admin{% endif %}</strong>
                                 <div class="progress-bar"><span style="width: 82%"></span></div>
                             </div>
                         </div>
@@ -124,29 +122,33 @@
                 <section class="dashboard-section" id="roles">
                     <div class="card glass">
                         <h2 class="section-title">All Roles</h2>
-                        <p class="muted">Manage role definitions and their permissions.</p>
+                        <p class="muted">Manage role definitions sourced from WebAPI sec_role.</p>
+                        <form method="post" class="auth-form mb-4">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="create_role">
+                            <div class="form-field">
+                                <label for="role_name">New role name</label>
+                                <input id="role_name" name="role_name" type="text" placeholder="Role name">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Add role</button>
+                        </form>
                         <div class="table-wrapper">
                             <table class="table" data-sort-table>
                                 <thead>
                                     <tr>
                                         <th data-sort-key="role">Role</th>
-                                        <th data-sort-key="permissions">Permissions</th>
-                                        <th>Actions</th>
+                                        <th data-sort-key="permissions">WebAPI ID</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for role in roles %}
+                                    {% for role in permissions %}
                                         <tr>
                                             <td data-cell="role">{{ role.name }}</td>
-                                            <td data-cell="permissions">{{ role.permissions.count }}</td>
-                                            <td>
-                                                <button class="btn btn-ghost" type="button">Edit</button>
-                                                <button class="btn btn-ghost" type="button" data-modal-open="roleModal">Delete</button>
-                                            </td>
+                                            <td data-cell="permissions">{{ role.external_id|default:"-" }}</td>
                                         </tr>
                                     {% empty %}
                                         <tr>
-                                            <td colspan="3" class="muted">No roles available.</td>
+                                            <td colspan="2" class="muted">No roles available.</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -157,130 +159,130 @@
 
                 <section class="dashboard-section" id="users">
                     <div class="card glass">
-                        <h2 class="section-title">All Users</h2>
-                        <p class="muted">Search, filter, and manage user access.</p>
-                        <div class="table-wrapper">
-                            <table class="table" data-sort-table>
-                                <thead>
-                                    <tr>
-                                        <th data-sort-key="username">Username</th>
-                                        <th data-sort-key="role">Role</th>
-                                        <th data-sort-key="active">Active</th>
-                                        <th data-sort-key="joined">Joined</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user_item in users %}
-                                        <tr>
-                                            <td data-cell="username">{{ user_item.username }}</td>
-                                            <td data-cell="role">{{ user_item.get_role_display }}</td>
-                                            <td data-cell="active">{% if user_item.is_active %}Yes{% else %}No{% endif %}</td>
-                                            <td data-cell="joined">{{ user_item.date_joined|date:"M d, Y" }}</td>
-                                            <td>
-                                                <button class="btn btn-ghost" type="button">View</button>
-                                                <button class="btn btn-ghost" type="button">Edit</button>
-                                                <button class="btn btn-ghost" type="button" data-modal-open="deactivateModal">Deactivate</button>
-                                            </td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="5" class="muted">No users found.</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <h2 class="section-title">Atlas Users</h2>
+                        <p class="muted">Review profiles, assign roles, and deactivate accounts.</p>
+                        <div class="stacked-list">
+                            {% for item in user_forms %}
+                                <div class="glass card mb-3 p-3">
+                                    <div class="d-flex flex-wrap justify-content-between gap-3">
+                                        <div>
+                                            <strong>{{ item.user.username }}</strong>
+                                            <span class="tag ms-2">Atlas User</span>
+                                            <div class="muted">
+                                                Email: {{ item.profile.email|default:"Not provided" }} |
+                                                Affiliation: {{ item.profile.affiliation|default:"Not provided" }}
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="status-badge {% if item.user.is_disabled %}status-badge--inactive{% else %}status-badge--active{% endif %}">
+                                                {% if item.user.is_disabled %}Disabled{% else %}Active{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <form method="post" class="auth-form mt-3">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_user">
+                                        {{ item.form.user_id }}
+                                        <div class="form-field">
+                                            <label>Assign roles</label>
+                                            {{ item.form.permissions }}
+                                        </div>
+                                        <div class="form-field">
+                                            <label>
+                                                {{ item.form.is_disabled }}
+                                                Deactivate user
+                                            </label>
+                                        </div>
+                                        <button class="btn btn-primary" type="submit">Save updates</button>
+                                    </form>
+                                </div>
+                            {% empty %}
+                                <p class="muted">No Atlas users found.</p>
+                            {% endfor %}
                         </div>
                     </div>
                 </section>
 
                 <section class="dashboard-section" id="details">
                     <div class="card glass">
-                        <h2 class="section-title">User Details</h2>
-                        <p class="muted">Select a user to review assigned roles and permissions.</p>
+                        <h2 class="section-title">Bulk Grant Roles</h2>
+                        <p class="muted">Assign roles to multiple Atlas users in one action.</p>
                         <form method="post" class="auth-form">
                             {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_grant">
                             <div class="form-field">
-                                <label for="detail_user">Select user</label>
-                                <select id="detail_user" name="detail_user">
-                                    {% for user_item in users %}
-                                        <option value="{{ user_item.id }}">{{ user_item.username }}</option>
-                                    {% endfor %}
-                                </select>
+                                {{ bulk_form.user_ids.label_tag }}
+                                {{ bulk_form.user_ids }}
                             </div>
-                            <button class="btn btn-primary" type="submit">Load details</button>
+                            <div class="form-field">
+                                {{ bulk_form.permissions.label_tag }}
+                                {{ bulk_form.permissions }}
+                            </div>
+                            <button class="btn btn-primary" type="submit">Grant roles</button>
                         </form>
                     </div>
                 </section>
 
+                {% if is_super_admin %}
                 <section class="dashboard-section" id="assign">
                     <div class="card glass">
-                        <h2 class="section-title">Add Role to User</h2>
-                        <p class="muted">Assign one or more roles to a user.</p>
-                        <form method="post" class="auth-form">
+                        <h2 class="section-title">Admin Users</h2>
+                        <p class="muted">Superadmins can view and promote admin accounts.</p>
+                        <div class="table-wrapper">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Affiliation</th>
+                                        <th>Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for admin in admin_users %}
+                                        <tr>
+                                            <td>{{ admin.name }}</td>
+                                            <td>{{ admin.email }}</td>
+                                            <td>{{ admin.affiliation|default:"-" }}</td>
+                                            <td>
+                                                {% if admin.is_super_admin %}
+                                                    <span class="tag">Superadmin</span>
+                                                {% else %}
+                                                    <span class="tag">Admin</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="muted">No admin users found.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <form method="post" class="auth-form mt-4">
                             {% csrf_token %}
+                            <input type="hidden" name="action" value="promote_admin">
                             <div class="form-field">
-                                <label for="assign_user">Select user</label>
-                                <select id="assign_user" name="assign_user">
-                                    {% for user_item in users %}
+                                <label for="atlas_user_id">Promote Atlas user</label>
+                                <select id="atlas_user_id" name="atlas_user_id">
+                                    {% for user_item in atlas_users %}
                                         <option value="{{ user_item.id }}">{{ user_item.username }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="form-field">
-                                <label for="assign_roles">Select roles</label>
-                                <select id="assign_roles" name="assign_roles" multiple>
-                                    {% for role in roles %}
-                                        <option value="{{ role.id }}">{{ role.name }}</option>
-                                    {% endfor %}
-                                </select>
+                                <label>
+                                    <input type="checkbox" name="make_super_admin">
+                                    Grant superadmin access
+                                </label>
                             </div>
-                            <button class="btn btn-primary" type="submit">Assign roles</button>
+                            <button class="btn btn-primary" type="submit">Promote to admin</button>
                         </form>
                     </div>
                 </section>
-
-                <section class="dashboard-section" id="deactivate">
-                    <div class="card glass">
-                        <h2 class="section-title">Deactivate User</h2>
-                        <p class="muted">Quickly disable an account and revoke access.</p>
-                        <form method="post" class="auth-form">
-                            {% csrf_token %}
-                            <div class="form-field">
-                                <label for="deactivate_user">Select user</label>
-                                <select id="deactivate_user" name="deactivate_user">
-                                    {% for user_item in users %}
-                                        <option value="{{ user_item.id }}">{{ user_item.username }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <button class="btn btn-primary" type="submit" data-modal-open="deactivateModal">Deactivate</button>
-                        </form>
-                    </div>
-                </section>
+                {% endif %}
             </main>
-        </div>
-    </div>
-
-    <div class="modal" id="roleModal" role="dialog" aria-modal="true">
-        <div class="modal__panel glass">
-            <h3 class="section-title">Delete role?</h3>
-            <p class="muted">This action cannot be undone.</p>
-            <div class="modal__actions">
-                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
-                <button class="btn btn-primary" type="button">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="deactivateModal" role="dialog" aria-modal="true">
-        <div class="modal__panel glass">
-            <h3 class="section-title">Deactivate user?</h3>
-            <p class="muted">The selected user will lose access immediately.</p>
-            <div class="modal__actions">
-                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
-                <button class="btn btn-primary" type="button">Confirm</button>
-            </div>
         </div>
     </div>
 

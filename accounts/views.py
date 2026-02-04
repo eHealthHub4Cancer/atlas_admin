@@ -10,8 +10,9 @@ from .forms import (
     PasswordChangeForm,
     AdminUserPermissionsForm,
     BulkGrantPermissionsForm,
+    AdminLoginForm,
 )
-from .models import AtlasUser, Permission
+from .models import AtlasUser, Permission, AdminUser
 
 
 logger = logging.getLogger(__name__)
@@ -298,6 +299,16 @@ def get_current_user(request):
         return None
 
 
+def get_current_admin(request):
+    admin_user_id = request.session.get("admin_user_id")
+    if not admin_user_id:
+        return None
+    try:
+        return AdminUser.objects.get(id=admin_user_id)
+    except AdminUser.DoesNotExist:
+        return None
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Views
 # ──────────────────────────────────────────────────────────────────────────────
@@ -354,6 +365,33 @@ def login_view(request):
     return render(request, "accounts/login.html")
 
 
+def admin_login(request):
+    if request.method == "POST":
+        form = AdminLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"].lower()
+            password = form.cleaned_data["password"]
+            try:
+                admin_user = AdminUser.objects.get(email__iexact=email)
+            except AdminUser.DoesNotExist:
+                admin_user = None
+
+            if not admin_user or not admin_user.check_password(password):
+                messages.error(request, "Invalid admin email or password.")
+            elif not (admin_user.is_admin or admin_user.is_super_admin):
+                messages.error(request, "You are not authorized for admin access.")
+            else:
+                request.session["admin_user_id"] = admin_user.id
+                request.session["admin_email"] = admin_user.email
+                request.session["is_super_admin"] = admin_user.is_super_admin
+                messages.success(request, "Welcome back to the admin console.")
+                return redirect("admin_dashboard")
+    else:
+        form = AdminLoginForm()
+
+    return render(request, "accounts/admin_login.html", {"form": form})
+
+
 def logout_view(request):
     request.session.flush()
     messages.success(request, "You have been logged out successfully.")
@@ -376,10 +414,11 @@ def account_view(request):
         form = PasswordChangeForm(user)
 
     permissions = user.permissions.order_by("name")
+    profile = getattr(user, "profile", None)
     return render(
         request,
         "accounts/account.html",
-        {"user_profile": user, "permissions": permissions, "form": form},
+        {"user_profile": user, "profile": profile, "permissions": permissions, "form": form},
     )
 
 
@@ -399,12 +438,14 @@ def user_dashboard(request):
         form = PasswordChangeForm(user)
 
     permissions = user.permissions.order_by("name")
+    profile = getattr(user, "profile", None)
     return render(
         request,
         "accounts/user_dashboard.html",
         {
             "user": user,
             "user_profile": user,
+            "profile": profile,
             "permissions": permissions,
             "form": form,
             "activity_logs": [],
@@ -413,13 +454,17 @@ def user_dashboard(request):
 
 
 def admin_dashboard(request):
-    user = get_current_user(request)
-    if not user:
+    admin_user = get_current_admin(request)
+    if not admin_user:
         messages.error(request, "Please log in to access the admin dashboard.")
-        return redirect("login")
+        return redirect("admin_login")
+
+    is_super_admin = admin_user.is_super_admin
 
     permissions = sync_permissions_from_webapi()
-    users = AtlasUser.objects.prefetch_related("permissions").order_by("username")
+    atlas_users = AtlasUser.objects.select_related("profile").prefetch_related("permissions").order_by("username")
+    admin_users = AdminUser.objects.order_by("name")
+    users = atlas_users
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -474,13 +519,63 @@ def admin_dashboard(request):
                 messages.success(request, "Granted permissions to selected users.")
                 return redirect("admin_dashboard")
 
+        elif action == "create_role":
+            role_name = (request.POST.get("role_name") or "").strip()
+            if role_name:
+                try:
+                    with transaction.atomic(using=WEBAPI_DB_ALIAS):
+                        with webapi_connection().cursor() as cursor:
+                            ensure_webapi_role(cursor, role_name)
+                    sync_permissions_from_webapi()
+                    messages.success(request, f"Role '{role_name}' created.")
+                except Exception as e:
+                    logger.exception("WebAPI role creation failed")
+                    messages.error(request, f"Role creation failed: {type(e).__name__}: {e}")
+            else:
+                messages.error(request, "Role name cannot be blank.")
+            return redirect("admin_dashboard")
+
+        elif action == "promote_admin" and is_super_admin:
+            atlas_user_id = request.POST.get("atlas_user_id")
+            make_super_admin = bool(request.POST.get("make_super_admin"))
+            if atlas_user_id:
+                target_user = AtlasUser.objects.filter(id=atlas_user_id).select_related("profile").first()
+                if not target_user:
+                    messages.error(request, "Selected user not found.")
+                else:
+                    profile = getattr(target_user, "profile", None)
+                    if not profile or not profile.email:
+                        messages.error(request, "Selected user must have a profile email before promotion.")
+                    else:
+                        admin_user, created = AdminUser.objects.get_or_create(
+                            email=profile.email,
+                            defaults={
+                                "name": profile.display_name or target_user.username,
+                                "affiliation": getattr(profile, "affiliation", ""),
+                                "is_admin": True,
+                                "is_super_admin": make_super_admin,
+                                "password": target_user.password,
+                            },
+                        )
+                        if not created:
+                            admin_user.is_admin = True
+                            if make_super_admin:
+                                admin_user.is_super_admin = True
+                            admin_user.name = admin_user.name or profile.display_name or target_user.username
+                            admin_user.affiliation = admin_user.affiliation or getattr(profile, "affiliation", "")
+                            admin_user.save()
+                        messages.success(request, f"{target_user.username} can now access admin.")
+            return redirect("admin_dashboard")
+
     bulk_form = BulkGrantPermissionsForm(users_queryset=users, permissions_queryset=permissions)
     user_forms = []
     for target_user in users:
         initial_permissions = target_user.permissions.all()
+        profile = getattr(target_user, "profile", None)
         user_forms.append(
             {
                 "user": target_user,
+                "profile": profile,
                 "form": AdminUserPermissionsForm(
                     initial={
                         "user_id": target_user.id,
@@ -496,9 +591,13 @@ def admin_dashboard(request):
         request,
         "accounts/admin_dashboard.html",
         {
-            "user_profile": user,
+            "user_profile": admin_user,
+            "admin_user": admin_user,
+            "is_super_admin": is_super_admin,
             "permissions": permissions,
             "bulk_form": bulk_form,
             "user_forms": user_forms,
+            "atlas_users": atlas_users,
+            "admin_users": admin_users,
         },
     )
