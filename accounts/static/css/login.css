@@ -34,7 +34,7 @@
 }
 
 .auth-brand .logo {
-  width: clamp(90px, 14vw, 140px);
+  width: clamp(60px, 8vw, 70px);
   height: auto;
 }
 
