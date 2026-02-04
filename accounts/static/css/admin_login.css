@@ -1,39 +1,76 @@
+/* Admin Auth Theme Override */
 .admin-auth {
   --accent: #ef4444;
   --accent-strong: #fca5a5;
   --accent-hover: #f87171;
+  --accent-glow: rgba(239, 68, 68, 0.2);
   --focus-ring: 0 0 0 3px rgba(248, 113, 113, 0.35);
 }
 
-.admin-auth .pill {
-  background: rgba(248, 113, 113, 0.18);
-  color: #fecaca;
+[data-theme="light"].admin-auth,
+[data-theme="light"] .admin-auth {
+  --accent: #dc2626;
+  --accent-strong: #b91c1c;
+  --accent-hover: #ef4444;
+  --accent-glow: rgba(220, 38, 38, 0.15);
 }
 
+/* Admin pill styling */
+.admin-auth .pill,
+.admin-pill {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+[data-theme="light"] .admin-auth .pill,
+[data-theme="light"] .admin-pill {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* Admin button gradient */
 .admin-auth .btn-primary {
   background: linear-gradient(135deg, #ef4444, #f97316);
-  box-shadow: 0 12px 24px rgba(248, 113, 113, 0.35);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
 }
 
 .admin-auth .btn-primary:hover {
-  box-shadow: 0 16px 28px rgba(248, 113, 113, 0.45);
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.35);
 }
 
-.admin-auth .auth-header {
-  padding: 0.4rem 0;
+/* Admin icon in card */
+.admin-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--accent-strong);
 }
 
-.admin-auth .auth-header .header-inner {
-  max-width: 920px;
-  margin: 0 auto;
+.admin-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
-.admin-auth .auth-actions .tag {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.55rem;
+[data-theme="light"] .admin-icon {
+  background: rgba(239, 68, 68, 0.08);
 }
 
-.admin-auth .auth-actions .tag svg {
-  width: 14px;
-  height: 14px;
+/* Admin link color override */
+.admin-auth .link {
+  color: var(--accent-strong);
+}
+
+.admin-auth .link:hover {
+  color: #fecaca;
+}
+
+[data-theme="light"] .admin-auth .link:hover {
+  color: #991b1b;
 }
