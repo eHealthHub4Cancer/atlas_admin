@@ -9,11 +9,11 @@
 
 services:
   # ---------------------------------------------------------------------------
-  # Disable Local PostgreSQL
+  # Disable Local PostgreSQL (scale to 0 replicas)
   # ---------------------------------------------------------------------------
   db:
-    profiles:
-      - disabled
+    deploy:
+      replicas: 0
 
   # ---------------------------------------------------------------------------
   # Django Web Application - External DB Configuration
@@ -30,7 +30,11 @@ services:
       - DB_SSLMODE=${DB_SSLMODE:-prefer}
       - DB_SSLROOTCERT_PATH=${DB_SSLROOTCERT_PATH:-}
       - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-60}
+      - DB_SEARCH_PATH=${DB_SEARCH_PATH:-}
     depends_on:
+      db:
+        condition: service_started
+        required: false
       redis:
         condition: service_healthy
     volumes:
@@ -53,7 +57,11 @@ services:
       - DB_SSLMODE=${DB_SSLMODE:-prefer}
       - DB_SSLROOTCERT_PATH=${DB_SSLROOTCERT_PATH:-}
       - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-60}
+      - DB_SEARCH_PATH=${DB_SEARCH_PATH:-}
     depends_on:
+      db:
+        condition: service_started
+        required: false
       redis:
         condition: service_healthy
     volumes:
