@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Login - Atlas Config{% endblock %}
+
+{% block body_class %}auth-page{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <!-- Header -->
+        <div class="auth-header">
+            <a href="{% url 'admin_login' %}" class="auth-brand">
+                <i class="bi bi-shield-lock fs-2"></i>
+                <span>Atlas Config</span>
+            </a>
+        </div>
+
+        <!-- Card -->
+        <div class="card auth-card shadow-lg border-warning">
+            <div class="card-header bg-warning bg-opacity-10 border-bottom-0 text-center py-3">
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-shield-check me-1"></i>Administrator Access
+                </span>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <h1 class="h3 fw-bold">Admin Login</h1>
+                    <p class="text-muted">Sign in to the administration panel</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Admin Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                   id="id_email" name="email" placeholder="admin@example.com"
+                                   value="{{ form.email.value|default:'' }}" autofocus required>
+                        </div>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                   id="id_password" name="password" placeholder="Enter admin password" required>
+                            <button class="btn btn-outline-secondary" type="button" data-password-toggle="id_password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <a href="{% url 'forgot_password' %}" class="text-decoration-none small">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 mb-3">
+                        <i class="bi bi-shield-lock me-2"></i>Sign In as Admin
+                    </button>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="text-muted small mb-0">
+                        Looking for user login? <a href="{% url 'user_login' %}" class="text-decoration-none">User login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="auth-footer">
+            <p class="mb-0">
+                &copy; {% now "Y" %} <a href="https://ehealth4cancer.ie" class="text-decoration-none">ehealthhub for cancer</a>
+            </p>
+            <div class="social-links mt-2">
+                <a href="https://github.com/ehealthhub" target="_blank" class="text-muted me-2"><i class="bi bi-github"></i></a>
+                <a href="https://linkedin.com/company/ehealthhub" target="_blank" class="text-muted me-2"><i class="bi bi-linkedin"></i></a>
+                <a href="https://x.com/ehealthhub" target="_blank" class="text-muted"><i class="bi bi-twitter-x"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Password toggle functionality
+document.querySelectorAll('[data-password-toggle]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-password-toggle');
+        const input = document.getElementById(targetId);
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    });
+});
+</script>
+{% endblock %}

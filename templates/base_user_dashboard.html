@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}dashboard-page user-dashboard{% endblock %}
+
+{% block body %}
+<div class="dashboard-wrapper">
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
+        <div class="container-fluid">
+            <!-- Brand -->
+            <a class="navbar-brand fw-bold" href="{% url 'user_dashboard' %}">
+                <i class="bi bi-gear-wide-connected me-2"></i>Atlas Config
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Right Side -->
+            <div class="d-none d-lg-flex align-items-center ms-auto">
+                {% if user %}
+                <div class="dropdown">
+                    <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="avatar-circle bg-white text-primary me-2">
+                            {{ user.first_name.0|upper }}{{ user.last_name.0|upper }}
+                        </div>
+                        <span class="d-none d-xl-inline">{{ user.display_name }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li>
+                            <span class="dropdown-item-text">
+                                <strong>{{ user.display_name }}</strong><br>
+                                <small class="text-muted">@{{ user.username }}</small>
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'user_profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'user_roles' %}"><i class="bi bi-shield me-2"></i>My Roles</a></li>
+                        <li><a class="dropdown-item" href="{% url 'user_change_password' %}"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'user_logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="offcanvas-lg offcanvas-start sidebar" tabindex="-1" id="sidebarMenu">
+        <div class="offcanvas-header border-bottom d-lg-none">
+            <h5 class="offcanvas-title">Menu</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column p-0">
+            <nav class="sidebar-nav flex-grow-1">
+                <ul class="nav flex-column">
+                    <!-- Main Navigation -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}" href="{% url 'user_dashboard' %}">
+                            <i class="bi bi-house-door"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_roles' %}active{% endif %}" href="{% url 'user_roles' %}">
+                            <i class="bi bi-shield"></i>
+                            <span>My Roles</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}" href="{% url 'user_profile' %}">
+                            <i class="bi bi-person"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_change_password' %}active{% endif %}" href="{% url 'user_change_password' %}">
+                            <i class="bi bi-key"></i>
+                            <span>Change Password</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_support' %}active{% endif %}" href="{% url 'user_support' %}">
+                            <i class="bi bi-question-circle"></i>
+                            <span>Support</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer border-top p-3">
+                {% if user %}
+                <div class="d-flex align-items-center">
+                    <div class="avatar-circle bg-primary text-white me-2">
+                        {{ user.first_name.0|upper }}{{ user.last_name.0|upper }}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="fw-semibold text-truncate">{{ user.display_name }}</div>
+                        <small class="text-muted">@{{ user.username }}</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid py-4">
+            <!-- Page Header -->
+            {% block page_header %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">{% block page_title %}Dashboard{% endblock %}</h1>
+                    {% block breadcrumbs %}{% endblock %}
+                </div>
+                <div>
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </div>
+            {% endblock %}
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages-container mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {% elif message.tags == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+                    {% else %}
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        {% include "partials/dashboard_footer.html" %}
+    </main>
+</div>
+
+<!-- Toast Container for HTMX notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// HTMX event handling for toast notifications
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    // Check if response contains a toast message
+    const toastEl = evt.detail.elt.querySelector('.toast-message');
+    if (toastEl) {
+        showToast(toastEl.textContent, toastEl.classList.contains('success') ? 'success' :
+                 toastEl.classList.contains('warning') ? 'warning' : 'danger');
+        evt.detail.elt.innerHTML = '';
+    }
+});
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const icons = {
+        success: 'bi-check-circle-fill',
+        warning: 'bi-exclamation-circle-fill',
+        danger: 'bi-exclamation-triangle-fill',
+        info: 'bi-info-circle-fill'
+    };
+    const colors = {
+        success: 'text-success',
+        warning: 'text-warning',
+        danger: 'text-danger',
+        info: 'text-info'
+    };
+
+    const toastHtml = `
+        <div class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icons[type]} ${colors[type]} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-dark me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = toastHtml;
+    const toastEl = wrapper.firstElementChild;
+    container.appendChild(toastEl);
+
+    const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 4000 });
+    toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
+</script>
+{% endblock %}

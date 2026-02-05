@@ -2,6 +2,7 @@
 Atlas Config - Celery Tasks
 
 Asynchronous tasks for email notifications and background processing.
+Supports both User and AtlasAdmin models for notifications.
 """
 
 import logging
@@ -70,6 +71,7 @@ def send_welcome_email(user_id):
         context = {
             'user_name': user.first_name,
             'user_email': user.email,
+            'username': user.username,
             'site_url': settings.SITE_URL,
             'login_url': f"{settings.SITE_URL}/login/",
             'site_name': 'Atlas Config',
@@ -89,130 +91,185 @@ def send_welcome_email(user_id):
 
 
 @shared_task
-def send_password_reset_email(user_id, reset_token):
+def send_password_reset_email(account_id, reset_token, account_type='user'):
     """
     Send password reset email with secure link.
+
+    Args:
+        account_id: ID of the User or AtlasAdmin
+        reset_token: The reset token string
+        account_type: Either 'user' or 'admin'
     """
-    from accounts.models import User
+    from accounts.models import User, AtlasAdmin
 
     try:
-        user = User.objects.get(id=user_id)
+        if account_type == 'admin':
+            account = AtlasAdmin.objects.get(id=account_id)
+            login_url = f"{settings.SITE_URL}/admin-login/"
+        else:
+            account = User.objects.get(id=account_id)
+            login_url = f"{settings.SITE_URL}/login/"
 
         reset_url = f"{settings.SITE_URL}/reset-password/{reset_token}/"
 
         context = {
-            'user_name': user.first_name,
-            'user_email': user.email,
+            'user_name': account.first_name,
+            'user_email': account.email,
             'reset_url': reset_url,
+            'login_url': login_url,
             'site_url': settings.SITE_URL,
             'site_name': 'Atlas Config',
             'expiry_hours': getattr(settings, 'PASSWORD_RESET_TIMEOUT_HOURS', 24),
+            'is_admin': account_type == 'admin',
         }
 
         send_email_task.delay(
             subject='Reset Your Atlas Config Password',
             template_name='password_reset',
             context=context,
-            recipient_email=user.email
+            recipient_email=account.email
         )
 
-        logger.info(f"Password reset email queued for {user.email}")
+        logger.info(f"Password reset email queued for {account.email}")
 
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found for password reset email")
+    except (User.DoesNotExist, AtlasAdmin.DoesNotExist):
+        logger.error(f"{account_type.capitalize()} {account_id} not found for password reset email")
 
 
 @shared_task
-def send_promotion_email(user_id, new_role):
-    """
-    Send notification email when user is promoted to admin.
-    """
-    from accounts.models import User
-
-    try:
-        user = User.objects.get(id=user_id)
-
-        role_display = 'Administrator' if new_role == User.ROLE_ADMIN else 'Super Administrator'
-
-        context = {
-            'user_name': user.first_name,
-            'user_email': user.email,
-            'new_role': role_display,
-            'site_url': settings.SITE_URL,
-            'dashboard_url': f"{settings.SITE_URL}/dashboard/",
-            'admin_url': f"{settings.SITE_URL}/dashboard/admin/",
-            'site_name': 'Atlas Config',
-        }
-
-        send_email_task.delay(
-            subject=f'You are now an {role_display} - Atlas Config',
-            template_name='promotion',
-            context=context,
-            recipient_email=user.email
-        )
-
-        logger.info(f"Promotion email queued for {user.email} (new role: {new_role})")
-
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found for promotion email")
-
-
-@shared_task
-def send_demotion_email(user_id):
-    """
-    Send notification email when admin is demoted to user.
-    """
-    from accounts.models import User
-
-    try:
-        user = User.objects.get(id=user_id)
-
-        context = {
-            'user_name': user.first_name,
-            'user_email': user.email,
-            'site_url': settings.SITE_URL,
-            'dashboard_url': f"{settings.SITE_URL}/dashboard/",
-            'site_name': 'Atlas Config',
-        }
-
-        send_email_task.delay(
-            subject='Your Admin Access Has Been Changed - Atlas Config',
-            template_name='demotion',
-            context=context,
-            recipient_email=user.email
-        )
-
-        logger.info(f"Demotion email queued for {user.email}")
-
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found for demotion email")
-
-
-@shared_task
-def send_password_changed_email(user_id):
+def send_password_changed_email(account_id, account_type='user'):
     """
     Send confirmation email when password is changed.
+
+    Args:
+        account_id: ID of the User or AtlasAdmin
+        account_type: Either 'user' or 'admin'
     """
-    from accounts.models import User
+    from accounts.models import User, AtlasAdmin
 
     try:
-        user = User.objects.get(id=user_id)
+        if account_type == 'admin':
+            account = AtlasAdmin.objects.get(id=account_id)
+            login_url = f"{settings.SITE_URL}/admin-login/"
+        else:
+            account = User.objects.get(id=account_id)
+            login_url = f"{settings.SITE_URL}/login/"
 
         context = {
-            'user_name': user.first_name,
-            'user_email': user.email,
+            'user_name': account.first_name,
+            'user_email': account.email,
+            'login_url': login_url,
             'site_url': settings.SITE_URL,
             'site_name': 'Atlas Config',
+            'is_admin': account_type == 'admin',
         }
 
         send_email_task.delay(
             subject='Your Password Has Been Changed - Atlas Config',
             template_name='password_changed',
             context=context,
+            recipient_email=account.email
+        )
+
+        logger.info(f"Password changed email queued for {account.email}")
+
+    except (User.DoesNotExist, AtlasAdmin.DoesNotExist):
+        logger.error(f"{account_type.capitalize()} {account_id} not found for password changed email")
+
+
+@shared_task
+def send_promotion_email(admin_id, new_role):
+    """
+    Send notification email when admin role is changed.
+    """
+    from accounts.models import AtlasAdmin
+
+    try:
+        admin = AtlasAdmin.objects.get(id=admin_id)
+
+        role_display = admin.role_display
+
+        context = {
+            'user_name': admin.first_name,
+            'user_email': admin.email,
+            'new_role': role_display,
+            'site_url': settings.SITE_URL,
+            'dashboard_url': f"{settings.SITE_URL}/admin/",
+            'site_name': 'Atlas Config',
+        }
+
+        send_email_task.delay(
+            subject=f'Your Role Has Been Updated - Atlas Config',
+            template_name='promotion',
+            context=context,
+            recipient_email=admin.email
+        )
+
+        logger.info(f"Role change email queued for {admin.email} (new role: {new_role})")
+
+    except AtlasAdmin.DoesNotExist:
+        logger.error(f"Admin {admin_id} not found for promotion email")
+
+
+@shared_task
+def send_demotion_email(admin_id):
+    """
+    Send notification email when admin role is downgraded.
+    """
+    from accounts.models import AtlasAdmin
+
+    try:
+        admin = AtlasAdmin.objects.get(id=admin_id)
+
+        context = {
+            'user_name': admin.first_name,
+            'user_email': admin.email,
+            'site_url': settings.SITE_URL,
+            'dashboard_url': f"{settings.SITE_URL}/admin/",
+            'site_name': 'Atlas Config',
+        }
+
+        send_email_task.delay(
+            subject='Your Admin Role Has Been Changed - Atlas Config',
+            template_name='demotion',
+            context=context,
+            recipient_email=admin.email
+        )
+
+        logger.info(f"Demotion email queued for {admin.email}")
+
+    except AtlasAdmin.DoesNotExist:
+        logger.error(f"Admin {admin_id} not found for demotion email")
+
+
+@shared_task
+def send_role_granted_email(user_id, role_name):
+    """
+    Send notification email when a role is granted to a user.
+    """
+    from accounts.models import User
+
+    try:
+        user = User.objects.get(id=user_id)
+
+        context = {
+            'user_name': user.first_name,
+            'user_email': user.email,
+            'role_name': role_name,
+            'site_url': settings.SITE_URL,
+            'dashboard_url': f"{settings.SITE_URL}/dashboard/",
+            'roles_url': f"{settings.SITE_URL}/dashboard/roles/",
+            'site_name': 'Atlas Config',
+        }
+
+        send_email_task.delay(
+            subject=f'New Role Granted: {role_name} - Atlas Config',
+            template_name='role_granted',
+            context=context,
             recipient_email=user.email
         )
 
-        logger.info(f"Password changed email queued for {user.email}")
+        logger.info(f"Role granted email queued for {user.email} (role: {role_name})")
 
     except User.DoesNotExist:
-        logger.error(f"User {user_id} not found for password changed email")
+        logger.error(f"User {user_id} not found for role granted email")
