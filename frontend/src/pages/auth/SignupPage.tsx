@@ -73,7 +73,13 @@ export const SignupPage: React.FC = () => {
     }
 
     try {
-      const result = await authApi.signup(formData);
+      const result = await authApi.signup({
+        ...formData,
+        username: formData.username.trim(),
+        display_name: formData.display_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        affiliation: formData.affiliation.trim(),
+      });
       if (result.success) {
         toast.success('Account created!', 'Please sign in with your credentials.');
         navigate('/login');
@@ -98,6 +104,7 @@ export const SignupPage: React.FC = () => {
     <AuthLayout
       title="Create your account"
       subtitle="Join Atlas Research Platform"
+      maxWidthClassName="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">

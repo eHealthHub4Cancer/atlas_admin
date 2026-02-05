@@ -104,13 +104,20 @@ def login_api(request):
     if not serializer.is_valid():
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    username = serializer.validated_data['username']
+    username = serializer.validated_data['username'].strip()
     password = serializer.validated_data['password']
 
     try:
         user = AtlasUser.objects.get(username__iexact=username)
     except AtlasUser.DoesNotExist:
-        return Response({'message': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        if "@" in username:
+            try:
+                profile = UserProfile.objects.select_related("user").get(email__iexact=username)
+                user = profile.user
+            except UserProfile.DoesNotExist:
+                return Response({'message': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response({'message': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
     if not user.check_password(password):
         return Response({'message': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -133,7 +140,7 @@ def admin_login_api(request):
     if not serializer.is_valid():
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    email = serializer.validated_data['email']
+    email = serializer.validated_data['email'].strip().lower()
     password = serializer.validated_data['password']
 
     try:

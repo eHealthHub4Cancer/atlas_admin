@@ -45,10 +45,9 @@ export const Select: React.FC<SelectProps> = ({
             className={cn(
               'relative w-full cursor-pointer rounded-xl py-2.5 pl-4 pr-10 text-left text-sm',
               'bg-white dark:bg-dark-elevated',
-              'border border-light-border dark:border-dark-border',
-              'focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500',
-              'transition-all duration-200',
-              error && 'border-red-500 focus:ring-red-500/20',
+              'focus:outline-none focus:ring-2 focus:ring-brand-500/20',
+              'transition-all duration-200 shadow-sm',
+              error && 'input-error',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -69,7 +68,6 @@ export const Select: React.FC<SelectProps> = ({
               className={cn(
                 'absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl py-1',
                 'bg-white dark:bg-dark-card',
-                'border border-light-border dark:border-dark-border',
                 'shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
                 'text-sm'
               )}

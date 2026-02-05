@@ -101,6 +101,11 @@ export interface LoginFormData {
   password: string;
 }
 
+export interface AdminLoginFormData {
+  email: string;
+  password: string;
+}
+
 export interface SignupFormData {
   username: string;
   display_name: string;
