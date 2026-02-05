@@ -1,0 +1,31 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Congratulations! You're Now an {{ new_role }} - Atlas Config{% endblock %}
+{% block header_subtitle %}Role Update{% endblock %}
+
+{% block content %}
+<h2>Congratulations, {{ user_name }}!</h2>
+
+<p>Your role on Atlas Config has been upgraded. You are now an <strong>{{ new_role }}</strong>.</p>
+
+<p>With your new role, you have access to additional administrative features including:</p>
+
+<ul style="color: #555555; padding-left: 20px;">
+    <li>User management dashboard</li>
+    <li>View and manage user accounts</li>
+    <li>Access to audit logs</li>
+    <li>Administrative reports</li>
+</ul>
+
+<p style="text-align: center;">
+    <a href="{{ admin_url }}" class="btn">Go to Admin Dashboard</a>
+</p>
+
+<div class="info-box">
+    <p>With great power comes great responsibility. Please use your administrative privileges responsibly and in accordance with our policies.</p>
+</div>
+
+<p>If you have any questions about your new responsibilities, please contact our support team.</p>
+
+<p>Best regards,<br>The Atlas Config Team</p>
+{% endblock %}

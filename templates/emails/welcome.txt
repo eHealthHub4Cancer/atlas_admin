@@ -1,0 +1,23 @@
+Welcome to Atlas Config
+=======================
+
+Hello {{ user_name }},
+
+Thank you for registering with Atlas Config. Your account has been successfully created.
+
+You can now log in to access your dashboard:
+{{ login_url }}
+
+Your account email: {{ user_email }}
+
+If you have any questions or need assistance, contact our support team:
+- akwuru.david@ul.ie
+- akintomide.jeremiah@ul.ie
+- ehealth@ul.ie
+
+Best regards,
+The Atlas Config Team
+
+--
+ehealthhub4cancer
+https://ehealth4cancer.ie

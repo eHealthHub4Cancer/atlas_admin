@@ -2,7 +2,14 @@
 __pycache__/
 *.py[codz]
 *$py.class
-*migrations/
+# Keep migrations in version control but ignore __pycache__
+**/migrations/__pycache__/
+
+# Static files directory (generated)
+staticfiles/
+
+# Media uploads
+media/
 # C extensions
 *.so
 

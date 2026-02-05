@@ -1,0 +1,246 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        {% if target_user.is_admin %}
+        <li class="breadcrumb-item"><a href="{% url 'admin_admins' %}">Administrators</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'admin_users' %}">Users</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active">{{ target_user.display_name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>User Details</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_super_admin %}
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text"
+                                   class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                   id="first_name"
+                                   name="first_name"
+                                   value="{{ form.first_name.value|default:'' }}">
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text"
+                                   class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                   id="last_name"
+                                   name="last_name"
+                                   value="{{ form.last_name.value|default:'' }}">
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email"
+                               class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                               id="email"
+                               name="email"
+                               value="{{ form.email.value|default:'' }}">
+                        {% if form.email.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="prefix" class="form-label">Title/Prefix</label>
+                            <select class="form-select" id="prefix" name="prefix">
+                                {% for value, label in form.fields.prefix.choices %}
+                                <option value="{{ value }}" {% if form.prefix.value == value %}selected{% endif %}>
+                                    {{ label|default:"None" }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="affiliation" class="form-label">Affiliation</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="affiliation"
+                                   name="affiliation"
+                                   value="{{ form.affiliation.value|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="is_active"
+                                   name="is_active"
+                                   {% if form.is_active.value %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">Account is active</label>
+                        </div>
+                        <div class="form-text">Deactivated accounts cannot log in.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Save Changes
+                        </button>
+                        {% if target_user.is_admin %}
+                        <a href="{% url 'admin_admins' %}" class="btn btn-outline-secondary">Back to List</a>
+                        {% else %}
+                        <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">Back to List</a>
+                        {% endif %}
+                    </div>
+                </form>
+                {% else %}
+                <!-- Read-only view for non-super-admins -->
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" style="width: 150px;">Name</td>
+                            <td>{{ target_user.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Email</td>
+                            <td>{{ target_user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Affiliation</td>
+                            <td>{{ target_user.affiliation|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Status</td>
+                            <td>
+                                {% if target_user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Created</td>
+                            <td>{{ target_user.created_at|date:"F d, Y H:i" }}</td>
+                        </tr>
+                        {% if target_user.last_login %}
+                        <tr>
+                            <td class="text-muted">Last Login</td>
+                            <td>{{ target_user.last_login|date:"F d, Y H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                {% if target_user.is_admin %}
+                <a href="{% url 'admin_admins' %}" class="btn btn-outline-secondary">Back to List</a>
+                {% else %}
+                <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">Back to List</a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-shield me-2"></i>Role & Access</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="avatar-circle {% if target_user.is_super_admin %}bg-danger{% elif target_user.is_admin %}bg-warning{% else %}bg-secondary{% endif %} text-white mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                    {{ target_user.first_name.0 }}{{ target_user.last_name.0 }}
+                </div>
+                <h5 class="mb-1">{{ target_user.display_name }}</h5>
+                <p class="text-muted mb-3">{{ target_user.email }}</p>
+                {% if target_user.is_super_admin %}
+                <span class="badge bg-danger fs-6">Super Admin</span>
+                {% elif target_user.is_admin %}
+                <span class="badge bg-warning text-dark fs-6">Admin</span>
+                {% else %}
+                <span class="badge bg-secondary fs-6">User</span>
+                {% endif %}
+
+                {% if user.is_super_admin and target_user.id != user.id %}
+                <hr class="my-4">
+                <div class="d-grid gap-2">
+                    {% if target_user.role == 'user' %}
+                    <button type="button"
+                            class="btn btn-success"
+                            data-bs-toggle="modal"
+                            data-bs-target="#changeRoleModal">
+                        <i class="bi bi-arrow-up-circle me-1"></i>Promote to Admin
+                    </button>
+                    {% else %}
+                    <button type="button"
+                            class="btn btn-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#changeRoleModal">
+                        <i class="bi bi-pencil me-1"></i>Change Role
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.is_super_admin and target_user.id != user.id %}
+<!-- Change Role Modal -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1" aria-labelledby="changeRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeRoleModalLabel">Change Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'admin_change_role' %}">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                <div class="modal-body">
+                    <p>Change role for <strong>{{ target_user.display_name }}</strong>?</p>
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">New Role</label>
+                        <select class="form-select" name="new_role" id="newRole">
+                            <option value="user" {% if target_user.role == 'user' %}selected{% endif %}>User</option>
+                            <option value="admin" {% if target_user.role == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="super_admin" {% if target_user.role == 'super_admin' %}selected{% endif %}>Super Admin</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Role changes take effect immediately.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

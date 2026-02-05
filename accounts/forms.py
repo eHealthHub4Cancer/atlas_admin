@@ -1,124 +1,217 @@
-# forms.py
+"""
+Atlas Config - Forms
+
+Forms for authentication, user management, and profile updates.
+"""
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import AtlasUser, Permission, UserProfile
+from .models import User
 
-class AtlasSignUpForm(forms.ModelForm):
-    display_name = forms.CharField(
-        label="Full name",
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Full name"}),
+
+class LoginForm(forms.Form):
+    """User login form."""
+
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'you@example.com',
+            'autofocus': True,
+        })
+    )
+    password = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your password',
+        })
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        email = cleaned_data.get('email')
+        password = cleaned_data.get('password')
+
+        if email and password:
+            try:
+                user = User.objects.get(email=email.lower())
+                if not user.is_active:
+                    raise ValidationError('This account has been deactivated.')
+                if not user.check_password(password):
+                    raise ValidationError('Invalid email or password.')
+                cleaned_data['user'] = user
+            except User.DoesNotExist:
+                raise ValidationError('Invalid email or password.')
+
+        return cleaned_data
+
+
+class SignupForm(forms.Form):
+    """User registration form."""
+
+    first_name = forms.CharField(
+        label='First Name',
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'John',
+        })
+    )
+    last_name = forms.CharField(
+        label='Last Name',
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Doe',
+        })
     )
     email = forms.EmailField(
-        label="Email",
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email address"}),
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'you@example.com',
+        })
     )
     affiliation = forms.CharField(
-        label="Affiliation",
+        label='Affiliation',
+        max_length=255,
         required=False,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Affiliation"}),
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'University / Organization',
+        })
     )
-    prefix = forms.ChoiceField(
-        label="Prefix",
-        required=False,
-        choices=UserProfile.PREFIX_CHOICES,
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
-    password1 = forms.CharField(
+    password = forms.CharField(
         label='Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}),
-        help_text='Your password must contain at least 8 characters.'
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'At least 8 characters',
+        })
     )
-    password2 = forms.CharField(
+    password_confirm = forms.CharField(
         label='Confirm Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}),
-        help_text='Enter the same password as before, for verification.'
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Repeat your password',
+        })
     )
-
-    class Meta:
-        model = AtlasUser
-        fields = ('username', 'role')
-        widgets = {
-            'username': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Username'
-            }),
-            'role': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-        }
-
-    def clean_username(self):
-        """Ensure username is unique"""
-        username = self.cleaned_data.get('username')
-        if AtlasUser.objects.filter(username=username).exists():
-            raise ValidationError('A user with that username already exists.')
-        return username
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if email and UserProfile.objects.filter(email=email).exists():
-            raise ValidationError("A user with that email already exists.")
+        email = self.cleaned_data.get('email')
+        if email:
+            email = email.lower()
+            if User.objects.filter(email=email).exists():
+                raise ValidationError('An account with this email already exists.')
         return email
 
-    def clean_password1(self):
-        """Validate password strength"""
-        password1 = self.cleaned_data.get('password1')
-        if password1:
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
             try:
-                validate_password(password1)
+                validate_password(password)
             except ValidationError as e:
                 raise ValidationError(e.messages)
-        return password1
+        return password
 
-    def clean_password2(self):
-        """Check that the two password entries match"""
-        password1 = self.cleaned_data.get('password1')
-        password2 = self.cleaned_data.get('password2')
-        
-        if password1 and password2 and password1 != password2:
-            raise ValidationError("The two password fields didn't match.")
-        return password2
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
 
-    def save(self, commit=True):
-        """Save the user with bcrypt-hashed password"""
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password1'])
-        if commit:
-            user.save()
-            UserProfile.objects.create(
-                user=user,
-                display_name=self.cleaned_data["display_name"],
-                email=self.cleaned_data["email"],
-                affiliation=self.cleaned_data.get("affiliation", ""),
-                prefix=self.cleaned_data.get("prefix", ""),
-            )
+        if password and password_confirm and password != password_confirm:
+            self.add_error('password_confirm', 'Passwords do not match.')
+
+        return cleaned_data
+
+    def save(self):
+        """Create and return a new user."""
+        user = User(
+            email=self.cleaned_data['email'].lower(),
+            first_name=self.cleaned_data['first_name'],
+            last_name=self.cleaned_data['last_name'],
+            affiliation=self.cleaned_data.get('affiliation', ''),
+            role=User.ROLE_USER,
+        )
+        user.set_password(self.cleaned_data['password'])
+        user.save()
         return user
 
 
-class AdminLoginForm(forms.Form):
+class ForgotPasswordForm(forms.Form):
+    """Password reset request form."""
+
     email = forms.EmailField(
-        label="Email",
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Admin email"}),
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'you@example.com',
+        })
     )
+
+
+class ResetPasswordForm(forms.Form):
+    """Password reset form (with token)."""
+
     password = forms.CharField(
-        label="Password",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Password"}),
+        label='New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter new password',
+        })
+    )
+    password_confirm = forms.CharField(
+        label='Confirm New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Repeat new password',
+        })
     )
 
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                raise ValidationError(e.messages)
+        return password
 
-class PasswordChangeForm(forms.Form):
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+
+        if password and password_confirm and password != password_confirm:
+            self.add_error('password_confirm', 'Passwords do not match.')
+
+        return cleaned_data
+
+
+class ChangePasswordForm(forms.Form):
+    """Change password form for authenticated users."""
+
     current_password = forms.CharField(
         label='Current Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Current password'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter current password',
+        })
     )
-    new_password1 = forms.CharField(
+    new_password = forms.CharField(
         label='New Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'New password'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter new password',
+        })
     )
-    new_password2 = forms.CharField(
+    new_password_confirm = forms.CharField(
         label='Confirm New Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Repeat new password',
+        })
     )
 
     def __init__(self, user, *args, **kwargs):
@@ -131,96 +224,131 @@ class PasswordChangeForm(forms.Form):
             raise ValidationError('Current password is incorrect.')
         return current_password
 
-    def clean_new_password1(self):
-        password1 = self.cleaned_data.get('new_password1')
-        if password1:
+    def clean_new_password(self):
+        password = self.cleaned_data.get('new_password')
+        if password:
             try:
-                validate_password(password1)
+                validate_password(password)
             except ValidationError as e:
                 raise ValidationError(e.messages)
-        return password1
+        return password
 
-    def clean_new_password2(self):
-        password1 = self.cleaned_data.get('new_password1')
-        password2 = self.cleaned_data.get('new_password2')
-        if password1 and password2 and password1 != password2:
-            raise ValidationError("The two password fields didn't match.")
-        return password2
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        new_password_confirm = cleaned_data.get('new_password_confirm')
 
-    def save(self, commit=True):
-        self.user.set_password(self.cleaned_data['new_password1'])
-        if commit:
-            self.user.save()
+        if new_password and new_password_confirm and new_password != new_password_confirm:
+            self.add_error('new_password_confirm', 'Passwords do not match.')
+
+        return cleaned_data
+
+    def save(self):
+        """Update the user's password."""
+        self.user.set_password(self.cleaned_data['new_password'])
+        self.user.save()
         return self.user
 
 
-class ProfileUpdateForm(forms.ModelForm):
-    display_name = forms.CharField(
-        label="Full name",
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Full name"}),
-    )
-    email = forms.EmailField(
-        label="Email",
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email address"}),
-    )
-    affiliation = forms.CharField(
-        label="Affiliation",
-        required=False,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Affiliation"}),
-    )
-    prefix = forms.ChoiceField(
-        label="Prefix",
-        required=False,
-        choices=UserProfile.PREFIX_CHOICES,
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
+class ProfileForm(forms.ModelForm):
+    """User profile update form."""
 
     class Meta:
-        model = UserProfile
-        fields = ("display_name", "email", "affiliation", "prefix")
+        model = User
+        fields = ['first_name', 'last_name', 'prefix', 'affiliation']
+        widgets = {
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'prefix': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'affiliation': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'University / Organization',
+            }),
+        }
+
+
+class UserEditForm(forms.ModelForm):
+    """Admin form for editing user details."""
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'prefix', 'affiliation', 'is_active']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'prefix': forms.Select(attrs={'class': 'form-select'}),
+            'affiliation': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
-        existing = UserProfile.objects.filter(email=email)
-        if self.instance and self.instance.pk:
-            existing = existing.exclude(pk=self.instance.pk)
-        if email and existing.exists():
-            raise ValidationError("A user with that email already exists.")
+        email = self.cleaned_data.get('email')
+        if email:
+            email = email.lower()
+            existing = User.objects.filter(email=email)
+            if self.instance and self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                raise ValidationError('A user with this email already exists.')
         return email
 
 
-class AdminUserPermissionsForm(forms.Form):
-    user_id = forms.IntegerField(widget=forms.HiddenInput)
-    is_disabled = forms.BooleanField(required=False)
-    permissions = forms.ModelMultipleChoiceField(
-        queryset=Permission.objects.none(),
-        required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"})
+class RoleChangeForm(forms.Form):
+    """Form for changing user roles (super_admin only)."""
+
+    user_id = forms.IntegerField(widget=forms.HiddenInput())
+    new_role = forms.ChoiceField(
+        choices=User.ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
-    def __init__(self, *args, **kwargs):
-        permissions_queryset = kwargs.pop('permissions_queryset', Permission.objects.none())
+    def __init__(self, *args, actor=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['permissions'].queryset = permissions_queryset
+        self.actor = actor
+        self.target_user = None
 
+    def clean_user_id(self):
+        user_id = self.cleaned_data.get('user_id')
+        try:
+            self.target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise ValidationError('User not found.')
+        return user_id
 
-class BulkGrantPermissionsForm(forms.Form):
-    user_ids = forms.ModelMultipleChoiceField(
-        queryset=AtlasUser.objects.none(),
-        required=True,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"}),
-        label="Atlas users",
-    )
-    permissions = forms.ModelMultipleChoiceField(
-        queryset=Permission.objects.none(),
-        required=True,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "checkbox-grid"}),
-        label="Roles",
-    )
+    def clean(self):
+        cleaned_data = super().clean()
+        new_role = cleaned_data.get('new_role')
 
-    def __init__(self, *args, **kwargs):
-        users_queryset = kwargs.pop('users_queryset', AtlasUser.objects.none())
-        permissions_queryset = kwargs.pop('permissions_queryset', Permission.objects.none())
-        super().__init__(*args, **kwargs)
-        self.fields['user_ids'].queryset = users_queryset
-        self.fields['permissions'].queryset = permissions_queryset
+        if self.target_user and new_role and self.actor:
+            if not self.actor.can_change_role(self.target_user, new_role):
+                if not self.actor.is_super_admin:
+                    raise ValidationError('Only Super Admins can change user roles.')
+                elif self.target_user.is_super_admin and new_role != User.ROLE_SUPER_ADMIN:
+                    # Check if this is the last super admin
+                    super_admin_count = User.objects.filter(
+                        role=User.ROLE_SUPER_ADMIN,
+                        is_active=True
+                    ).exclude(id=self.target_user.id).count()
+                    if super_admin_count == 0:
+                        raise ValidationError('Cannot demote the last Super Admin.')
+                else:
+                    raise ValidationError('You do not have permission to make this change.')
+
+        return cleaned_data
+
+    def save(self):
+        """Update the user's role."""
+        old_role = self.target_user.role
+        new_role = self.cleaned_data['new_role']
+
+        self.target_user.role = new_role
+        self.target_user.save()
+
+        return self.target_user, old_role, new_role

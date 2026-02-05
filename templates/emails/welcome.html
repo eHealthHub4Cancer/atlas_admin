@@ -1,0 +1,24 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Welcome to Atlas Config{% endblock %}
+{% block header_subtitle %}Welcome Aboard!{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ user_name }}!</h2>
+
+<p>Thank you for registering with Atlas Config. Your account has been successfully created.</p>
+
+<p>You can now log in to access your dashboard and explore the platform's features.</p>
+
+<p style="text-align: center;">
+    <a href="{{ login_url }}" class="btn">Log In to Your Account</a>
+</p>
+
+<div class="info-box">
+    <p><strong>Your account email:</strong> {{ user_email }}</p>
+</div>
+
+<p>If you have any questions or need assistance, don't hesitate to reach out to our support team.</p>
+
+<p>Best regards,<br>The Atlas Config Team</p>
+{% endblock %}

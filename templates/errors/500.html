@@ -1,0 +1,23 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Server Error - Atlas Config{% endblock %}
+{% block auth_subtitle %}500 Error{% endblock %}
+
+{% block auth_content %}
+<div class="text-center">
+    <div class="mb-4">
+        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+    </div>
+    <h4 class="mb-3">Something Went Wrong</h4>
+    <p class="text-muted mb-4">We're experiencing some technical difficulties. Please try again later.</p>
+    <a href="/" class="btn btn-primary">
+        <i class="bi bi-house me-2"></i>Go to Home
+    </a>
+</div>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="mb-0 small text-muted">
+    If the problem persists, contact support: <a href="mailto:ehealth@ul.ie">ehealth@ul.ie</a>
+</p>
+{% endblock %}

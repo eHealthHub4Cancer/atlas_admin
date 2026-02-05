@@ -1,0 +1,61 @@
+# =============================================================================
+# Atlas Config - Docker Compose Override for External PostgreSQL
+# =============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.external.yml up --build
+# =============================================================================
+# This file removes the local PostgreSQL container and configures
+# the application to connect to an external database.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Disable Local PostgreSQL
+  # ---------------------------------------------------------------------------
+  db:
+    profiles:
+      - disabled
+
+  # ---------------------------------------------------------------------------
+  # Django Web Application - External DB Configuration
+  # ---------------------------------------------------------------------------
+  web:
+    environment:
+      - DB_MODE=external
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=${DB_SSL:-false}
+      - DB_SSLMODE=${DB_SSLMODE:-prefer}
+      - DB_SSLROOTCERT_PATH=${DB_SSLROOTCERT_PATH:-}
+      - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-60}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - static_files:/app/staticfiles
+      # Mount SSL certificate if needed
+      - ${DB_SSLROOTCERT_HOST_PATH:-/dev/null}:${DB_SSLROOTCERT_PATH:-/run/secrets/db_root_ca.crt}:ro
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker - External DB Configuration
+  # ---------------------------------------------------------------------------
+  worker:
+    environment:
+      - DB_MODE=external
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=${DB_SSL:-false}
+      - DB_SSLMODE=${DB_SSLMODE:-prefer}
+      - DB_SSLROOTCERT_PATH=${DB_SSLROOTCERT_PATH:-}
+      - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-60}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Mount SSL certificate if needed
+      - ${DB_SSLROOTCERT_HOST_PATH:-/dev/null}:${DB_SSLROOTCERT_PATH:-/run/secrets/db_root_ca.crt}:ro

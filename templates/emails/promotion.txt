@@ -1,0 +1,31 @@
+Congratulations! You're Now an {{ new_role }}
+=============================================
+
+Hello {{ user_name }},
+
+Your role on Atlas Config has been upgraded. You are now an {{ new_role }}.
+
+With your new role, you have access to additional administrative features including:
+- User management dashboard
+- View and manage user accounts
+- Access to audit logs
+- Administrative reports
+
+Go to your Admin Dashboard:
+{{ admin_url }}
+
+With great power comes great responsibility. Please use your administrative privileges responsibly.
+
+If you have any questions about your new responsibilities, please contact our support team.
+
+Best regards,
+The Atlas Config Team
+
+--
+Need help? Contact us:
+- akwuru.david@ul.ie
+- akintomide.jeremiah@ul.ie
+- ehealth@ul.ie
+
+ehealthhub4cancer
+https://ehealth4cancer.ie
