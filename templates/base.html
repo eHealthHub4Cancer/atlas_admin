@@ -37,6 +37,45 @@
             evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
         });
     </script>
+    <script>
+        (function() {
+            const storageKey = 'atlas_theme_mode';
+            const root = document.documentElement;
+            const getSystemTheme = () =>
+                window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const applyTheme = (theme) => {
+                const resolved = theme === 'system' ? getSystemTheme() : theme;
+                root.setAttribute('data-bs-theme', resolved);
+                root.setAttribute('data-theme', resolved);
+            };
+
+            const storedTheme = localStorage.getItem(storageKey) || 'system';
+            applyTheme(storedTheme);
+
+            const syncSelects = (value) => {
+                document.querySelectorAll('[data-theme-select]').forEach((select) => {
+                    select.value = value;
+                });
+            };
+            syncSelects(storedTheme);
+
+            document.addEventListener('change', (event) => {
+                const target = event.target;
+                if (target instanceof HTMLSelectElement && target.matches('[data-theme-select]')) {
+                    const value = target.value;
+                    localStorage.setItem(storageKey, value);
+                    applyTheme(value);
+                    syncSelects(value);
+                }
+            });
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if ((localStorage.getItem(storageKey) || 'system') === 'system') {
+                    applyTheme('system');
+                }
+            });
+        })();
+    </script>
 
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
