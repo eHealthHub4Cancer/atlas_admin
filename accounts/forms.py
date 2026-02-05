@@ -120,7 +120,7 @@ class UserSignupForm(forms.Form):
     )
     role = forms.ModelChoiceField(
         label='Role',
-        queryset=Role.objects.filter(is_system_role=False).order_by('name'),
+        queryset=Role.objects.none(),
         required=False,
         empty_label='Select a role',
         widget=forms.Select(attrs={
@@ -165,6 +165,10 @@ class UserSignupForm(forms.Form):
         if email and User.objects.filter(email=email).exists():
             raise ValidationError('An account with this email already exists.')
         return email
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].queryset = Role.objects.filter(is_system_role=False).order_by('name')
 
     def clean_password(self):
         password = self.cleaned_data.get('password')
