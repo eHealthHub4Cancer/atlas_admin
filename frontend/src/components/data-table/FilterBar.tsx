@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { MagnifyingGlassIcon, XMarkIcon, FunnelIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { cn, debounce } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { Select, SelectOption } from '../ui/Select';
+import { Select, type SelectOption } from '../ui/Select';
 import { Badge } from '../ui/Badge';
 
 export interface FilterConfig {

@@ -1,8 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { format, formatDistanceToNow } from 'date-fns';
-import { twMerge } from 'tailwind-merge';
 
-export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
+export const cn = (...inputs: ClassValue[]) => clsx(inputs);
 
 export const debounce = <T extends (...args: Parameters<T>) => void>(fn: T, wait = 300) => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
