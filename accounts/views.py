@@ -1204,6 +1204,7 @@ def health_check(request):
             cursor.execute('SELECT 1')
         return JsonResponse({'status': 'healthy'})
     except Exception as e:
+        logger.error(f"Health check failed: {e}")
         return JsonResponse({'status': 'unhealthy', 'error': str(e)}, status=500)
 
 

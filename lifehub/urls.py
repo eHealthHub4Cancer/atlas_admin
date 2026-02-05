@@ -12,8 +12,8 @@ def home_redirect(request):
     from accounts.views import get_current_user
     user = get_current_user(request)
     if user:
-        return redirect('dashboard')
-    return redirect('login')
+        return redirect('user_dashboard')
+    return redirect('user_login')
 
 urlpatterns = [
     # Root redirect

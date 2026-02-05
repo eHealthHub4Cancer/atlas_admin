@@ -81,9 +81,17 @@ urlpatterns = [
     path('health/', views.health_check, name='health_check'),
 
     # =========================================================================
-    # Backwards Compatibility Redirects
+    # Backwards Compatibility Aliases
+    # These provide old URL names for existing templates
     # =========================================================================
     path('', views.login_redirect_view, name='home'),
-    path('profile/', views.user_profile_view, name='profile'),  # Alias
-    path('change-password/', views.user_change_password_view, name='change_password'),  # Alias
+    path('profile/', views.user_profile_view, name='profile'),
+    path('change-password/', views.user_change_password_view, name='change_password'),
+
+    # Old URL name aliases (same paths, old names for template compatibility)
+    # These must come after the primary patterns so URL resolution works
+    path('login/', views.user_login_view, name='login'),
+    path('signup/', views.user_signup_view, name='signup'),
+    path('logout/', views.user_logout_view, name='logout'),
+    path('dashboard/', views.user_dashboard_view, name='dashboard'),
 ]
