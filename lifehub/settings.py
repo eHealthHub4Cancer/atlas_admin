@@ -88,13 +88,20 @@ DB_SSL = os.environ.get('DB_SSL', 'false').lower() == 'true'
 DB_SSLMODE = os.environ.get('DB_SSLMODE', 'prefer')
 DB_SSLROOTCERT_PATH = os.environ.get('DB_SSLROOTCERT_PATH', '')
 DB_CONN_MAX_AGE = int(os.environ.get('DB_CONN_MAX_AGE', '60'))
+DB_SEARCH_PATH = os.environ.get('DB_SEARCH_PATH', 'web_security,public')
 
 # Build database options
 db_options = {}
+
+# SSL configuration
 if DB_SSL or DB_SSLMODE not in ('disable', 'prefer', ''):
     db_options['sslmode'] = DB_SSLMODE
     if DB_SSLROOTCERT_PATH:
         db_options['sslrootcert'] = DB_SSLROOTCERT_PATH
+
+# Search path for schema (required for external databases with custom schemas)
+if DB_SEARCH_PATH:
+    db_options['options'] = f'-c search_path={DB_SEARCH_PATH}'
 
 DATABASES = {
     'default': {
