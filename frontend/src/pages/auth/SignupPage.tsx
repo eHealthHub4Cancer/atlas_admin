@@ -104,9 +104,9 @@ export const SignupPage: React.FC = () => {
     <AuthLayout
       title="Create your account"
       subtitle="Join Atlas Research Platform"
-      maxWidthClassName="max-w-lg"
+      maxWidthClassName="max-w-xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Select
             label="Prefix"
@@ -169,6 +169,10 @@ export const SignupPage: React.FC = () => {
           error={errors.role}
         />
 
+        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 px-4 py-3 text-xs text-slate-600 dark:border-slate-800/70 dark:bg-dark-elevated/70 dark:text-slate-400">
+          Passwords must be at least 8 characters and include a mix of letters and numbers.
+        </div>
+
         <Input
           label="Password"
           name="password1"
@@ -179,7 +183,6 @@ export const SignupPage: React.FC = () => {
           placeholder="At least 8 characters"
           autoComplete="new-password"
           required
-          hint="Must be at least 8 characters"
           rightIcon={
             <button
               type="button"
