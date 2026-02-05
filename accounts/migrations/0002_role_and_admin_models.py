@@ -5,15 +5,145 @@ This migration:
 1. Creates the Role model for SEC role management
 2. Creates the UserRole junction table
 3. Creates the AtlasAdmin model for separate admin authentication
-4. Adds username and sec_user_id fields to User
+4. Adds username and sec_user_id fields to User (if not exist)
 5. Creates Message and MessageDismissal models for announcements
 6. Updates AuditLog to support both User and Admin actors/targets
 7. Updates PasswordResetToken to support both User and Admin
 """
 
-from django.db import migrations, models
+from django.db import migrations, models, connection
 import django.db.models.deletion
 import django.utils.timezone
+
+
+def column_exists(table_name, column_name):
+    """Check if a column exists in a table."""
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = %s AND column_name = %s
+        """, [table_name, column_name])
+        return cursor.fetchone() is not None
+
+
+def table_exists(table_name):
+    """Check if a table exists."""
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT table_name FROM information_schema.tables
+            WHERE table_name = %s
+        """, [table_name])
+        return cursor.fetchone() is not None
+
+
+def add_username_if_not_exists(apps, schema_editor):
+    """Add username column if it doesn't exist."""
+    if not column_exists('atlas_user', 'username'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_user
+                ADD COLUMN username VARCHAR(150) NOT NULL DEFAULT ''
+            """)
+
+
+def add_sec_user_id_if_not_exists(apps, schema_editor):
+    """Add sec_user_id column if it doesn't exist."""
+    if not column_exists('atlas_user', 'sec_user_id'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_user
+                ADD COLUMN sec_user_id INTEGER NULL
+            """)
+
+
+def remove_role_if_exists(apps, schema_editor):
+    """Remove role column from User if it exists."""
+    if column_exists('atlas_user', 'role'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_user DROP COLUMN role
+            """)
+
+
+def make_username_unique(apps, schema_editor):
+    """Make username unique if not already."""
+    # First, populate empty usernames with email prefix
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE atlas_user
+            SET username = LOWER(SPLIT_PART(email, '@', 1))
+            WHERE username = '' OR username IS NULL
+        """)
+        # Handle duplicates by appending id
+        cursor.execute("""
+            UPDATE atlas_user u1
+            SET username = username || '_' || u1.id::text
+            WHERE EXISTS (
+                SELECT 1 FROM atlas_user u2
+                WHERE u2.username = u1.username AND u2.id < u1.id
+            )
+        """)
+        # Check if unique constraint already exists
+        cursor.execute("""
+            SELECT constraint_name FROM information_schema.table_constraints
+            WHERE table_name = 'atlas_user'
+            AND constraint_type = 'UNIQUE'
+            AND constraint_name LIKE '%username%'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("""
+                ALTER TABLE atlas_user
+                ADD CONSTRAINT atlas_user_username_unique UNIQUE (username)
+            """)
+
+
+def rename_audit_log_fields(apps, schema_editor):
+    """Rename actor/target to actor_user/target_user if needed."""
+    if column_exists('atlas_audit_log', 'actor_id') and not column_exists('atlas_audit_log', 'actor_user_id'):
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE atlas_audit_log RENAME COLUMN actor_id TO actor_user_id')
+    if column_exists('atlas_audit_log', 'target_id') and not column_exists('atlas_audit_log', 'target_user_id'):
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE atlas_audit_log RENAME COLUMN target_id TO target_user_id')
+
+
+def add_audit_log_admin_fields(apps, schema_editor):
+    """Add actor_admin_id and target_admin_id to audit log if not exist."""
+    if not column_exists('atlas_audit_log', 'actor_admin_id'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_audit_log
+                ADD COLUMN actor_admin_id BIGINT NULL REFERENCES atlas_admin(id) ON DELETE SET NULL
+            """)
+    if not column_exists('atlas_audit_log', 'target_admin_id'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_audit_log
+                ADD COLUMN target_admin_id BIGINT NULL REFERENCES atlas_admin(id) ON DELETE SET NULL
+            """)
+
+
+def update_password_reset_token(apps, schema_editor):
+    """Update password reset token table for admin support."""
+    # Rename user_id to user_id if needed (no change), make nullable
+    if column_exists('atlas_password_reset_token', 'user_id'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_password_reset_token
+                ALTER COLUMN user_id DROP NOT NULL
+            """)
+    # Add admin_id if not exists
+    if not column_exists('atlas_password_reset_token', 'admin_id'):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE atlas_password_reset_token
+                ADD COLUMN admin_id BIGINT NULL REFERENCES atlas_admin(id) ON DELETE CASCADE
+            """)
+
+
+def noop(apps, schema_editor):
+    """No-op for reverse migrations."""
+    pass
 
 
 class Migration(migrations.Migration):
@@ -71,26 +201,11 @@ class Migration(migrations.Migration):
         ),
 
         # =====================================================================
-        # Update User Model
+        # Update User Model - using RunPython to handle existing columns
         # =====================================================================
-        # Add username field
-        migrations.AddField(
-            model_name='user',
-            name='username',
-            field=models.CharField(default='', help_text='Lowercase username, synced to sec_user.login', max_length=150),
-            preserve_default=False,
-        ),
-        # Add sec_user_id for SEC sync
-        migrations.AddField(
-            model_name='user',
-            name='sec_user_id',
-            field=models.IntegerField(blank=True, help_text='Links to sec_user.id in the WebAPI schema', null=True),
-        ),
-        # Remove the old role field from User (now managed separately via AtlasAdmin)
-        migrations.RemoveField(
-            model_name='user',
-            name='role',
-        ),
+        migrations.RunPython(add_username_if_not_exists, noop),
+        migrations.RunPython(add_sec_user_id_if_not_exists, noop),
+        migrations.RunPython(remove_role_if_exists, noop),
 
         # =====================================================================
         # UserRole Junction Model
@@ -112,13 +227,6 @@ class Migration(migrations.Migration):
                 'ordering': ['role__name'],
                 'unique_together': {('user', 'role')},
             },
-        ),
-
-        # Add roles M2M to User
-        migrations.AddField(
-            model_name='user',
-            name='roles',
-            field=models.ManyToManyField(related_name='users', through='accounts.UserRole', to='accounts.role'),
         ),
 
         # =====================================================================
@@ -166,54 +274,18 @@ class Migration(migrations.Migration):
         ),
 
         # =====================================================================
-        # Update AuditLog to support User and Admin actors/targets
+        # Update AuditLog - using RunPython for safety
         # =====================================================================
-        migrations.RenameField(
-            model_name='auditlog',
-            old_name='actor',
-            new_name='actor_user',
-        ),
-        migrations.RenameField(
-            model_name='auditlog',
-            old_name='target',
-            new_name='target_user',
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='actor_admin',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='actions_performed', to='accounts.atlasadmin'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='target_admin',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='actions_received', to='accounts.atlasadmin'),
-        ),
+        migrations.RunPython(rename_audit_log_fields, noop),
+        migrations.RunPython(add_audit_log_admin_fields, noop),
 
         # =====================================================================
-        # Update PasswordResetToken to support Admin
+        # Update PasswordResetToken - using RunPython for safety
         # =====================================================================
-        migrations.RenameField(
-            model_name='passwordresettoken',
-            old_name='user',
-            new_name='user',
-        ),
-        migrations.AlterField(
-            model_name='passwordresettoken',
-            name='user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_tokens', to='accounts.user'),
-        ),
-        migrations.AddField(
-            model_name='passwordresettoken',
-            name='admin',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_tokens', to='accounts.atlasadmin'),
-        ),
+        migrations.RunPython(update_password_reset_token, noop),
 
         # =====================================================================
-        # Make username unique after initial data migration
+        # Make username unique after data migration
         # =====================================================================
-        migrations.AlterField(
-            model_name='user',
-            name='username',
-            field=models.CharField(help_text='Lowercase username, synced to sec_user.login', max_length=150, unique=True),
-        ),
+        migrations.RunPython(make_username_unique, noop),
     ]
