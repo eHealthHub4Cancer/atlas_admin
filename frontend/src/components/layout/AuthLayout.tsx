@@ -45,9 +45,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   const { theme, toggleTheme } = useThemeStore();
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex flex-col">
+    <div className="relative min-h-screen overflow-hidden bg-light-bg dark:bg-dark-bg flex flex-col">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-500/20" />
+        <div className="absolute bottom-0 right-0 h-80 w-80 translate-x-1/3 translate-y-1/3 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/20" />
+      </div>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4">
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-dark-bg/70 backdrop-blur">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white font-bold text-lg shadow-glow-sm">
             A
@@ -88,28 +92,50 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className={cn('w-full', maxWidthClassName)}>
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {title}
-            </h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              {subtitle}
-            </p>
-          </div>
+      <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-6xl">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm dark:border-slate-800/70 dark:bg-dark-card/70 dark:text-slate-400">
+                Atlas Research Platform
+              </div>
+              <h1 className="text-3xl font-semibold leading-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
+                Streamline your research workflows in one secure hub.
+              </h1>
+              <p className="text-base text-slate-600 dark:text-slate-400">
+                Manage datasets, collaborate with your team, and access insights with confidence. Built for modern
+                research teams who want clarity, speed, and security.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-500 dark:text-slate-400 lg:justify-start">
+                <span className="rounded-full border border-slate-200/70 px-3 py-1 dark:border-slate-800/70">
+                  Secure access
+                </span>
+                <span className="rounded-full border border-slate-200/70 px-3 py-1 dark:border-slate-800/70">
+                  Team-ready
+                </span>
+                <span className="rounded-full border border-slate-200/70 px-3 py-1 dark:border-slate-800/70">
+                  Built for scale
+                </span>
+              </div>
+            </div>
 
-          {/* Card */}
-          <div className="bg-white dark:bg-dark-card rounded-2xl shadow-soft p-6 sm:p-8">
-            {children}
+            <div className={cn('w-full', maxWidthClassName)}>
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{subtitle}</p>
+              </div>
+
+              <div className="bg-white/90 dark:bg-dark-card/90 rounded-3xl border border-slate-200/70 dark:border-slate-800/70 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.6)] p-6 sm:p-8 backdrop-blur">
+                {children}
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="py-6 px-4">
-        <div className="flex flex-col items-center gap-4">
+      <footer className="relative z-10 py-6 px-6 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-dark-bg/70 backdrop-blur">
+        <div className="flex flex-col items-center gap-4 text-center">
           {/* Social links */}
           <div className="flex items-center gap-6">
             <a
