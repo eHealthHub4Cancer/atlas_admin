@@ -33,12 +33,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full px-4 py-2.5 rounded-xl text-sm',
+              'w-full h-11 px-4 rounded-xl text-sm',
               'bg-white dark:bg-dark-elevated',
+              'border border-slate-200 dark:border-dark-border',
               'text-slate-900 dark:text-slate-100',
               'placeholder:text-slate-400 dark:placeholder:text-slate-500',
               'transition-all duration-200 shadow-sm',
-              'focus:ring-2 focus:ring-brand-500/20',
+              'focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500',
               'focus:outline-none',
               error && 'input-error',
               leftIcon && 'pl-10',

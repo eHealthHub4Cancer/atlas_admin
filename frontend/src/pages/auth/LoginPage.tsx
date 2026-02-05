@@ -64,7 +64,7 @@ export const LoginPage: React.FC = () => {
       showAdminLink
       maxWidthClassName="max-w-sm"
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Input
           label="Username or email"
           name="username"

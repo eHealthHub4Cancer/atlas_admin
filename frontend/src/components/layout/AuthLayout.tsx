@@ -101,7 +101,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </div>
 
           {/* Card */}
-          <div className="bg-white dark:bg-dark-card rounded-2xl shadow-soft p-8">
+          <div className="bg-white dark:bg-dark-card rounded-2xl shadow-soft p-6 sm:p-8">
             {children}
           </div>
         </div>
