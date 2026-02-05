@@ -1,0 +1,163 @@
+# =============================================================================
+# Atlas Config - Docker Compose (Local PostgreSQL)
+# =============================================================================
+# Usage: docker compose up --build
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database (Local Mode)
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: atlas_config_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-atlas_config}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-atlas_config}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - atlas_network
+
+  # ---------------------------------------------------------------------------
+  # Redis (Message Broker for Celery)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: atlas_config_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - atlas_network
+
+  # ---------------------------------------------------------------------------
+  # Django Web Application
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas_config_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-false}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DB_MODE=local
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-atlas_config}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-console}
+      - EMAIL_HOST=${EMAIL_HOST:-mailhog}
+      - EMAIL_PORT=${EMAIL_PORT:-1025}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS:-false}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER:-}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD:-}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-noreply@ehealth4cancer.ie}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-Atlas Config}
+      - EMAIL_REPLY_TO=${EMAIL_REPLY_TO:-ehealth@ul.ie}
+      - SITE_URL=${SITE_URL:-http://localhost:8000}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - static_files:/app/staticfiles
+    networks:
+      - atlas_network
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker (Background Tasks)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: atlas_config_worker
+    restart: unless-stopped
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-false}
+      - DB_MODE=local
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-atlas_config}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-console}
+      - EMAIL_HOST=${EMAIL_HOST:-mailhog}
+      - EMAIL_PORT=${EMAIL_PORT:-1025}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS:-false}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER:-}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD:-}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS:-noreply@ehealth4cancer.ie}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-Atlas Config}
+      - EMAIL_REPLY_TO=${EMAIL_REPLY_TO:-ehealth@ul.ie}
+      - SITE_URL=${SITE_URL:-http://localhost:8000}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - atlas_network
+
+  # ---------------------------------------------------------------------------
+  # MailHog (Development Email Testing) - Optional
+  # ---------------------------------------------------------------------------
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: atlas_config_mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - atlas_network
+    profiles:
+      - dev
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: atlas_config_postgres_data
+  redis_data:
+    name: atlas_config_redis_data
+  static_files:
+    name: atlas_config_static_files
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  atlas_network:
+    name: atlas_config_network
+    driver: bridge

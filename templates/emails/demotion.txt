@@ -1,0 +1,27 @@
+Your Admin Access Has Changed - Atlas Config
+============================================
+
+Hello {{ user_name }},
+
+We're writing to inform you that your administrative access on Atlas Config has been modified.
+
+Your account has been changed to a standard user role. You will no longer have access to administrative features.
+
+You can still access your personal dashboard and use all standard features:
+{{ dashboard_url }}
+
+If you believe this change was made in error, please contact a system administrator or our support team.
+
+Thank you for your service as an administrator.
+
+Best regards,
+The Atlas Config Team
+
+--
+Need help? Contact us:
+- akwuru.david@ul.ie
+- akintomide.jeremiah@ul.ie
+- ehealth@ul.ie
+
+ehealthhub4cancer
+https://ehealth4cancer.ie

@@ -1,23 +1,31 @@
 """
-URL configuration for lifehub project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+Atlas Config - URL Configuration
 """
+
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
+from django.conf import settings
+
+def home_redirect(request):
+    """Redirect home to login or dashboard."""
+    from accounts.views import get_current_user
+    user = get_current_user(request)
+    if user:
+        return redirect('dashboard')
+    return redirect('login')
 
 urlpatterns = [
+    # Root redirect
+    path('', home_redirect, name='home'),
+
+    # Django Admin (optional, can be disabled in production)
     path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
+
+    # Atlas Config routes
+    path('', include('accounts.urls')),
 ]
+
+# Custom error handlers
+handler404 = 'accounts.views.handler404'
+handler500 = 'accounts.views.handler500'

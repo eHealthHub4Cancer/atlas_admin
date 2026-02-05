@@ -1,0 +1,26 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Your Admin Access Has Changed - Atlas Config{% endblock %}
+{% block header_subtitle %}Role Update{% endblock %}
+
+{% block content %}
+<h2>Hello, {{ user_name }}</h2>
+
+<p>We're writing to inform you that your administrative access on Atlas Config has been modified.</p>
+
+<p>Your account has been changed to a standard user role. You will no longer have access to administrative features.</p>
+
+<p>You can still access your personal dashboard and use all standard features:</p>
+
+<p style="text-align: center;">
+    <a href="{{ dashboard_url }}" class="btn">Go to Your Dashboard</a>
+</p>
+
+<div class="info-box">
+    <p>If you believe this change was made in error, please contact a system administrator or our support team.</p>
+</div>
+
+<p>Thank you for your service as an administrator.</p>
+
+<p>Best regards,<br>The Atlas Config Team</p>
+{% endblock %}

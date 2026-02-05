@@ -1,0 +1,98 @@
+# =============================================================================
+# Atlas Config - Docker Ignore
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info
+dist
+build
+eggs
+.eggs
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.installed.cfg
+*.egg-info/
+.pytest_cache/
+.coverage
+.tox
+.nox
+htmlcov/
+
+# Virtual environments
+venv
+.venv
+env
+.env
+ENV
+env.bak
+venv.bak
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Tests
+tests/
+test/
+*_test.py
+test_*.py
+conftest.py
+
+# Frontend (if not needed in backend image)
+frontend/
+node_modules/
+
+# Static files (will be collected)
+staticfiles/
+
+# Local development files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Database
+*.sqlite3
+*.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
