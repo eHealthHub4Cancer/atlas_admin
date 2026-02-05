@@ -62,9 +62,9 @@ export const LoginPage: React.FC = () => {
       title="Welcome back"
       subtitle="Sign in to your Atlas account"
       showAdminLink
-      maxWidthClassName="max-w-sm"
+      maxWidthClassName="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Input
           label="Username or email"
           name="username"
@@ -108,6 +108,19 @@ export const LoginPage: React.FC = () => {
         {errors.non_field_errors && (
           <p className="text-sm text-red-500">{errors.non_field_errors}</p>
         )}
+
+        <div className="flex items-center justify-between text-sm">
+          <label className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+            />
+            Remember me
+          </label>
+          <Link to="/forgot-password" className="text-brand-500 hover:text-brand-600 font-medium">
+            Forgot password?
+          </Link>
+        </div>
 
         <Button
           type="submit"

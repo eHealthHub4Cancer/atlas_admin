@@ -118,6 +118,15 @@ class UserSignupForm(forms.Form):
             'placeholder': 'University / Organization (optional)',
         })
     )
+    role = forms.ModelChoiceField(
+        label='Role',
+        queryset=Role.objects.filter(is_system_role=False).order_by('name'),
+        required=False,
+        empty_label='Select a role',
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+        })
+    )
     password = forms.CharField(
         label='Password',
         widget=forms.PasswordInput(attrs={
@@ -187,6 +196,9 @@ class UserSignupForm(forms.Form):
         )
         user.set_password(self.cleaned_data['password'])
         user.save()
+        role = self.cleaned_data.get('role')
+        if role:
+            UserRole.objects.get_or_create(user=user, role=role)
         return user
 
 
