@@ -1,0 +1,159 @@
+{% extends "base_admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Audit Log - Admin Dashboard{% endblock %}
+
+{% block page_title %}Audit Log{% endblock %}
+{% block page_description %}View system activity and administrative actions{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="filter-action" class="form-label">Action Type</label>
+                        <select class="form-select" id="filter-action" name="action">
+                            <option value="">All Actions</option>
+                            <option value="create" {% if request.GET.action == 'create' %}selected{% endif %}>Create</option>
+                            <option value="update" {% if request.GET.action == 'update' %}selected{% endif %}>Update</option>
+                            <option value="delete" {% if request.GET.action == 'delete' %}selected{% endif %}>Delete</option>
+                            <option value="login" {% if request.GET.action == 'login' %}selected{% endif %}>Login</option>
+                            <option value="logout" {% if request.GET.action == 'logout' %}selected{% endif %}>Logout</option>
+                            <option value="role_grant" {% if request.GET.action == 'role_grant' %}selected{% endif %}>Role Grant</option>
+                            <option value="role_revoke" {% if request.GET.action == 'role_revoke' %}selected{% endif %}>Role Revoke</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filter-actor" class="form-label">Actor Type</label>
+                        <select class="form-select" id="filter-actor" name="actor_type">
+                            <option value="">All Actors</option>
+                            <option value="user" {% if request.GET.actor_type == 'user' %}selected{% endif %}>Users</option>
+                            <option value="admin" {% if request.GET.actor_type == 'admin' %}selected{% endif %}>Admins</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filter-from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="filter-from" name="from_date"
+                               value="{{ request.GET.from_date }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filter-to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="filter-to" name="to_date"
+                               value="{{ request.GET.to_date }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel me-1"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit Log Entries -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-journal-text me-2"></i>Activity Log
+                </h5>
+                <span class="badge bg-secondary">{{ logs.count }} entries</span>
+            </div>
+            <div class="card-body">
+                {% for log in logs %}
+                <div class="audit-entry audit-{{ log.action }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="audit-actor">
+                                {% if log.actor_type == 'admin' and log.actor_admin %}
+                                <i class="bi bi-person-gear text-danger me-1"></i>
+                                {{ log.actor_admin.email }}
+                                {% elif log.actor_type == 'user' and log.actor_user %}
+                                <i class="bi bi-person text-primary me-1"></i>
+                                {{ log.actor_user.username }}
+                                {% else %}
+                                <i class="bi bi-robot text-muted me-1"></i>
+                                System
+                                {% endif %}
+                            </span>
+                            <span class="badge bg-{% if log.action == 'create' %}success{% elif log.action == 'update' %}info{% elif log.action == 'delete' %}danger{% elif log.action == 'login' %}purple{% elif log.action == 'role_grant' %}primary{% elif log.action == 'role_revoke' %}warning{% else %}secondary{% endif %} ms-2">
+                                {{ log.action|title }}
+                            </span>
+
+                            {% if log.target_type and log.target_type != 'none' %}
+                            <span class="text-muted">on</span>
+                            <strong>{{ log.target_type }}</strong>
+                                {% if log.target_user %}
+                                ({{ log.target_user.username }})
+                                {% elif log.target_admin %}
+                                ({{ log.target_admin.email }})
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <span class="audit-time">
+                            {{ log.created_at|date:"M d, Y H:i" }}
+                        </span>
+                    </div>
+                    {% if log.description %}
+                    <div class="mt-2 text-muted small">
+                        {{ log.description }}
+                    </div>
+                    {% endif %}
+                    {% if log.ip_address %}
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <i class="bi bi-geo-alt me-1"></i>IP: {{ log.ip_address }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-x display-4 text-muted d-block mb-3"></i>
+                    <p class="text-muted mb-0">No audit log entries found matching your criteria.</p>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if logs.has_other_pages %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if logs.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in logs.paginator.page_range %}
+                            {% if logs.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if logs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

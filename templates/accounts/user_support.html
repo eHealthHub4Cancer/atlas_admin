@@ -1,0 +1,171 @@
+{% extends "base_user_dashboard.html" %}
+
+{% block page_title %}Support{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Contact Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Contact Us</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    If you have questions, need assistance with your account, or want to request
+                    additional role access, please contact us using one of the methods below.
+                </p>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex p-3 mb-3">
+                                    <i class="bi bi-person-circle fs-3 text-primary"></i>
+                                </div>
+                                <h6 class="card-title">David Akwuru</h6>
+                                <p class="card-text small text-muted mb-3">Technical Support</p>
+                                <a href="mailto:akwuru.david@ul.ie" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-envelope me-1"></i>Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex p-3 mb-3">
+                                    <i class="bi bi-person-circle fs-3 text-primary"></i>
+                                </div>
+                                <h6 class="card-title">Jeremiah Akintomide</h6>
+                                <p class="card-text small text-muted mb-3">Technical Support</p>
+                                <a href="mailto:akintomide.jeremiah@ul.ie" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-envelope me-1"></i>Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card h-100 border-success">
+                            <div class="card-body text-center">
+                                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex p-3 mb-3">
+                                    <i class="bi bi-building fs-3 text-success"></i>
+                                </div>
+                                <h6 class="card-title">eHealth Support</h6>
+                                <p class="card-text small text-muted mb-3">General Inquiries</p>
+                                <a href="mailto:ehealth@ul.ie" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-envelope me-1"></i>Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle me-2"></i>Frequently Asked Questions</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                How do I request additional roles?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Contact one of the support team members listed above with details about which
+                                roles you need and why. An administrator will review your request and grant
+                                appropriate access.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                What do different roles allow me to access?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Each role grants access to specific databases or features within the research
+                                platform. You can see descriptions of your assigned roles on the
+                                <a href="{% url 'user_roles' %}">My Roles</a> page.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                How do I change my password?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                You can change your password from the
+                                <a href="{% url 'user_change_password' %}">Change Password</a> page.
+                                You'll need to enter your current password and then your new password twice.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                I forgot my password. What should I do?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Use the <a href="{% url 'forgot_password' %}">Forgot Password</a> link on
+                                the login page. Enter your email address and you'll receive instructions
+                                to reset your password.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'user_profile' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-person me-2"></i>Update Profile
+                    </a>
+                    <a href="{% url 'user_roles' %}" class="btn btn-outline-info">
+                        <i class="bi bi-shield me-2"></i>View My Roles
+                    </a>
+                    <a href="{% url 'user_change_password' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-key me-2"></i>Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h6 class="card-title"><i class="bi bi-clock-history me-2"></i>Response Time</h6>
+                <p class="card-text text-muted small mb-0">
+                    We typically respond to support requests within 1-2 business days.
+                    For urgent issues, please indicate this in your email subject.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

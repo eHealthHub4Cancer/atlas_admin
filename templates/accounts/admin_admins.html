@@ -1,0 +1,250 @@
+{% extends "base_admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Admin Management - Admin Dashboard{% endblock %}
+
+{% block page_title %}Admin Management{% endblock %}
+{% block page_description %}Manage administrator accounts and permissions{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-gear me-2"></i>Administrators
+                </h5>
+                {% if admin.role in 'super_admin,system_superadmin' %}
+                <a href="{% url 'accounts:admin_create_admin' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-person-plus me-1"></i>Add Administrator
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Administrator</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for adm in admins %}
+                            <tr id="admin-row-{{ adm.id }}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-{% if adm.role == 'system_superadmin' %}danger{% elif adm.role == 'super_admin' %}warning{% else %}secondary{% endif %} bg-opacity-10 text-{% if adm.role == 'system_superadmin' %}danger{% elif adm.role == 'super_admin' %}warning{% else %}secondary{% endif %} me-2">
+                                            {{ adm.first_name.0|default:adm.email.0|upper }}{{ adm.last_name.0|default:"" }}
+                                        </div>
+                                        <div>
+                                            <strong>{{ adm.first_name }} {{ adm.last_name }}</strong>
+                                            {% if adm.id == admin.id %}
+                                            <span class="badge bg-info ms-1">You</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ adm.email }}</td>
+                                <td>
+                                    {% if adm.role == 'system_superadmin' %}
+                                    <span class="badge badge-system-superadmin">
+                                        <i class="bi bi-shield-lock me-1"></i>System Superadmin
+                                    </span>
+                                    {% elif adm.role == 'super_admin' %}
+                                    <span class="badge badge-super-admin">
+                                        <i class="bi bi-shield-check me-1"></i>Super Admin
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-admin">
+                                        <i class="bi bi-shield me-1"></i>Admin
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if adm.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if adm.last_login %}
+                                    <small class="text-muted">{{ adm.last_login|timesince }} ago</small>
+                                    {% else %}
+                                    <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ adm.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td class="text-end">
+                                    {% if adm.id != admin.id %}
+                                        {% if admin.role == 'system_superadmin' or admin.role == 'super_admin' and adm.role == 'admin' %}
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editAdminModal"
+                                                data-admin-id="{{ adm.id }}"
+                                                data-admin-email="{{ adm.email }}"
+                                                data-admin-role="{{ adm.role }}"
+                                                data-admin-active="{{ adm.is_active|yesno:'true,false' }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if adm.is_active %}
+                                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                                hx-post="{% url 'accounts:htmx_toggle_admin_status' adm.id %}"
+                                                hx-target="#admin-row-{{ adm.id }}"
+                                                hx-swap="outerHTML"
+                                                hx-confirm="Are you sure you want to deactivate this administrator?">
+                                            <i class="bi bi-pause"></i>
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-outline-success btn-sm"
+                                                hx-post="{% url 'accounts:htmx_toggle_admin_status' adm.id %}"
+                                                hx-target="#admin-row-{{ adm.id }}"
+                                                hx-swap="outerHTML">
+                                            <i class="bi bi-play"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                    <a href="{% url 'accounts:admin_profile' %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <i class="bi bi-person-x d-block"></i>
+                                    <p class="mb-0">No administrators found.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Hierarchy Info -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Permission Hierarchy
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded">
+                            <span class="badge badge-admin mb-2">Admin</span>
+                            <ul class="mb-0 small">
+                                <li>View users and roles</li>
+                                <li>Grant/revoke user roles</li>
+                                <li>View audit logs</li>
+                                <li>Send messages to users</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded">
+                            <span class="badge badge-super-admin mb-2">Super Admin</span>
+                            <ul class="mb-0 small">
+                                <li>All Admin permissions</li>
+                                <li>Create/edit Admin accounts</li>
+                                <li>Manage role descriptions</li>
+                                <li>Bulk role operations</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded border-danger">
+                            <span class="badge badge-system-superadmin mb-2">System Superadmin</span>
+                            <ul class="mb-0 small">
+                                <li>All Super Admin permissions</li>
+                                <li>Create/manage Super Admins</li>
+                                <li>Create/manage System Superadmins</li>
+                                <li>Cannot be deleted (protected)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Admin Modal -->
+<div class="modal fade" id="editAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Administrator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="edit-admin-form" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="edit-admin-email" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-admin-role" class="form-label">Role</label>
+                        <select class="form-select" id="edit-admin-role" name="role">
+                            <option value="admin">Admin</option>
+                            {% if admin.role == 'system_superadmin' %}
+                            <option value="super_admin">Super Admin</option>
+                            <option value="system_superadmin">System Superadmin</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">
+                            {% if admin.role == 'super_admin' %}
+                            As a Super Admin, you can only manage regular Admins.
+                            {% else %}
+                            As System Superadmin, you can manage all admin roles.
+                            {% endif %}
+                        </div>
+                    </div>
+                    <input type="hidden" id="edit-admin-id" name="admin_id">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"
+                            hx-post="{% url 'accounts:htmx_update_admin_role' %}"
+                            hx-target="body">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Populate edit modal with admin data
+document.getElementById('editAdminModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    const adminId = button.getAttribute('data-admin-id');
+    const adminEmail = button.getAttribute('data-admin-email');
+    const adminRole = button.getAttribute('data-admin-role');
+
+    document.getElementById('edit-admin-id').value = adminId;
+    document.getElementById('edit-admin-email').value = adminEmail;
+    document.getElementById('edit-admin-role').value = adminRole;
+});
+</script>
+{% endblock %}

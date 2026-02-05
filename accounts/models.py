@@ -2,9 +2,23 @@
 Atlas Config - Database Models
 
 This module defines the core models for the Atlas Config management system:
-- User: Unified user model with role-based access control
+- User: User model for regular atlas users (uses username + SEC sync)
+- AtlasAdmin: Separate admin model for administrator authentication
+- Role: Local representation of SEC roles with descriptions
+- UserRole: Many-to-many relationship between Users and Roles
+- Message: In-app announcements/messages system
 - AuditLog: Comprehensive audit trail for all significant actions
 - PasswordResetToken: Secure password reset functionality
+
+SEC Architecture Notes:
+----------------------
+The system maintains synchronization with external SEC tables:
+- sec_user: External user records (synced via ensure_sec_user)
+- sec_role: External role definitions (synced to local Role model)
+- sec_user_role: User-role assignments (synced via sync_user_roles_to_sec)
+
+The local Role model acts as a cache/mirror of sec_role with additional
+metadata like descriptions for display in the admin dashboard.
 """
 
 import secrets
@@ -15,25 +29,73 @@ from django.utils import timezone
 from django.conf import settings
 
 
+# =============================================================================
+# Role Model - Local representation of SEC roles
+# =============================================================================
+
+class Role(models.Model):
+    """
+    Local representation of SEC roles (sec_role).
+
+    This model mirrors the sec_role table and adds additional metadata
+    like descriptions for UI display. The external_id links back to
+    the sec_role.id for synchronization.
+
+    SEC Sync Architecture:
+    - Roles are synced FROM sec_role via sync_roles_from_sec()
+    - When a role is assigned to a user, it's synced TO sec_user_role
+    - The name field should match sec_role.name exactly
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, default='')
+    external_id = models.IntegerField(blank=True, null=True, db_index=True,
+        help_text="Links to sec_role.id in the WebAPI schema")
+    is_system_role = models.BooleanField(default=False,
+        help_text="System roles like 'public' cannot be removed from users")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'atlas_role'
+        ordering = ['name']
+        verbose_name = 'Role'
+        verbose_name_plural = 'Roles'
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def get_or_create_from_sec(cls, external_id, name):
+        """
+        Get or create a local role from SEC data.
+        Used during sync_roles_from_sec().
+        """
+        role, created = cls.objects.update_or_create(
+            name=name,
+            defaults={'external_id': external_id}
+        )
+        return role, created
+
+
+# =============================================================================
+# User Model - Regular users with SEC sync
+# =============================================================================
+
 class User(models.Model):
     """
-    Unified user model with role-based access control.
+    User model for regular Atlas users.
 
-    Roles:
-    - user: Standard user with basic access
-    - admin: Administrator with user management capabilities
-    - super_admin: Full system access including role management
+    This model represents users who authenticate via the user login flow.
+    Users are synced to the SEC tables (sec_user) upon creation.
+
+    SEC Sync Architecture:
+    - On signup, ensure_sec_user() creates a sec_user record
+    - User roles are managed via the UserRole model
+    - Role changes are synced to sec_user_role automatically
+
+    Note: Username is normalized to lowercase for SEC compatibility.
     """
-
-    ROLE_USER = 'user'
-    ROLE_ADMIN = 'admin'
-    ROLE_SUPER_ADMIN = 'super_admin'
-
-    ROLE_CHOICES = (
-        (ROLE_USER, 'User'),
-        (ROLE_ADMIN, 'Admin'),
-        (ROLE_SUPER_ADMIN, 'Super Admin'),
-    )
 
     PREFIX_CHOICES = (
         ('', ''),
@@ -44,7 +106,9 @@ class User(models.Model):
         ('prof', 'Prof.'),
     )
 
-    # Authentication fields
+    # Authentication fields - username is primary identifier
+    username = models.CharField(max_length=150, unique=True,
+        help_text="Lowercase username, synced to sec_user.login")
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
 
@@ -54,9 +118,15 @@ class User(models.Model):
     prefix = models.CharField(max_length=10, choices=PREFIX_CHOICES, blank=True, default='')
     affiliation = models.CharField(max_length=255, blank=True, default='')
 
-    # Role and status
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_USER)
+    # Roles - many-to-many through UserRole
+    roles = models.ManyToManyField(Role, through='UserRole', related_name='users')
+
+    # Status
     is_active = models.BooleanField(default=True)
+
+    # SEC sync tracking
+    sec_user_id = models.IntegerField(blank=True, null=True,
+        help_text="Links to sec_user.id in the WebAPI schema")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -70,7 +140,15 @@ class User(models.Model):
         verbose_name_plural = 'Users'
 
     def __str__(self):
-        return f"{self.full_name} ({self.email})"
+        return f"{self.full_name} ({self.username})"
+
+    def save(self, *args, **kwargs):
+        # Normalize username to lowercase for SEC compatibility
+        if self.username:
+            self.username = self.username.lower().strip()
+        if self.email:
+            self.email = self.email.lower().strip()
+        super().save(*args, **kwargs)
 
     @property
     def full_name(self):
@@ -86,14 +164,187 @@ class User(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     @property
+    def role_names(self):
+        """Return list of role names for this user."""
+        return list(self.roles.values_list('name', flat=True))
+
+    def set_password(self, raw_password):
+        """
+        Hash and set the user's password using bcrypt.
+        Uses OHDSI-compatible settings (prefix=2a, rounds=10).
+        """
+        salt = bcrypt.gensalt(rounds=10, prefix=b"2a")
+        self.password = bcrypt.hashpw(raw_password.encode('utf-8'), salt).decode('utf-8')
+
+    def check_password(self, raw_password):
+        """Verify a password against the stored hash."""
+        try:
+            return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
+        except (ValueError, TypeError):
+            return False
+
+    def update_last_login(self):
+        """Update the last login timestamp."""
+        self.last_login = timezone.now()
+        self.save(update_fields=['last_login'])
+
+    def has_role(self, role_name):
+        """Check if user has a specific role."""
+        return self.roles.filter(name__iexact=role_name).exists()
+
+    def add_role(self, role):
+        """Add a role to this user (creates UserRole record)."""
+        if isinstance(role, str):
+            role = Role.objects.get(name__iexact=role)
+        UserRole.objects.get_or_create(user=self, role=role)
+
+    def remove_role(self, role):
+        """Remove a role from this user."""
+        if isinstance(role, str):
+            role = Role.objects.get(name__iexact=role)
+        # Don't remove system roles
+        if role.is_system_role:
+            return False
+        UserRole.objects.filter(user=self, role=role).delete()
+        return True
+
+
+# =============================================================================
+# UserRole - Many-to-many relationship with metadata
+# =============================================================================
+
+class UserRole(models.Model):
+    """
+    Explicit many-to-many relationship between User and Role.
+
+    This model tracks role assignments and provides metadata about
+    when and by whom roles were granted.
+
+    SEC Sync Architecture:
+    - Creating a UserRole triggers sync to sec_user_role
+    - Deleting a UserRole removes from sec_user_role
+    - The origin field tracks whether the grant came from Atlas or SEC
+    """
+
+    ORIGIN_ATLAS = 'ATLAS'
+    ORIGIN_SEC = 'SEC'
+    ORIGIN_SYSTEM = 'SYSTEM'
+
+    ORIGIN_CHOICES = (
+        (ORIGIN_ATLAS, 'Atlas Admin'),
+        (ORIGIN_SEC, 'SEC System'),
+        (ORIGIN_SYSTEM, 'System'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_roles')
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='user_roles')
+    origin = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default=ORIGIN_ATLAS)
+    granted_by = models.ForeignKey(
+        'AtlasAdmin',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='roles_granted'
+    )
+    granted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'atlas_user_role'
+        unique_together = ['user', 'role']
+        ordering = ['role__name']
+        verbose_name = 'User Role'
+        verbose_name_plural = 'User Roles'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role.name}"
+
+
+# =============================================================================
+# AtlasAdmin - Separate admin authentication
+# =============================================================================
+
+class AtlasAdmin(models.Model):
+    """
+    Separate model for administrator accounts.
+
+    AtlasAdmin accounts are distinct from regular User accounts:
+    - They authenticate via the admin login flow
+    - They have admin/super_admin/system_superadmin roles
+    - They do NOT sync to SEC tables
+    - They manage users and their roles
+
+    Permission Hierarchy:
+    - admin: Can view users and their roles, but cannot modify
+    - super_admin: Can manage users, assign/revoke roles
+    - system_superadmin: Can manage other admins, create super_admins
+      Only system_superadmin can promote/demote to super_admin level.
+    """
+
+    ROLE_ADMIN = 'admin'
+    ROLE_SUPER_ADMIN = 'super_admin'
+    ROLE_SYSTEM_SUPERADMIN = 'system_superadmin'
+
+    ROLE_CHOICES = (
+        (ROLE_ADMIN, 'Admin'),
+        (ROLE_SUPER_ADMIN, 'Super Admin'),
+        (ROLE_SYSTEM_SUPERADMIN, 'System Super Admin'),
+    )
+
+    # Authentication
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+
+    # Profile
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+
+    # Admin role
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default=ROLE_ADMIN)
+
+    # Status
+    is_active = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'atlas_admin'
+        ordering = ['-role', '-created_at']
+        verbose_name = 'Atlas Admin'
+        verbose_name_plural = 'Atlas Admins'
+
+    def __str__(self):
+        return f"{self.full_name} ({self.get_role_display()})"
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower().strip()
+        super().save(*args, **kwargs)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def display_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
     def is_admin(self):
-        """Check if user has admin or super_admin role."""
-        return self.role in (self.ROLE_ADMIN, self.ROLE_SUPER_ADMIN)
+        """All AtlasAdmin accounts have at least admin privileges."""
+        return True
 
     @property
     def is_super_admin(self):
-        """Check if user has super_admin role."""
-        return self.role == self.ROLE_SUPER_ADMIN
+        """Check if admin has super_admin or higher role."""
+        return self.role in (self.ROLE_SUPER_ADMIN, self.ROLE_SYSTEM_SUPERADMIN)
+
+    @property
+    def is_system_superadmin(self):
+        """Check if admin is the system super admin."""
+        return self.role == self.ROLE_SYSTEM_SUPERADMIN
 
     @property
     def role_display(self):
@@ -101,7 +352,7 @@ class User(models.Model):
         return dict(self.ROLE_CHOICES).get(self.role, 'Unknown')
 
     def set_password(self, raw_password):
-        """Hash and set the user's password using bcrypt."""
+        """Hash and set the admin's password using bcrypt."""
         salt = bcrypt.gensalt(rounds=12, prefix=b"2b")
         self.password = bcrypt.hashpw(raw_password.encode('utf-8'), salt).decode('utf-8')
 
@@ -117,58 +368,145 @@ class User(models.Model):
         self.last_login = timezone.now()
         self.save(update_fields=['last_login'])
 
-    def can_manage_user(self, target_user):
+    def can_manage_users(self):
+        """Check if admin can manage regular users."""
+        return self.is_super_admin
+
+    def can_manage_admins(self):
+        """Check if admin can manage other admins."""
+        return self.is_system_superadmin
+
+    def can_view_admin_list(self):
         """
-        Check if this user can manage (edit/view) another user.
+        Permission check for viewing admin list.
+        Only super_admin and system_superadmin can view admin list.
+        Regular admins cannot see other admins.
+        """
+        return self.is_super_admin
+
+    def can_change_admin_role(self, target_admin, new_role):
+        """
+        Check if this admin can change another admin's role.
 
         Rules:
-        - Users can only manage themselves
-        - Admins can view users but not promote/demote
-        - Super admins can manage everyone
+        - Only system_superadmin can change admin roles
+        - Cannot demote the last system_superadmin
+        - Cannot change own role (protection)
         """
-        if self.id == target_user.id:
-            return True
-        if self.is_super_admin:
-            return True
-        if self.is_admin and target_user.role == self.ROLE_USER:
-            return True
-        return False
-
-    def can_change_role(self, target_user, new_role):
-        """
-        Check if this user can change another user's role.
-
-        STRICT RULES:
-        - Only super_admin can promote/demote users
-        - Admins CANNOT promote or demote anyone
-        - Cannot demote the last super_admin
-        """
-        # Only super_admin can change roles
-        if not self.is_super_admin:
+        if not self.is_system_superadmin:
             return False
 
-        # Can't change own role (edge case protection)
-        if self.id == target_user.id:
-            # Check if this would remove the last super_admin
-            if new_role != self.ROLE_SUPER_ADMIN:
-                super_admin_count = User.objects.filter(
-                    role=self.ROLE_SUPER_ADMIN,
-                    is_active=True
-                ).exclude(id=self.id).count()
-                if super_admin_count == 0:
-                    return False
+        # Cannot change own role
+        if self.id == target_admin.id:
+            return False
 
-        # Check if demoting target would remove last super_admin
-        if target_user.is_super_admin and new_role != self.ROLE_SUPER_ADMIN:
-            super_admin_count = User.objects.filter(
-                role=self.ROLE_SUPER_ADMIN,
+        # Cannot demote last system_superadmin
+        if target_admin.is_system_superadmin and new_role != self.ROLE_SYSTEM_SUPERADMIN:
+            sys_admin_count = AtlasAdmin.objects.filter(
+                role=self.ROLE_SYSTEM_SUPERADMIN,
                 is_active=True
-            ).exclude(id=target_user.id).count()
-            if super_admin_count == 0:
+            ).exclude(id=target_admin.id).count()
+            if sys_admin_count == 0:
                 return False
 
         return True
 
+
+# =============================================================================
+# Message - In-app announcements
+# =============================================================================
+
+class Message(models.Model):
+    """
+    In-app messages/announcements for users.
+
+    Admins can create messages that appear in user dashboards.
+    Messages can be targeted to all users or specific roles.
+    """
+
+    PRIORITY_LOW = 'low'
+    PRIORITY_NORMAL = 'normal'
+    PRIORITY_HIGH = 'high'
+
+    PRIORITY_CHOICES = (
+        (PRIORITY_LOW, 'Low'),
+        (PRIORITY_NORMAL, 'Normal'),
+        (PRIORITY_HIGH, 'High'),
+    )
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
+
+    # Targeting
+    target_all_users = models.BooleanField(default=True)
+    target_roles = models.ManyToManyField(Role, blank=True, related_name='messages')
+
+    # Status
+    is_active = models.BooleanField(default=True)
+    starts_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    # Tracking
+    created_by = models.ForeignKey(
+        AtlasAdmin,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='messages_created'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'atlas_message'
+        ordering = ['-priority', '-created_at']
+        verbose_name = 'Message'
+        verbose_name_plural = 'Messages'
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_visible(self):
+        """Check if message should be displayed."""
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if self.starts_at > now:
+            return False
+        if self.expires_at and self.expires_at < now:
+            return False
+        return True
+
+    def is_visible_to_user(self, user):
+        """Check if message should be shown to a specific user."""
+        if not self.is_visible:
+            return False
+        if self.target_all_users:
+            return True
+        # Check if user has any of the target roles
+        user_role_ids = set(user.roles.values_list('id', flat=True))
+        target_role_ids = set(self.target_roles.values_list('id', flat=True))
+        return bool(user_role_ids & target_role_ids)
+
+
+class MessageDismissal(models.Model):
+    """Tracks which users have dismissed which messages."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dismissed_messages')
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='dismissals')
+    dismissed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'atlas_message_dismissal'
+        unique_together = ['user', 'message']
+        verbose_name = 'Message Dismissal'
+        verbose_name_plural = 'Message Dismissals'
+
+
+# =============================================================================
+# AuditLog - Comprehensive audit trail
+# =============================================================================
 
 class AuditLog(models.Model):
     """
@@ -176,10 +514,11 @@ class AuditLog(models.Model):
 
     Records:
     - User creation/updates
-    - Role changes (promotions/demotions)
+    - Role changes (grants/revokes)
     - Password resets
     - Login/logout events
     - Admin actions
+    - SEC sync events
     """
 
     ACTION_LOGIN = 'login'
@@ -189,11 +528,20 @@ class AuditLog(models.Model):
     ACTION_USER_UPDATED = 'user_updated'
     ACTION_USER_DEACTIVATED = 'user_deactivated'
     ACTION_USER_ACTIVATED = 'user_activated'
-    ACTION_ROLE_CHANGED = 'role_changed'
+    ACTION_ROLE_GRANTED = 'role_granted'
+    ACTION_ROLE_REVOKED = 'role_revoked'
+    ACTION_ROLE_BULK_GRANT = 'role_bulk_grant'
     ACTION_PASSWORD_CHANGED = 'password_changed'
     ACTION_PASSWORD_RESET_REQUESTED = 'password_reset_requested'
     ACTION_PASSWORD_RESET_COMPLETED = 'password_reset_completed'
     ACTION_PROFILE_UPDATED = 'profile_updated'
+    ACTION_ADMIN_LOGIN = 'admin_login'
+    ACTION_ADMIN_LOGOUT = 'admin_logout'
+    ACTION_ADMIN_CREATED = 'admin_created'
+    ACTION_ADMIN_ROLE_CHANGED = 'admin_role_changed'
+    ACTION_SEC_SYNC = 'sec_sync'
+    ACTION_MESSAGE_CREATED = 'message_created'
+    ACTION_MESSAGE_UPDATED = 'message_updated'
 
     ACTION_CHOICES = (
         (ACTION_LOGIN, 'User Login'),
@@ -203,38 +551,61 @@ class AuditLog(models.Model):
         (ACTION_USER_UPDATED, 'User Updated'),
         (ACTION_USER_DEACTIVATED, 'User Deactivated'),
         (ACTION_USER_ACTIVATED, 'User Activated'),
-        (ACTION_ROLE_CHANGED, 'Role Changed'),
+        (ACTION_ROLE_GRANTED, 'Role Granted'),
+        (ACTION_ROLE_REVOKED, 'Role Revoked'),
+        (ACTION_ROLE_BULK_GRANT, 'Bulk Role Grant'),
         (ACTION_PASSWORD_CHANGED, 'Password Changed'),
         (ACTION_PASSWORD_RESET_REQUESTED, 'Password Reset Requested'),
         (ACTION_PASSWORD_RESET_COMPLETED, 'Password Reset Completed'),
         (ACTION_PROFILE_UPDATED, 'Profile Updated'),
+        (ACTION_ADMIN_LOGIN, 'Admin Login'),
+        (ACTION_ADMIN_LOGOUT, 'Admin Logout'),
+        (ACTION_ADMIN_CREATED, 'Admin Created'),
+        (ACTION_ADMIN_ROLE_CHANGED, 'Admin Role Changed'),
+        (ACTION_SEC_SYNC, 'SEC Sync'),
+        (ACTION_MESSAGE_CREATED, 'Message Created'),
+        (ACTION_MESSAGE_UPDATED, 'Message Updated'),
     )
 
-    # Who performed the action (null for system actions or anonymous)
-    actor = models.ForeignKey(
+    # Who performed the action (can be User or Admin)
+    actor_user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='actions_performed'
     )
-    actor_email = models.EmailField(blank=True, default='')  # Preserved even if user deleted
+    actor_admin = models.ForeignKey(
+        AtlasAdmin,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actions_performed'
+    )
+    actor_email = models.EmailField(blank=True, default='')
 
     # Target of the action (if applicable)
-    target = models.ForeignKey(
+    target_user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='actions_received'
     )
-    target_email = models.EmailField(blank=True, default='')  # Preserved even if user deleted
+    target_admin = models.ForeignKey(
+        AtlasAdmin,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actions_received'
+    )
+    target_email = models.EmailField(blank=True, default='')
 
     # Action details
     action = models.CharField(max_length=50, choices=ACTION_CHOICES)
     description = models.TextField(blank=True, default='')
 
-    # State changes (JSON-like text for simplicity)
+    # State changes
     previous_state = models.TextField(blank=True, default='')
     new_state = models.TextField(blank=True, default='')
 
@@ -252,8 +623,9 @@ class AuditLog(models.Model):
         verbose_name_plural = 'Audit Logs'
         indexes = [
             models.Index(fields=['action', 'created_at']),
-            models.Index(fields=['actor', 'created_at']),
-            models.Index(fields=['target', 'created_at']),
+            models.Index(fields=['actor_user', 'created_at']),
+            models.Index(fields=['actor_admin', 'created_at']),
+            models.Index(fields=['target_user', 'created_at']),
         ]
 
     def __str__(self):
@@ -261,15 +633,17 @@ class AuditLog(models.Model):
         return f"{actor_str} - {self.get_action_display()} - {self.created_at}"
 
     @classmethod
-    def log(cls, action, actor=None, target=None, description='',
-            previous_state='', new_state='', request=None):
+    def log(cls, action, actor_user=None, actor_admin=None, target_user=None,
+            target_admin=None, description='', previous_state='', new_state='', request=None):
         """
         Create an audit log entry.
 
         Args:
             action: One of the ACTION_* constants
-            actor: User who performed the action
-            target: User who was affected (optional)
+            actor_user: User who performed the action (for user actions)
+            actor_admin: Admin who performed the action (for admin actions)
+            target_user: User who was affected
+            target_admin: Admin who was affected
             description: Human-readable description
             previous_state: State before the action
             new_state: State after the action
@@ -279,20 +653,34 @@ class AuditLog(models.Model):
         user_agent = ''
 
         if request:
-            # Get IP address
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
             if x_forwarded_for:
                 ip_address = x_forwarded_for.split(',')[0].strip()
             else:
                 ip_address = request.META.get('REMOTE_ADDR')
-
             user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
 
+        # Determine actor email
+        actor_email = ''
+        if actor_admin:
+            actor_email = actor_admin.email
+        elif actor_user:
+            actor_email = actor_user.email
+
+        # Determine target email
+        target_email = ''
+        if target_admin:
+            target_email = target_admin.email
+        elif target_user:
+            target_email = target_user.email
+
         return cls.objects.create(
-            actor=actor,
-            actor_email=actor.email if actor else '',
-            target=target,
-            target_email=target.email if target else '',
+            actor_user=actor_user,
+            actor_admin=actor_admin,
+            actor_email=actor_email,
+            target_user=target_user,
+            target_admin=target_admin,
+            target_email=target_email,
             action=action,
             description=description,
             previous_state=previous_state,
@@ -302,17 +690,33 @@ class AuditLog(models.Model):
         )
 
 
+# =============================================================================
+# PasswordResetToken
+# =============================================================================
+
 class PasswordResetToken(models.Model):
     """
     Secure token for password reset functionality.
 
-    Features:
-    - Cryptographically secure token generation
-    - Automatic expiration
-    - Single-use enforcement
+    Works for both User and AtlasAdmin accounts.
     """
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    # Can be for either User or Admin
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='password_reset_tokens'
+    )
+    admin = models.ForeignKey(
+        AtlasAdmin,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='password_reset_tokens'
+    )
+
     token = models.CharField(max_length=64, unique=True)
     is_used = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -326,38 +730,43 @@ class PasswordResetToken(models.Model):
         verbose_name_plural = 'Password Reset Tokens'
 
     def __str__(self):
-        return f"Reset token for {self.user.email}"
+        if self.user:
+            return f"Reset token for user {self.user.email}"
+        elif self.admin:
+            return f"Reset token for admin {self.admin.email}"
+        return f"Reset token {self.token[:8]}..."
 
     @classmethod
     def create_for_user(cls, user):
-        """
-        Create a new password reset token for a user.
-        Invalidates any existing unused tokens.
-        """
-        # Invalidate existing unused tokens
+        """Create a new password reset token for a user."""
         cls.objects.filter(user=user, is_used=False).update(is_used=True)
-
-        # Generate secure token
         token = secrets.token_urlsafe(48)
-
-        # Calculate expiration
         timeout_hours = getattr(settings, 'PASSWORD_RESET_TIMEOUT_HOURS', 24)
         expires_at = timezone.now() + timedelta(hours=timeout_hours)
+        return cls.objects.create(user=user, token=token, expires_at=expires_at)
 
-        return cls.objects.create(
-            user=user,
-            token=token,
-            expires_at=expires_at
-        )
+    @classmethod
+    def create_for_admin(cls, admin):
+        """Create a new password reset token for an admin."""
+        cls.objects.filter(admin=admin, is_used=False).update(is_used=True)
+        token = secrets.token_urlsafe(48)
+        timeout_hours = getattr(settings, 'PASSWORD_RESET_TIMEOUT_HOURS', 24)
+        expires_at = timezone.now() + timedelta(hours=timeout_hours)
+        return cls.objects.create(admin=admin, token=token, expires_at=expires_at)
 
     @property
     def is_valid(self):
-        """Check if the token is still valid (not used and not expired)."""
+        """Check if the token is still valid."""
         if self.is_used:
             return False
         if timezone.now() > self.expires_at:
             return False
         return True
+
+    @property
+    def account(self):
+        """Return the user or admin this token belongs to."""
+        return self.user or self.admin
 
     def use(self):
         """Mark the token as used."""
@@ -367,12 +776,9 @@ class PasswordResetToken(models.Model):
 
     @classmethod
     def get_valid_token(cls, token):
-        """
-        Retrieve a valid token by its string value.
-        Returns None if not found or invalid.
-        """
+        """Retrieve a valid token by its string value."""
         try:
-            reset_token = cls.objects.select_related('user').get(token=token)
+            reset_token = cls.objects.select_related('user', 'admin').get(token=token)
             if reset_token.is_valid:
                 return reset_token
         except cls.DoesNotExist:

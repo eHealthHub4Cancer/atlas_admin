@@ -510,6 +510,356 @@ body {
 }
 
 /* -----------------------------------------------------------------------------
+   Toast Notifications
+   ----------------------------------------------------------------------------- */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1100;
+    max-width: 350px;
+}
+
+.toast {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+    overflow: hidden;
+}
+
+.toast-success {
+    border-left: 4px solid #198754;
+}
+
+.toast-error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.toast-info {
+    border-left: 4px solid #0dcaf0;
+}
+
+.toast .toast-body {
+    padding: 1rem;
+}
+
+/* -----------------------------------------------------------------------------
+   Password Toggle
+   ----------------------------------------------------------------------------- */
+.password-toggle-wrapper {
+    position: relative;
+}
+
+.password-toggle-wrapper .form-control {
+    padding-right: 2.5rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    z-index: 10;
+}
+
+.password-toggle-btn:hover {
+    color: #212529;
+}
+
+.password-toggle-btn:focus {
+    outline: none;
+    color: var(--primary-color);
+}
+
+/* -----------------------------------------------------------------------------
+   Admin Sidebar (Differentiation)
+   ----------------------------------------------------------------------------- */
+.sidebar-admin {
+    --sidebar-bg: #1a1d20;
+    --sidebar-active: #dc3545;
+    background-color: var(--sidebar-bg);
+}
+
+.sidebar-admin .nav-link.active {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--sidebar-active);
+    border-left-color: var(--sidebar-active);
+}
+
+.sidebar-admin .sidebar-footer {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* User Sidebar */
+.sidebar-user {
+    --sidebar-active: #198754;
+}
+
+.sidebar-user .nav-link.active {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: var(--sidebar-active);
+    border-left-color: var(--sidebar-active);
+}
+
+/* -----------------------------------------------------------------------------
+   Modals
+   ----------------------------------------------------------------------------- */
+.modal-content {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+/* -----------------------------------------------------------------------------
+   Message/Announcement Cards
+   ----------------------------------------------------------------------------- */
+.message-card {
+    border-left: 4px solid var(--primary-color);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.message-card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.message-card.message-info {
+    border-left-color: #0dcaf0;
+}
+
+.message-card.message-warning {
+    border-left-color: #ffc107;
+}
+
+.message-card.message-urgent {
+    border-left-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+.message-card .message-meta {
+    font-size: 0.8125rem;
+    color: #6c757d;
+}
+
+.message-card .dismiss-btn {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.message-card:hover .dismiss-btn {
+    opacity: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   Role Badges
+   ----------------------------------------------------------------------------- */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    background-color: #e9ecef;
+    color: #495057;
+    margin: 0.125rem;
+}
+
+.role-badge i {
+    margin-right: 0.375rem;
+    font-size: 0.75rem;
+}
+
+.role-badge.role-system {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.role-badge .remove-role {
+    margin-left: 0.5rem;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.role-badge .remove-role:hover {
+    opacity: 1;
+    color: #dc3545;
+}
+
+/* -----------------------------------------------------------------------------
+   Support Page
+   ----------------------------------------------------------------------------- */
+.support-card {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.support-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.support-card .support-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+.support-card a {
+    word-break: break-all;
+}
+
+/* -----------------------------------------------------------------------------
+   Audit Log
+   ----------------------------------------------------------------------------- */
+.audit-entry {
+    padding: 1rem;
+    border-left: 3px solid #dee2e6;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.audit-entry.audit-create {
+    border-left-color: #198754;
+}
+
+.audit-entry.audit-update {
+    border-left-color: #0dcaf0;
+}
+
+.audit-entry.audit-delete {
+    border-left-color: #dc3545;
+}
+
+.audit-entry.audit-login {
+    border-left-color: #6f42c1;
+}
+
+.audit-entry .audit-actor {
+    font-weight: 600;
+}
+
+.audit-entry .audit-time {
+    font-size: 0.8125rem;
+    color: #6c757d;
+}
+
+/* -----------------------------------------------------------------------------
+   Admin Permission Badges
+   ----------------------------------------------------------------------------- */
+.badge-system-superadmin {
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+    color: #fff;
+}
+
+.badge-super-admin {
+    background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+    color: #fff;
+}
+
+.badge-admin {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: #fff;
+}
+
+/* -----------------------------------------------------------------------------
+   HTMX Loading Overlays
+   ----------------------------------------------------------------------------- */
+.htmx-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.htmx-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Table row loading state */
+tr.htmx-swapping {
+    opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------------
+   Search and Filter
+   ----------------------------------------------------------------------------- */
+.search-box {
+    position: relative;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-box .form-control {
+    padding-left: 2.5rem;
+}
+
+/* Filter Pills */
+.filter-pills .nav-link {
+    color: #6c757d;
+    border-radius: 2rem;
+    padding: 0.375rem 1rem;
+    margin-right: 0.5rem;
+    transition: all 0.2s;
+}
+
+.filter-pills .nav-link:hover {
+    background-color: #e9ecef;
+}
+
+.filter-pills .nav-link.active {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+/* -----------------------------------------------------------------------------
    Print Styles
    ----------------------------------------------------------------------------- */
 @media print {

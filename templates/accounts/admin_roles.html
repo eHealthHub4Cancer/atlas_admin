@@ -1,0 +1,227 @@
+{% extends "base_admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Role Management - Admin Dashboard{% endblock %}
+
+{% block page_title %}Role Management{% endblock %}
+{% block page_description %}Manage SEC roles and their descriptions{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>All Roles
+                </h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                            hx-get="{% url 'accounts:htmx_sync_roles' %}"
+                            hx-target="#roles-table-body"
+                            hx-indicator="#sync-spinner">
+                        <span id="sync-spinner" class="spinner-border spinner-border-sm htmx-indicator me-1"></span>
+                        <i class="bi bi-arrow-repeat me-1"></i>Sync from SEC
+                    </button>
+                    {% if admin.role == 'system_superadmin' %}
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+                        <i class="bi bi-plus-lg me-1"></i>Create Role
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Role Name</th>
+                                <th>Description</th>
+                                <th>Users</th>
+                                <th>Type</th>
+                                <th>SEC ID</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body">
+                            {% for role in roles %}
+                            <tr id="role-row-{{ role.id }}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-{% if role.is_system_role %}warning{% else %}primary{% endif %} bg-opacity-10 text-{% if role.is_system_role %}warning{% else %}primary{% endif %} me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                            <i class="bi bi-shield{% if role.is_system_role %}-lock{% endif %}"></i>
+                                        </div>
+                                        <strong>{{ role.name }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ role.description|default:"No description" }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ role.users.count }}</span>
+                                </td>
+                                <td>
+                                    {% if role.is_system_role %}
+                                    <span class="badge bg-warning text-dark">System</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Custom</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if role.external_id %}
+                                    <code>{{ role.external_id }}</code>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editRoleModal"
+                                            data-role-id="{{ role.id }}"
+                                            data-role-name="{{ role.name }}"
+                                            data-role-description="{{ role.description }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#viewUsersModal"
+                                            hx-get="{% url 'accounts:htmx_role_users' role.id %}"
+                                            hx-target="#role-users-content">
+                                        <i class="bi bi-people"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="table-empty-state">
+                                    <i class="bi bi-shield-x d-block"></i>
+                                    <p class="mb-0">No roles found. Click "Sync from SEC" to import roles.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Role Description</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="edit-role-form" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="edit-role-name" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-role-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit-role-description" name="description" rows="3"
+                                  placeholder="Enter a description for this role..."></textarea>
+                        <div class="form-text">This description will be shown to users who have this role.</div>
+                    </div>
+                    <input type="hidden" id="edit-role-id" name="role_id">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"
+                            hx-post="{% url 'accounts:htmx_update_role_description' %}"
+                            hx-target="#role-row-"
+                            hx-swap="outerHTML">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Users Modal -->
+<div class="modal fade" id="viewUsersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Users with this Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="role-users-content">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if admin.role == 'system_superadmin' %}
+<!-- Create Role Modal (System Superadmin only) -->
+<div class="modal fade" id="createRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:admin_create_role' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This will create a local role. To sync with SEC, the role must also be created in the SEC database.
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-role-name" class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="new-role-name" name="name" required
+                               pattern="[a-zA-Z0-9_\-]+" title="Only letters, numbers, underscores, and hyphens allowed">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-role-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="new-role-description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Create Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Populate edit modal with role data
+document.getElementById('editRoleModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    const roleId = button.getAttribute('data-role-id');
+    const roleName = button.getAttribute('data-role-name');
+    const roleDescription = button.getAttribute('data-role-description');
+
+    document.getElementById('edit-role-id').value = roleId;
+    document.getElementById('edit-role-name').value = roleName;
+    document.getElementById('edit-role-description').value = roleDescription || '';
+
+    // Update the hx-target to point to the correct row
+    const submitBtn = document.querySelector('#edit-role-form button[type="submit"]');
+    submitBtn.setAttribute('hx-target', '#role-row-' + roleId);
+    htmx.process(submitBtn);
+});
+</script>
+{% endblock %}

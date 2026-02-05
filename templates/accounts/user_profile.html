@@ -1,0 +1,107 @@
+{% extends "base_user_dashboard.html" %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                   id="id_first_name" name="first_name" value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                   id="id_last_name" name="last_name" value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_prefix" class="form-label">Title/Prefix</label>
+                        <select class="form-select" id="id_prefix" name="prefix">
+                            <option value="">-- None --</option>
+                            <option value="mr" {% if form.prefix.value == 'mr' %}selected{% endif %}>Mr.</option>
+                            <option value="mrs" {% if form.prefix.value == 'mrs' %}selected{% endif %}>Mrs.</option>
+                            <option value="ms" {% if form.prefix.value == 'ms' %}selected{% endif %}>Ms.</option>
+                            <option value="dr" {% if form.prefix.value == 'dr' %}selected{% endif %}>Dr.</option>
+                            <option value="prof" {% if form.prefix.value == 'prof' %}selected{% endif %}>Prof.</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_affiliation" class="form-label">Affiliation</label>
+                        <input type="text" class="form-control {% if form.affiliation.errors %}is-invalid{% endif %}"
+                               id="id_affiliation" name="affiliation" value="{{ form.affiliation.value|default:'' }}"
+                               placeholder="University / Organization">
+                        {% if form.affiliation.errors %}
+                            <div class="invalid-feedback">{{ form.affiliation.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>Save Changes
+                        </button>
+                        <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Account Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Username</td>
+                        <td class="fw-semibold">@{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Email</td>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Member Since</td>
+                        <td>{{ user.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h6 class="card-title"><i class="bi bi-shield-lock me-2"></i>Security</h6>
+                <p class="card-text text-muted small mb-3">
+                    Your username and email cannot be changed directly.
+                    Contact support if you need to update these.
+                </p>
+                <a href="{% url 'user_change_password' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-key me-2"></i>Change Password
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

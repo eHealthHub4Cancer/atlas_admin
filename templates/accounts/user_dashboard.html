@@ -1,0 +1,174 @@
+{% extends "base_user_dashboard.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Card -->
+    <div class="col-12 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h4 class="mb-1">Welcome back, {{ user.first_name }}!</h4>
+                        <p class="mb-0 opacity-75">Here's your account overview and role information.</p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-person-circle" style="font-size: 4rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages/Announcements -->
+    {% if messages_list %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Announcements</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for msg in messages_list %}
+                    <li class="list-group-item d-flex justify-content-between align-items-start" id="message-{{ msg.id }}">
+                        <div class="ms-2 me-auto">
+                            <div class="d-flex align-items-center mb-1">
+                                {% if msg.priority == 'high' %}
+                                <span class="badge bg-danger me-2">Important</span>
+                                {% elif msg.priority == 'normal' %}
+                                <span class="badge bg-primary me-2">Notice</span>
+                                {% else %}
+                                <span class="badge bg-secondary me-2">Info</span>
+                                {% endif %}
+                                <strong>{{ msg.title }}</strong>
+                            </div>
+                            <p class="mb-0 text-muted small">{{ msg.content|truncatewords:30 }}</p>
+                            <small class="text-muted">{{ msg.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                hx-post="{% url 'user_dismiss_message' msg.id %}"
+                                hx-target="#message-{{ msg.id }}"
+                                hx-swap="outerHTML"
+                                title="Dismiss">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Account Information -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Account Information</h5>
+                <a href="{% url 'user_profile' %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" style="width: 140px;">Username</td>
+                            <td class="fw-semibold">@{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Name</td>
+                            <td>{{ user.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Email</td>
+                            <td>{{ user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Affiliation</td>
+                            <td>{{ user.affiliation|default:"Not specified" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Member Since</td>
+                            <td>{{ user.created_at|date:"F d, Y" }}</td>
+                        </tr>
+                        {% if user.last_login %}
+                        <tr>
+                            <td class="text-muted">Last Login</td>
+                            <td>{{ user.last_login|date:"F d, Y H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Roles -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-shield me-2"></i>My Roles</h5>
+                <a href="{% url 'user_roles' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if user_roles %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for role in user_roles %}
+                    <span class="badge bg-primary fs-6 fw-normal py-2 px-3" title="{{ role.description|default:'No description' }}">
+                        <i class="bi bi-shield-check me-1"></i>{{ role.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Roles determine your access to various research resources.
+                </p>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-shield fs-1 mb-2"></i>
+                    <p class="mb-0">No roles assigned yet.</p>
+                    <small>Contact an administrator to request role assignments.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <a href="{% url 'user_profile' %}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-person d-block fs-4 mb-1"></i>
+                            <span class="small">Update Profile</span>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{% url 'user_roles' %}" class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-shield d-block fs-4 mb-1"></i>
+                            <span class="small">View Roles</span>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{% url 'user_change_password' %}" class="btn btn-outline-secondary w-100 py-3">
+                            <i class="bi bi-key d-block fs-4 mb-1"></i>
+                            <span class="small">Change Password</span>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{% url 'user_support' %}" class="btn btn-outline-success w-100 py-3">
+                            <i class="bi bi-question-circle d-block fs-4 mb-1"></i>
+                            <span class="small">Get Support</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
