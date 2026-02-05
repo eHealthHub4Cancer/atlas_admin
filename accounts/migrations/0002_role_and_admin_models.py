@@ -38,6 +38,8 @@ def table_exists(table_name):
 
 def add_username_if_not_exists(apps, schema_editor):
     """Add username column if it doesn't exist."""
+    if not table_exists('atlas_user'):
+        return  # Table doesn't exist, skip
     if not column_exists('atlas_user', 'username'):
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -48,6 +50,8 @@ def add_username_if_not_exists(apps, schema_editor):
 
 def add_sec_user_id_if_not_exists(apps, schema_editor):
     """Add sec_user_id column if it doesn't exist."""
+    if not table_exists('atlas_user'):
+        return  # Table doesn't exist, skip
     if not column_exists('atlas_user', 'sec_user_id'):
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -58,6 +62,8 @@ def add_sec_user_id_if_not_exists(apps, schema_editor):
 
 def remove_role_if_exists(apps, schema_editor):
     """Remove role column from User if it exists."""
+    if not table_exists('atlas_user'):
+        return  # Table doesn't exist, skip
     if column_exists('atlas_user', 'role'):
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -67,6 +73,10 @@ def remove_role_if_exists(apps, schema_editor):
 
 def make_username_unique(apps, schema_editor):
     """Make username unique if not already."""
+    if not table_exists('atlas_user'):
+        return  # Table doesn't exist, skip
+    if not column_exists('atlas_user', 'username'):
+        return  # Column doesn't exist, skip
     # First, populate empty usernames with email prefix
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -99,6 +109,8 @@ def make_username_unique(apps, schema_editor):
 
 def rename_audit_log_fields(apps, schema_editor):
     """Rename actor/target to actor_user/target_user if needed."""
+    if not table_exists('atlas_audit_log'):
+        return  # Table doesn't exist, skip
     if column_exists('atlas_audit_log', 'actor_id') and not column_exists('atlas_audit_log', 'actor_user_id'):
         with connection.cursor() as cursor:
             cursor.execute('ALTER TABLE atlas_audit_log RENAME COLUMN actor_id TO actor_user_id')
@@ -109,6 +121,8 @@ def rename_audit_log_fields(apps, schema_editor):
 
 def add_audit_log_admin_fields(apps, schema_editor):
     """Add actor_admin_id and target_admin_id to audit log if not exist."""
+    if not table_exists('atlas_audit_log'):
+        return  # Table doesn't exist, skip
     if not column_exists('atlas_audit_log', 'actor_admin_id'):
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -125,7 +139,9 @@ def add_audit_log_admin_fields(apps, schema_editor):
 
 def update_password_reset_token(apps, schema_editor):
     """Update password reset token table for admin support."""
-    # Rename user_id to user_id if needed (no change), make nullable
+    if not table_exists('atlas_password_reset_token'):
+        return  # Table doesn't exist, skip
+    # Make user_id nullable
     if column_exists('atlas_password_reset_token', 'user_id'):
         with connection.cursor() as cursor:
             cursor.execute("""
