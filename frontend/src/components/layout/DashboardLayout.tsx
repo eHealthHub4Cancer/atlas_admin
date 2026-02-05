@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar, NavItem } from './Sidebar';
+import { Sidebar, type NavItem } from './Sidebar';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { cn } from '../../lib/utils';

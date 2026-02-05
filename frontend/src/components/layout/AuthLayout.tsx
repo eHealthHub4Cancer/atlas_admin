@@ -32,6 +32,7 @@ export interface AuthLayoutProps {
   title?: string;
   subtitle?: string;
   showAdminLink?: boolean;
+  maxWidthClassName?: string;
 }
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
@@ -39,6 +40,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   title = 'Welcome to Atlas',
   subtitle = 'Sign in to your account',
   showAdminLink = false,
+  maxWidthClassName = 'max-w-md',
 }) => {
   const { theme, toggleTheme } = useThemeStore();
 
@@ -87,7 +89,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
+        <div className={cn('w-full', maxWidthClassName)}>
           {/* Title */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -99,7 +101,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </div>
 
           {/* Card */}
-          <div className="bg-white dark:bg-dark-card rounded-2xl border border-light-border dark:border-dark-border shadow-soft p-8">
+          <div className="bg-white dark:bg-dark-card rounded-2xl shadow-soft p-8">
             {children}
           </div>
         </div>

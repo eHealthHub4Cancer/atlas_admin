@@ -14,7 +14,7 @@ const variantStyles = {
   secondary: 'bg-slate-100 dark:bg-dark-elevated text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 focus:ring-slate-500',
   ghost: 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-elevated focus:ring-slate-500',
   danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 focus:ring-red-500',
-  outline: 'border border-light-border dark:border-dark-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-elevated focus:ring-slate-500',
+  outline: 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-elevated focus:ring-slate-500 shadow-sm',
 };
 
 const sizeStyles = {

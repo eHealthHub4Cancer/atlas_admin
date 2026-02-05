@@ -32,7 +32,10 @@ export const AdminLoginPage: React.FC = () => {
     setErrors({});
 
     try {
-      const result = await authApi.adminLogin(formData);
+      const result = await authApi.adminLogin({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
       if (result.success) {
         await fetchSession();
         toast.success('Welcome, Admin!', 'You have been logged in successfully.');
@@ -58,6 +61,7 @@ export const AdminLoginPage: React.FC = () => {
     <AuthLayout
       title="Admin Console"
       subtitle="Sign in to the administration dashboard"
+      maxWidthClassName="max-w-sm"
     >
       <div className="mb-6 flex justify-center">
         <Badge variant="warning" className="gap-2 px-3 py-2">

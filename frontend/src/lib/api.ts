@@ -1,5 +1,6 @@
 import type {
   AuthSession,
+  AdminLoginFormData,
   LoginFormData,
   SignupFormData,
   ProfileFormData,
@@ -82,7 +83,7 @@ export const authApi = {
   getSession: () => request<AuthSession>('/session/'),
   login: (data: LoginFormData) =>
     request<AuthSession>('/login/', { method: 'POST', body: JSON.stringify(data) }),
-  adminLogin: (data: LoginFormData) =>
+  adminLogin: (data: AdminLoginFormData) =>
     request<AuthSession>('/admin-login/', { method: 'POST', body: JSON.stringify(data) }),
   signup: (data: SignupFormData) =>
     request<AuthSession>('/signup/', { method: 'POST', body: JSON.stringify(data) }),

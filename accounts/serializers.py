@@ -93,14 +93,16 @@ class SignupSerializer(serializers.Serializer):
     password2 = serializers.CharField(write_only=True)
 
     def validate_username(self, value):
-        if AtlasUser.objects.filter(username__iexact=value).exists():
+        normalized = value.strip()
+        if AtlasUser.objects.filter(username__iexact=normalized).exists():
             raise serializers.ValidationError("This username is already taken.")
-        return value
+        return normalized
 
     def validate_email(self, value):
-        if UserProfile.objects.filter(email__iexact=value).exists():
+        normalized = value.strip().lower()
+        if UserProfile.objects.filter(email__iexact=normalized).exists():
             raise serializers.ValidationError("This email is already registered.")
-        return value
+        return normalized
 
     def validate(self, data):
         if data.get('password1') != data.get('password2'):

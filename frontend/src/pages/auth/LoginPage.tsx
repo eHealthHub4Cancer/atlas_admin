@@ -32,7 +32,10 @@ export const LoginPage: React.FC = () => {
     setErrors({});
 
     try {
-      const result = await authApi.login(formData);
+      const result = await authApi.login({
+        username: formData.username.trim(),
+        password: formData.password,
+      });
       if (result.success) {
         await fetchSession();
         toast.success('Welcome back!', 'You have been logged in successfully.');
@@ -59,16 +62,17 @@ export const LoginPage: React.FC = () => {
       title="Welcome back"
       subtitle="Sign in to your Atlas account"
       showAdminLink
+      maxWidthClassName="max-w-sm"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <Input
-          label="Username"
+          label="Username or email"
           name="username"
           type="text"
           value={formData.username}
           onChange={handleChange}
           error={errors.username}
-          placeholder="Enter your username"
+          placeholder="Enter your username or email"
           autoComplete="username"
           required
         />
