@@ -1,6 +1,6 @@
 /* Signup page specific styles */
 .signup-page .auth-wrapper {
-  max-width: 560px;
+  max-width: 1080px;
 }
 
 .signup-page .auth-card {
@@ -8,7 +8,7 @@
 }
 
 .signup-page .auth-hero {
-  margin-bottom: 1.75rem;
+  margin-bottom: 0;
 }
 
 .signup-page .auth-subtitle {
@@ -16,12 +16,8 @@
 }
 
 /* Adjust form fields for signup */
-.signup-page .form-field {
-  margin-bottom: 1rem;
-}
-
-.signup-page .form-field:last-of-type {
-  margin-bottom: 1.25rem;
+.signup-page .auth-form {
+  gap: 1.1rem;
 }
 
 /* Compact password hints */

@@ -70,7 +70,7 @@ export const AdminLoginPage: React.FC = () => {
         </Badge>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Input
           label="Email"
           name="email"

@@ -128,8 +128,8 @@ export const ProfilePage: React.FC = () => {
           title="Edit Profile"
           description="Update your personal information below"
         />
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <Select
               label="Prefix"
               options={prefixOptions}

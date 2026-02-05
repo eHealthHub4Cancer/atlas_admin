@@ -6,6 +6,7 @@ import math
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.response import Response
 
 from .models import AtlasUser, UserProfile, AdminUser, Permission
@@ -66,6 +67,7 @@ def _paginate(queryset, page, page_size):
 # AUTH API ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
 
+@ensure_csrf_cookie
 @api_view(['GET'])
 def session_api(request):
     """Get current session info."""

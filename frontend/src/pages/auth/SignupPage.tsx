@@ -106,8 +106,8 @@ export const SignupPage: React.FC = () => {
       subtitle="Join Atlas Research Platform"
       maxWidthClassName="max-w-lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Select
             label="Prefix"
             options={prefixOptions}

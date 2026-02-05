@@ -43,9 +43,10 @@ export const Select: React.FC<SelectProps> = ({
         <div className="relative">
           <Listbox.Button
             className={cn(
-              'relative w-full cursor-pointer rounded-xl py-2.5 pl-4 pr-10 text-left text-sm',
+              'relative w-full h-11 cursor-pointer rounded-xl pl-4 pr-10 text-left text-sm',
               'bg-white dark:bg-dark-elevated',
-              'focus:outline-none focus:ring-2 focus:ring-brand-500/20',
+              'border border-slate-200 dark:border-dark-border',
+              'focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500',
               'transition-all duration-200 shadow-sm',
               error && 'input-error',
               disabled && 'opacity-50 cursor-not-allowed'

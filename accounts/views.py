@@ -347,25 +347,42 @@ def signup(request):
 
 def login_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
 
-        try:
-            user = AtlasUser.objects.get(username=username)
-            if user.is_disabled:
-                messages.error(request, "Your account has been disabled. Please contact an admin.")
-                return render(request, "accounts/login.html")
+        if not username or not password:
+            messages.error(request, "Please enter both username/email and password.")
+            return render(request, "accounts/login.html")
 
-            if user.check_password(password):
-                request.session["user_id"] = user.id
-                request.session["username"] = user.username
-                request.session["role"] = user.role
-                messages.success(request, "Signed in successfully.")
-                return redirect("user_dashboard")
+        user = None
+        if "@" in username:
+            try:
+                profile = UserProfile.objects.select_related("user").get(email__iexact=username)
+                user = profile.user
+            except UserProfile.DoesNotExist:
+                user = None
+        else:
+            try:
+                user = AtlasUser.objects.get(username__iexact=username)
+            except AtlasUser.DoesNotExist:
+                user = None
 
+        if not user:
             messages.error(request, "Invalid username or password.")
-        except AtlasUser.DoesNotExist:
-            messages.error(request, "Invalid username or password.")
+            return render(request, "accounts/login.html")
+
+        if user.is_disabled:
+            messages.error(request, "Your account has been disabled. Please contact an admin.")
+            return render(request, "accounts/login.html")
+
+        if user.check_password(password):
+            request.session["user_id"] = user.id
+            request.session["username"] = user.username
+            request.session["role"] = user.role
+            messages.success(request, "Signed in successfully.")
+            return redirect("user_dashboard")
+
+        messages.error(request, "Invalid username or password.")
 
     return render(request, "accounts/login.html")
 

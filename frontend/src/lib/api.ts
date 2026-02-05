@@ -14,7 +14,7 @@ import type {
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-const API_BASE = '/api';
+const API_BASE = '/accounts/api';
 
 const getCsrfToken = (): string | null => {
   if (typeof document === 'undefined') {

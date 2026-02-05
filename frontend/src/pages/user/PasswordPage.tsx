@@ -99,7 +99,7 @@ export const PasswordPage: React.FC = () => {
           description="Choose a strong password with at least 8 characters"
         />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Current Password"
             name="current_password"
