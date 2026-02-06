@@ -30,52 +30,67 @@ from django.conf import settings
 
 
 # =============================================================================
-# Role Model - Local representation of SEC roles
+# Prefix Model - Manageable name prefixes
+# =============================================================================
+
+class Prefix(models.Model):
+    """
+    User name prefix options (Mr., Mrs., Ms., Dr., Prof., etc.).
+    
+    Managed by super admins instead of being hardcoded.
+    """
+    
+    name = models.CharField(max_length=20, unique=True,
+        help_text="Short code for the prefix (e.g., 'mr', 'dr')")
+    display_name = models.CharField(max_length=50,
+        help_text="Display text for the prefix (e.g., 'Mr.', 'Dr.')")
+    is_active = models.BooleanField(default=True,
+        help_text="Whether this prefix is available for selection")
+    sort_order = models.IntegerField(default=0,
+        help_text="Order in which to display this prefix")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'atlas_prefix'
+        ordering = ['sort_order', 'display_name']
+        verbose_name = 'Prefix'
+        verbose_name_plural = 'Prefixes'
+    
+    def __str__(self):
+        return self.display_name
+
+
+# =============================================================================
+# Role Model - Manageable user roles
 # =============================================================================
 
 class Role(models.Model):
     """
-    Local representation of SEC roles (sec_role).
-
-    This model mirrors the sec_role table and adds additional metadata
-    like descriptions for UI display. The external_id links back to
-    the sec_role.id for synchronization.
-
-    SEC Sync Architecture:
-    - Roles are synced FROM sec_role via sync_roles_from_sec()
-    - When a role is assigned to a user, it's synced TO sec_user_role
-    - The name field should match sec_role.name exactly
+    User role definitions (guest, student, researcher, clinician, etc.).
+    
+    Managed by super admins. Roles define user access levels and permissions.
     """
 
-    name = models.CharField(max_length=255, unique=True)
-    description = models.TextField(blank=True, default='')
-    external_id = models.IntegerField(blank=True, null=True, db_index=True,
-        help_text="Links to sec_role.id in the WebAPI schema")
-    is_system_role = models.BooleanField(default=False,
-        help_text="System roles like 'public' cannot be removed from users")
+    name = models.CharField(max_length=255, unique=True,
+        help_text="Role name (e.g., 'guest', 'researcher')")
+    description = models.TextField(blank=True, default='',
+        help_text="Description of what this role represents")
+    is_active = models.BooleanField(default=True,
+        help_text="Whether this role is available for assignment")
+    sort_order = models.IntegerField(default=0,
+        help_text="Order in which to display this role")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'atlas_role'
-        ordering = ['name']
+        ordering = ['sort_order', 'name']
         verbose_name = 'Role'
         verbose_name_plural = 'Roles'
 
     def __str__(self):
         return self.name
-
-    @classmethod
-    def get_or_create_from_sec(cls, external_id, name):
-        """
-        Get or create a local role from SEC data.
-        Used during sync_roles_from_sec().
-        """
-        role, created = cls.objects.update_or_create(
-            name=name,
-            defaults={'external_id': external_id}
-        )
-        return role, created
 
 
 # =============================================================================
@@ -97,25 +112,17 @@ class User(models.Model):
     Note: Username is normalized to lowercase for SEC compatibility.
     """
 
-    PREFIX_CHOICES = (
-        ('', ''),
-        ('mr', 'Mr.'),
-        ('mrs', 'Mrs.'),
-        ('ms', 'Ms.'),
-        ('dr', 'Dr.'),
-        ('prof', 'Prof.'),
-    )
-
     # Authentication fields - username is primary identifier
     username = models.CharField(max_length=150, unique=True,
-        help_text="Lowercase username, synced to sec_user.login")
+        help_text="Lowercase username")
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
 
     # Profile fields
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    prefix = models.CharField(max_length=10, choices=PREFIX_CHOICES, blank=True, default='')
+    prefix = models.ForeignKey(Prefix, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='users', help_text="Name prefix (Mr., Dr., etc.)")
     affiliation = models.CharField(max_length=255, blank=True, default='')
 
     # Roles - many-to-many through UserRole
@@ -124,9 +131,6 @@ class User(models.Model):
     # Status
     is_active = models.BooleanField(default=True)
 
-    # SEC sync tracking
-    sec_user_id = models.IntegerField(blank=True, null=True,
-        help_text="Links to sec_user.id in the WebAPI schema")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -153,9 +157,8 @@ class User(models.Model):
     @property
     def full_name(self):
         """Return the user's full name with optional prefix."""
-        prefix_display = dict(self.PREFIX_CHOICES).get(self.prefix, '')
-        if prefix_display:
-            return f"{prefix_display} {self.first_name} {self.last_name}"
+        if self.prefix:
+            return f"{self.prefix.display_name} {self.first_name} {self.last_name}"
         return f"{self.first_name} {self.last_name}"
 
     @property
@@ -202,9 +205,6 @@ class User(models.Model):
         """Remove a role from this user."""
         if isinstance(role, str):
             role = Role.objects.get(name__iexact=role)
-        # Don't remove system roles
-        if role.is_system_role:
-            return False
         UserRole.objects.filter(user=self, role=role).delete()
         return True
 

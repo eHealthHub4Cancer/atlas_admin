@@ -120,8 +120,10 @@ button {
 }
 
 .container {
-  width: min(1140px, 90vw);
+  width: 100%;
+  max-width: 1140px;
   margin: 0 auto;
+  padding: 0 clamp(1rem, 5vw, 2rem);
 }
 
 /* Buttons */

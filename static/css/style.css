@@ -265,11 +265,11 @@ body.auth-page {
 
 /* Wide container for signup form */
 .auth-container-wide {
-    max-width: 540px;
+    max-width: 480px;
 }
 
 .auth-wrapper:has(.auth-container-wide) {
-    max-width: 540px;
+    max-width: 480px;
 }
 
 /* Form text helper */

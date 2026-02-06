@@ -1,68 +1,250 @@
+"""
+Atlas Config - Serializers
+
+REST API serializers for User, AtlasAdmin, Role, Prefix, and related models.
+"""
+
 from rest_framework import serializers
-from .models import AtlasUser, UserProfile, AdminUser, Permission
+from .models import User, AtlasAdmin, Role, Prefix, UserRole
 
 
-class PermissionSerializer(serializers.ModelSerializer):
+# =============================================================================
+# Prefix Serializers
+# =============================================================================
+
+class PrefixSerializer(serializers.ModelSerializer):
+    """Serializer for Prefix model."""
+    
     class Meta:
-        model = Permission
-        fields = ['id', 'name', 'external_id', 'description']
+        model = Prefix
+        fields = ['id', 'name', 'display_name', 'is_active', 'sort_order', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class PrefixCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating prefixes."""
+    
     class Meta:
-        model = UserProfile
-        fields = ['id', 'display_name', 'email', 'affiliation', 'prefix', 'created_at', 'updated_at']
+        model = Prefix
+        fields = ['name', 'display_name', 'is_active', 'sort_order']
+    
+    def validate_name(self, value):
+        """Ensure name is lowercase and unique."""
+        value = value.lower().strip()
+        instance = self.instance
+        if instance:
+            # Update - check uniqueness excluding current instance
+            if Prefix.objects.exclude(pk=instance.pk).filter(name=value).exists():
+                raise serializers.ValidationError("A prefix with this name already exists.")
+        else:
+            # Create - check uniqueness
+            if Prefix.objects.filter(name=value).exists():
+                raise serializers.ValidationError("A prefix with this name already exists.")
+        return value
 
 
-class AtlasUserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(read_only=True)
-    permissions = PermissionSerializer(many=True, read_only=True)
+# =============================================================================
+# Role Serializers
+# =============================================================================
 
+class RoleSerializer(serializers.ModelSerializer):
+    """Serializer for Role model."""
+    
+    user_count = serializers.IntegerField(read_only=True, required=False)
+    
     class Meta:
-        model = AtlasUser
-        fields = ['id', 'username', 'role', 'is_disabled', 'created_at', 'updated_at', 'profile', 'permissions']
+        model = Role
+        fields = ['id', 'name', 'description', 'is_active', 'sort_order', 'created_at', 'updated_at', 'user_count']
+        read_only_fields = ['created_at', 'updated_at']
 
 
-class AdminUserSerializer(serializers.ModelSerializer):
+class RoleCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating roles."""
+    
     class Meta:
-        model = AdminUser
-        fields = ['id', 'name', 'email', 'affiliation', 'is_admin', 'is_super_admin']
+        model = Role
+        fields = ['name', 'description', 'is_active', 'sort_order']
+    
+    def validate_name(self, value):
+        """Ensure name is lowercase and unique."""
+        value = value.lower().strip()
+        instance = self.instance
+        if instance:
+            # Update - check uniqueness excluding current instance
+            if Role.objects.exclude(pk=instance.pk).filter(name=value).exists():
+                raise serializers.ValidationError("A role with this name already exists.")
+        else:
+            # Create - check uniqueness
+            if Role.objects.filter(name=value).exists():
+                raise serializers.ValidationError("A role with this name already exists.")
+        return value
 
 
-class CombinedUserSerializer(serializers.Serializer):
-    """Serializer for combined atlas + admin users view"""
-    id = serializers.IntegerField()
-    username = serializers.CharField(allow_null=True)
-    display_name = serializers.CharField()
-    email = serializers.CharField()
-    role = serializers.CharField()
-    is_disabled = serializers.BooleanField()
-    is_admin = serializers.BooleanField()
-    is_super_admin = serializers.BooleanField()
-    user_type = serializers.CharField()
-    permissions = PermissionSerializer(many=True)
+# =============================================================================
+# User Serializers
+# =============================================================================
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for User model."""
+    
+    roles = RoleSerializer(many=True, read_only=True)
+    prefix_display = serializers.CharField(source='prefix.display_name', read_only=True, allow_null=True)
+    role_names = serializers.ListField(source='role_names', read_only=True)
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name', 
+            'prefix', 'prefix_display', 'affiliation', 'is_active',
+            'roles', 'role_names', 'created_at', 'updated_at', 'last_login'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'last_login']
 
 
-class ActivityLogSerializer(serializers.Serializer):
-    """Serializer for activity log entries"""
-    id = serializers.IntegerField()
-    action = serializers.CharField()
-    summary = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-    status = serializers.CharField()
+class UserCreateSerializer(serializers.Serializer):
+    """Serializer for user signup/creation."""
+    
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=100)
+    last_name = serializers.CharField(max_length=100)
+    prefix = serializers.PrimaryKeyRelatedField(
+        queryset=Prefix.objects.filter(is_active=True),
+        required=False,
+        allow_null=True
+    )
+    affiliation = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    role = serializers.PrimaryKeyRelatedField(
+        queryset=Role.objects.filter(is_active=True),
+        required=False,
+        allow_null=True
+    )
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    
+    def validate_username(self, value):
+        """Validate username is unique and lowercase."""
+        value = value.lower().strip()
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
+    
+    def validate_email(self, value):
+        """Validate email is unique."""
+        value = value.lower().strip()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return value
+    
+    def validate(self, data):
+        """Validate passwords match."""
+        if data.get('password') != data.get('password_confirm'):
+            raise serializers.ValidationError({'password_confirm': "Passwords do not match."})
+        return data
 
 
-class DashboardStatsSerializer(serializers.Serializer):
-    """Serializer for admin dashboard stats"""
-    total_users = serializers.IntegerField()
-    admin_users = serializers.IntegerField()
-    roles_count = serializers.IntegerField()
-    active_users = serializers.IntegerField()
-    disabled_users = serializers.IntegerField()
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating user profile."""
+    
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'prefix', 'affiliation', 'email']
+    
+    def validate_email(self, value):
+        """Validate email is unique (excluding current user)."""
+        value = value.lower().strip()
+        if self.instance:
+            if User.objects.exclude(pk=self.instance.pk).filter(email=value).exists():
+                raise serializers.ValidationError("This email is already registered.")
+        return value
+
+
+# =============================================================================
+# Admin Serializers
+# =============================================================================
+
+class AtlasAdminSerializer(serializers.ModelSerializer):
+    """Serializer for AtlasAdmin model."""
+    
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+    
+    class Meta:
+        model = AtlasAdmin
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'role', 'role_display',
+            'is_active', 'created_at', 'updated_at', 'last_login'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'last_login']
+
+
+# =============================================================================
+# Authentication Serializers
+# =============================================================================
+
+class LoginSerializer(serializers.Serializer):
+    """Serializer for user login."""
+    
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
+class AdminLoginSerializer(serializers.Serializer):
+    """Serializer for admin login."""
+    
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
+class SignupSerializer(serializers.Serializer):
+    """Serializer for user signup (frontend API)."""
+    
+    username = serializers.CharField(max_length=150)
+    display_name = serializers.CharField(max_length=200)
+    email = serializers.EmailField()
+    affiliation = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    prefix = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    role = serializers.CharField(max_length=50)
+    password1 = serializers.CharField(write_only=True, min_length=8)
+    password2 = serializers.CharField(write_only=True)
+    
+    def validate_username(self, value):
+        """Validate username."""
+        value = value.lower().strip()
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
+    
+    def validate_email(self, value):
+        """Validate email."""
+        value = value.lower().strip()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return value
+    
+    def validate(self, data):
+        """Validate passwords match."""
+        if data.get('password1') != data.get('password2'):
+            raise serializers.ValidationError({'password2': "Passwords do not match."})
+        return data
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    """Serializer for password change."""
+    
+    current_password = serializers.CharField(write_only=True)
+    new_password1 = serializers.CharField(write_only=True, min_length=8)
+    new_password2 = serializers.CharField(write_only=True)
+    
+    def validate(self, data):
+        """Validate new passwords match."""
+        if data.get('new_password1') != data.get('new_password2'):
+            raise serializers.ValidationError({'new_password2': "Passwords do not match."})
+        return data
 
 
 class AuthSessionSerializer(serializers.Serializer):
-    """Serializer for authentication session"""
+    """Serializer for authentication session."""
+    
     user_id = serializers.IntegerField()
     username = serializers.CharField(allow_null=True)
     role = serializers.CharField()
@@ -72,68 +254,41 @@ class AuthSessionSerializer(serializers.Serializer):
     email = serializers.CharField(allow_null=True)
 
 
-class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-
-
-class AdminLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-
-class SignupSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    display_name = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
-    affiliation = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    prefix = serializers.ChoiceField(choices=['', 'Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'], required=False)
-    role = serializers.ChoiceField(choices=['researcher', 'guest', 'student'], default='guest')
-    password1 = serializers.CharField(write_only=True, min_length=8)
-    password2 = serializers.CharField(write_only=True)
-
-    def validate_username(self, value):
-        normalized = value.strip()
-        if AtlasUser.objects.filter(username__iexact=normalized).exists():
-            raise serializers.ValidationError("This username is already taken.")
-        return normalized
-
-    def validate_email(self, value):
-        normalized = value.strip().lower()
-        if UserProfile.objects.filter(email__iexact=normalized).exists():
-            raise serializers.ValidationError("This email is already registered.")
-        return normalized
-
-    def validate(self, data):
-        if data.get('password1') != data.get('password2'):
-            raise serializers.ValidationError({'password2': "Passwords do not match."})
-        return data
-
+# =============================================================================
+# Utility Serializers
+# =============================================================================
 
 class ProfileUpdateSerializer(serializers.Serializer):
-    display_name = serializers.CharField(max_length=150)
+    """Serializer for profile updates (frontend API)."""
+    
+    display_name = serializers.CharField(max_length=200)
     email = serializers.EmailField()
     affiliation = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    prefix = serializers.ChoiceField(choices=['', 'Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'], required=False)
+    prefix = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
 
-class PasswordChangeSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True)
-    new_password1 = serializers.CharField(write_only=True, min_length=8)
-    new_password2 = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        if data.get('new_password1') != data.get('new_password2'):
-            raise serializers.ValidationError({'new_password2': "Passwords do not match."})
-        return data
-
-
-class BulkGrantSerializer(serializers.Serializer):
+class BulkRoleAssignSerializer(serializers.Serializer):
+    """Serializer for bulk role assignment."""
+    
     user_ids = serializers.ListField(child=serializers.IntegerField())
-    permission_ids = serializers.ListField(child=serializers.IntegerField())
+    role_ids = serializers.ListField(child=serializers.IntegerField())
 
 
-class UserUpdateSerializer(serializers.Serializer):
-    is_disabled = serializers.BooleanField(required=False)
-    permissions = serializers.ListField(child=serializers.IntegerField(), required=False)
-    type = serializers.ChoiceField(choices=['atlas', 'admin'])
+class DashboardStatsSerializer(serializers.Serializer):
+    """Serializer for admin dashboard stats."""
+    
+    total_users = serializers.IntegerField()
+    admin_users = serializers.IntegerField()
+    roles_count = serializers.IntegerField()
+    active_users = serializers.IntegerField()
+    disabled_users = serializers.IntegerField()
+
+
+class PaginatedResponseSerializer(serializers.Serializer):
+    """Generic paginated response serializer."""
+    
+    count = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    results = serializers.ListField()

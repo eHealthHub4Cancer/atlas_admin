@@ -7,6 +7,7 @@ Supports dual login: User (username) and AtlasAdmin (email).
 
 from django.urls import path
 from . import views
+from . import api_views
 
 urlpatterns = [
     # =========================================================================
@@ -75,6 +76,38 @@ urlpatterns = [
     path('htmx/search-users/', views.htmx_search_users_view, name='htmx_search_users'),
     path('htmx/user-roles/<int:user_id>/', views.htmx_user_roles_view, name='htmx_user_roles'),
 
+    # =========================================================================
+    # REST API Endpoints
+    # =========================================================================
+    
+    # Auth API
+    path('api/session/', api_views.session_api, name='api_session'),
+    path('api/login/', api_views.login_api, name='api_login'),
+    path('api/admin-login/', api_views.admin_login_api, name='api_admin_login'),
+    path('api/signup/', api_views.signup_api, name='api_signup'),
+    path('api/logout/', api_views.logout_api, name='api_logout'),
+    
+    # Public API (for forms)
+    path('api/prefixes/', api_views.prefixes_list_api, name='api_prefixes_list'),
+    path('api/roles/', api_views.roles_list_api, name='api_roles_list'),
+    
+    # User API
+    path('api/user/profile/', api_views.user_profile_api, name='api_user_profile'),
+    path('api/user/change-password/', api_views.user_change_password_api, name='api_user_change_password'),
+    path('api/user/roles/', api_views.user_roles_api, name='api_user_roles'),
+    
+    # Admin API - Prefixes
+    path('api/admin/prefixes/', api_views.admin_prefixes_api, name='api_admin_prefixes'),
+    path('api/admin/prefixes/<int:prefix_id>/', api_views.admin_prefix_detail_api, name='api_admin_prefix_detail'),
+    
+    # Admin API - Roles
+    path('api/admin/roles/', api_views.admin_roles_api, name='api_admin_roles'),
+    path('api/admin/roles/<int:role_id>/', api_views.admin_role_detail_api, name='api_admin_role_detail'),
+    
+    # Admin API - Users & Stats
+    path('api/admin/stats/', api_views.admin_stats_api, name='api_admin_stats'),
+    path('api/admin/users/', api_views.admin_users_api, name='api_admin_users'),
+    
     # =========================================================================
     # Health Check
     # =========================================================================

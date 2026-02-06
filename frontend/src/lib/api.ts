@@ -124,3 +124,37 @@ export const adminApi = {
     request('/admin/remove-admin/', { method: 'POST', body: JSON.stringify({ admin_id: adminId }) }),
   syncRoles: () => request<{ synced: number }>('/admin/sync-roles/', { method: 'POST' }),
 };
+
+// Public API (for forms)
+export const publicApi = {
+  getPrefixes: () => request<Permission[]>('/prefixes/'),
+  getRoles: () => request<Permission[]>('/roles/'),
+};
+
+// Admin Prefix Management API
+export const prefixApi = {
+  list: (params?: Record<string, unknown>) =>
+    request<PaginatedResponse<Permission>>(`/admin/prefixes/${buildQuery(params)}`),
+  get: (id: number) =>
+    request<Permission>(`/admin/prefixes/${id}/`),
+  create: (data: JsonValue) =>
+    request<Permission>('/admin/prefixes/', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: JsonValue) =>
+    request<Permission>(`/admin/prefixes/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    request(`/admin/prefixes/${id}/`, { method: 'DELETE' }),
+};
+
+// Admin Role Management API
+export const roleApi = {
+  list: (params?: Record<string, unknown>) =>
+    request<PaginatedResponse<Permission>>(`/admin/roles/${buildQuery(params)}`),
+  get: (id: number) =>
+    request<Permission>(`/admin/roles/${id}/`),
+  create: (data: JsonValue) =>
+    request<Permission>('/admin/roles/', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: JsonValue) =>
+    request<Permission>(`/admin/roles/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    request(`/admin/roles/${id}/`, { method: 'DELETE' }),
+};

@@ -15,7 +15,8 @@ export interface UserProfile {
   display_name: string;
   email: string;
   affiliation?: string;
-  prefix?: string;
+  prefix?: number;  // Now references Prefix.id
+  prefix_display?: string;  // Display name of the prefix
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +28,28 @@ export interface AdminUser {
   affiliation?: string;
   is_admin: boolean;
   is_super_admin: boolean;
+}
+
+// Role and Prefix types
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+  is_active: boolean;
+  sort_order: number;
+  user_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Prefix {
+  id: number;
+  name: string;
+  display_name: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Permission {
@@ -111,8 +134,8 @@ export interface SignupFormData {
   display_name: string;
   email: string;
   affiliation?: string;
-  prefix: string;
-  role: string;
+  prefix: string;  // Prefix name (e.g., 'mr', 'dr')
+  role: string;    // Role name (e.g., 'guest', 'researcher')
   password1: string;
   password2: string;
 }
@@ -121,7 +144,22 @@ export interface ProfileFormData {
   display_name: string;
   email: string;
   affiliation?: string;
-  prefix?: string;
+  prefix?: string;  // Prefix name
+}
+
+// Form data for role/prefix management
+export interface RoleFormData {
+  name: string;
+  description: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface PrefixFormData {
+  name: string;
+  display_name: string;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface PasswordChangeFormData {
