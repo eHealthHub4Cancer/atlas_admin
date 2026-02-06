@@ -42,55 +42,7 @@
                             </tr>
                         </thead>
                         <tbody id="roles-table-body">
-                            {% for role in roles %}
-                            <tr id="role-row-{{ role.id }}">
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
-                                            <i class="bi bi-shield"></i>
-                                        </div>
-                                        <strong>{{ role.name }}</strong>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="text-muted">{{ role.description|default:"No description" }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ role.users.count }}</span>
-                                </td>
-                                <td>
-                                    {% if role.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                    <span class="badge bg-danger">Inactive</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <button type="button" class="btn btn-outline-primary btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editRoleModal"
-                                            data-role-id="{{ role.id }}"
-                                            data-role-name="{{ role.name }}"
-                                            data-role-description="{{ role.description }}">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-info btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#viewUsersModal"
-                                            hx-get="{% url 'accounts:htmx_role_users' role.id %}"
-                                            hx-target="#role-users-content">
-                                        <i class="bi bi-people"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="table-empty-state">
-                                    <i class="bi bi-shield-x d-block"></i>
-                                    <p class="mb-0">No roles found. Click "Sync from SEC" to import roles.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
+                            {% include "accounts/partials/admin_roles_rows.html" %}
                         </tbody>
                     </table>
                 </div>

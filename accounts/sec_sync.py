@@ -244,8 +244,7 @@ def update_sec_user(cursor, user):
         cursor: Database cursor
         user: Atlas User model instance
     """
-    if not user.sec_user_id:
-        return
+    sec_user_id = _resolve_sec_user_id(cursor, user)
 
     cursor.execute(
         f"""
@@ -253,7 +252,7 @@ def update_sec_user(cursor, user):
         SET name = %s
         WHERE id = %s;
         """,
-        [user.display_name, user.sec_user_id],
+        [user.display_name, sec_user_id],
     )
 
 
@@ -366,6 +365,14 @@ def get_sec_user_role_ids(cursor, user_id):
 # High-Level Sync Operations
 # =============================================================================
 
+def _resolve_sec_user_id(cursor, user):
+    """Resolve sec_user.id for an Atlas user, creating SEC user if needed."""
+    user_sec_id = getattr(user, 'sec_user_id', None)
+    if user_sec_id:
+        return user_sec_id
+    return ensure_sec_user(cursor, user)
+
+
 def sync_roles_from_sec():
     """
     Sync all roles from sec_role to local Role model.
@@ -422,10 +429,6 @@ def sync_user_to_sec(user):
             with get_webapi_connection().cursor() as cursor:
                 sec_user_id = ensure_sec_user(cursor, user)
 
-        # Update the user's sec_user_id
-        user.sec_user_id = sec_user_id
-        user.save(update_fields=['sec_user_id'])
-
         logger.info(f"Synced user {user.username} to SEC with id {sec_user_id}")
         return sec_user_id
 
@@ -449,14 +452,11 @@ def sync_user_roles_to_sec(user, role_names):
         logger.debug(f"SEC sync disabled, skipping role sync for {user.username}")
         return
 
-    if not user.sec_user_id:
-        logger.warning(f"User {user.username} has no sec_user_id, cannot sync roles")
-        return
-
     try:
         with transaction.atomic(using=WEBAPI_DB_ALIAS):
             with get_webapi_connection().cursor() as cursor:
                 login = user.username.lower()
+                sec_user_id = _resolve_sec_user_id(cursor, user)
 
                 # Get base role IDs (these are preserved)
                 public_role_id = ensure_sec_role(cursor, PUBLIC_ROLE_NAME)
@@ -464,7 +464,7 @@ def sync_user_roles_to_sec(user, role_names):
                 base_role_ids = {public_role_id, personal_role_id}
 
                 # Get current role IDs
-                current_role_ids = get_sec_user_role_ids(cursor, user.sec_user_id)
+                current_role_ids = get_sec_user_role_ids(cursor, sec_user_id)
 
                 # Build desired role IDs (excluding base roles, they're always kept)
                 desired_role_ids = set()
@@ -481,10 +481,10 @@ def sync_user_roles_to_sec(user, role_names):
 
                 # Apply changes
                 for role_id in to_remove:
-                    remove_sec_user_role_link(cursor, user.sec_user_id, role_id)
+                    remove_sec_user_role_link(cursor, sec_user_id, role_id)
 
                 for role_id in to_add:
-                    ensure_sec_user_role_link(cursor, user.sec_user_id, role_id)
+                    ensure_sec_user_role_link(cursor, sec_user_id, role_id)
 
         logger.info(f"Synced roles for {user.username}: +{len(to_add)} -{len(to_remove)}")
 
@@ -506,15 +506,12 @@ def grant_role_to_sec(user, role_name):
     if not SEC_SYNC_ENABLED:
         return True
 
-    if not user.sec_user_id:
-        logger.warning(f"User {user.username} has no sec_user_id, cannot grant role")
-        return False
-
     try:
         with transaction.atomic(using=WEBAPI_DB_ALIAS):
             with get_webapi_connection().cursor() as cursor:
+                sec_user_id = _resolve_sec_user_id(cursor, user)
                 role_id = ensure_sec_role(cursor, role_name)
-                ensure_sec_user_role_link(cursor, user.sec_user_id, role_id)
+                ensure_sec_user_role_link(cursor, sec_user_id, role_id)
 
         logger.info(f"Granted role '{role_name}' to {user.username} in SEC")
         return True
@@ -540,10 +537,6 @@ def revoke_role_from_sec(user, role_name):
     if not SEC_SYNC_ENABLED:
         return True
 
-    if not user.sec_user_id:
-        logger.warning(f"User {user.username} has no sec_user_id, cannot revoke role")
-        return False
-
     # Protect base roles
     login = user.username.lower()
     if role_name.lower() in (PUBLIC_ROLE_NAME, login):
@@ -553,9 +546,10 @@ def revoke_role_from_sec(user, role_name):
     try:
         with transaction.atomic(using=WEBAPI_DB_ALIAS):
             with get_webapi_connection().cursor() as cursor:
+                sec_user_id = _resolve_sec_user_id(cursor, user)
                 role_id = get_sec_role_id(cursor, role_name)
                 if role_id:
-                    remove_sec_user_role_link(cursor, user.sec_user_id, role_id)
+                    remove_sec_user_role_link(cursor, sec_user_id, role_id)
 
         logger.info(f"Revoked role '{role_name}' from {user.username} in SEC")
         return True
@@ -575,11 +569,12 @@ def get_user_roles_from_sec(user):
     Returns:
         list of str: Role names, or empty list if failed
     """
-    if not SEC_SYNC_ENABLED or not user.sec_user_id:
+    if not SEC_SYNC_ENABLED:
         return []
 
     try:
         with get_webapi_connection().cursor() as cursor:
+            sec_user_id = _resolve_sec_user_id(cursor, user)
             rows = fetchall_tuples(
                 cursor,
                 f"""
@@ -589,7 +584,7 @@ def get_user_roles_from_sec(user):
                 WHERE ur.user_id = %s
                 ORDER BY r.name;
                 """,
-                [user.sec_user_id],
+                [sec_user_id],
             )
         return [row[0] for row in rows]
 

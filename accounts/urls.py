@@ -81,6 +81,8 @@ urlpatterns = [
     path('htmx/toggle-user-active/<int:user_id>/', views.htmx_toggle_user_active_view, name='htmx_toggle_user_active'),
     path('htmx/search-users/', views.htmx_search_users_view, name='htmx_search_users'),
     path('htmx/user-roles/<int:user_id>/', views.htmx_user_roles_view, name='htmx_user_roles'),
+    path('htmx/sync-roles/', views.htmx_sync_roles_view, name='htmx_sync_roles'),
+    path('htmx/role-users/<int:role_id>/', views.htmx_role_users_view, name='htmx_role_users'),
 
     # =========================================================================
     # REST API Endpoints

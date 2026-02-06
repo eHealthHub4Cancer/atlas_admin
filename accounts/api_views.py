@@ -29,6 +29,7 @@ from .serializers import (
     BulkRoleAssignSerializer,
     DashboardStatsSerializer,
 )
+from .sec_sync import sync_user_to_sec, grant_role_to_sec
 
 
 # =============================================================================
@@ -227,11 +228,15 @@ def signup_api(request):
     user.set_password(data['password1'])
     user.save()
 
+    # Sync user into SEC tables (sec_user + base roles)
+    sync_user_to_sec(user)
+
     # Assign role if provided
     if data.get('role'):
         try:
             role = Role.objects.get(name=data['role'], is_active=True)
             UserRole.objects.create(user=user, role=role, origin=UserRole.ORIGIN_ATLAS)
+            grant_role_to_sec(user, role.name)
         except Role.DoesNotExist:
             pass
 

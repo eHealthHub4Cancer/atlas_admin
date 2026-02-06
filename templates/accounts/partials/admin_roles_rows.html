@@ -1,0 +1,10 @@
+{% for role in roles %}
+{% include "accounts/partials/admin_role_row.html" with role=role %}
+{% empty %}
+<tr>
+    <td colspan="5" class="table-empty-state">
+        <i class="bi bi-shield-x d-block"></i>
+        <p class="mb-0">No roles found. Click "Sync from SEC" to import roles.</p>
+    </td>
+</tr>
+{% endfor %}
