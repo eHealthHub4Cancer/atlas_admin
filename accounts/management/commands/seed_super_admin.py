@@ -97,13 +97,12 @@ class Command(BaseCommand):
                 existing_admin.save()
 
                 # Log the promotion
-                AuditLog.objects.create(
-                    action='role_change',
-                    actor_type='admin',
-                    actor_admin=None,  # System action
-                    target_type='admin',
+                AuditLog.log(
+                    action=AuditLog.ACTION_ADMIN_ROLE_CHANGED,
                     target_admin=existing_admin,
-                    description=f'Admin promoted to system_superadmin via seed command (from {old_role})',
+                    description=(
+                        f'Admin promoted to system_superadmin via seed command (from {old_role})'
+                    ),
                 )
 
                 self.stdout.write(
@@ -130,11 +129,8 @@ class Command(BaseCommand):
         admin.save()
 
         # Log the creation
-        AuditLog.objects.create(
-            action='create',
-            actor_type='admin',
-            actor_admin=None,  # System action
-            target_type='admin',
+        AuditLog.log(
+            action=AuditLog.ACTION_ADMIN_CREATED,
             target_admin=admin,
             description='System superadmin created via seed command',
         )
