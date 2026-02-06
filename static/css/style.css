@@ -324,8 +324,8 @@ body.auth-page {
 
 
 .dashboard-page .dashboard-topbar {
-    background: linear-gradient(90deg, #f5f3ff 0%, #ede9fe 100%);
-    border-bottom: 1px solid #ddd6fe;
+    background: linear-gradient(90deg, #f3f6fb 0%, #e8f0fb 55%, #f2f4f8 100%);
+    border-bottom: 1px solid #d8e2ef;
 }
 
 .dashboard-page .dashboard-topbar .navbar-brand,
@@ -349,8 +349,8 @@ body.auth-page {
 }
 
 .admin-dashboard .dashboard-topbar {
-    background: linear-gradient(90deg, #ede9fe 0%, #ddd6fe 100%);
-    border-bottom-color: #c4b5fd;
+    background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-bottom-color: #d1d5db;
 }
 
 /* Avatar Circle */
@@ -1161,4 +1161,34 @@ tr.htmx-swapping {
         box-shadow: none !important;
         border: 1px solid #dee2e6 !important;
     }
+}
+
+
+/* Contrast improvements for dashboard navigation */
+.sidebar .nav-link,
+.sidebar .nav-link span,
+.sidebar .nav-link i,
+.sidebar .nav-section-title,
+.sidebar .sidebar-footer .fw-semibold,
+.sidebar .sidebar-footer small {
+    color: #111827 !important;
+}
+
+.sidebar-admin {
+    --sidebar-bg: #fff9f3;
+    --sidebar-text: #1f2937;
+    --sidebar-hover: #ffe8d2;
+    --sidebar-active: #9a3412;
+}
+
+.sidebar-user {
+    --sidebar-bg: #f6f8fc;
+    --sidebar-text: #1f2937;
+    --sidebar-hover: #e8edf5;
+    --sidebar-active: #334155;
+}
+
+.sidebar .nav-link.active span,
+.sidebar .nav-link.active i {
+    color: inherit !important;
 }
