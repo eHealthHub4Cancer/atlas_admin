@@ -9,8 +9,8 @@
 :root {
     --sidebar-width: 260px;
     --navbar-height: 60px;
-    --primary-color: #3b82f6;
-    --primary-dark: #2563eb;
+    --primary-color: #6d28d9;
+    --primary-dark: #4c1d95;
     --sidebar-bg: #f4f7fb;
     --sidebar-text: #1f2937;
     --sidebar-hover: #e7eef8;
@@ -324,8 +324,8 @@ body.auth-page {
 
 
 .dashboard-page .dashboard-topbar {
-    background: linear-gradient(90deg, #ecfdf5 0%, #eff6ff 100%);
-    border-bottom: 1px solid #dbeafe;
+    background: linear-gradient(90deg, #f5f3ff 0%, #ede9fe 100%);
+    border-bottom: 1px solid #ddd6fe;
 }
 
 .dashboard-page .dashboard-topbar .navbar-brand,
@@ -349,8 +349,8 @@ body.auth-page {
 }
 
 .admin-dashboard .dashboard-topbar {
-    background: linear-gradient(90deg, #fff7ed 0%, #fefce8 100%);
-    border-bottom-color: #fed7aa;
+    background: linear-gradient(90deg, #ede9fe 0%, #ddd6fe 100%);
+    border-bottom-color: #c4b5fd;
 }
 
 /* Avatar Circle */
@@ -867,13 +867,29 @@ body.auth-page {
 
 /* User Sidebar */
 .sidebar-user {
-    --sidebar-active: #198754;
+    --sidebar-bg: #f8f7ff;
+    --sidebar-text: #2e1065;
+    --sidebar-hover: #ede9fe;
+    --sidebar-active: #5b21b6;
+    border-right: 1px solid #ddd6fe;
 }
 
 .sidebar-user .nav-link.active {
-    background-color: rgba(25, 135, 84, 0.1);
+    background-color: rgba(91, 33, 182, 0.14);
     color: var(--sidebar-active);
     border-left-color: var(--sidebar-active);
+}
+
+.sidebar-user .nav-link {
+    color: #1f2937;
+}
+
+.sidebar-user .nav-link i {
+    color: #374151;
+}
+
+.sidebar-user .nav-link:hover {
+    color: #111827;
 }
 
 /* -----------------------------------------------------------------------------

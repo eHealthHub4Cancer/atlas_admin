@@ -50,6 +50,9 @@ PUBLIC_ROLE_NAME = 'public'
 # Whether SEC sync is enabled (can be disabled for testing)
 SEC_SYNC_ENABLED = os.environ.get('SEC_SYNC_ENABLED', 'true').lower() == 'true'
 
+# Cache sec_user column metadata per process
+_SEC_USER_COLUMNS_CACHE = None
+
 
 # =============================================================================
 # Database Helpers
@@ -160,6 +163,42 @@ def get_all_sec_roles(cursor):
 # SEC User Operations
 # =============================================================================
 
+def get_sec_user_columns(cursor):
+    """Return available columns for sec_user as a lowercase set."""
+    global _SEC_USER_COLUMNS_CACHE
+    if _SEC_USER_COLUMNS_CACHE is not None:
+        return _SEC_USER_COLUMNS_CACHE
+
+    rows = fetchall_tuples(
+        cursor,
+        """
+        SELECT LOWER(column_name)
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = 'sec_user';
+        """,
+        [WEBAPI_SCHEMA],
+    )
+    _SEC_USER_COLUMNS_CACHE = {row[0] for row in rows}
+    return _SEC_USER_COLUMNS_CACHE
+
+
+def build_sec_user_fields(user, sec_user_columns):
+    """Build column/value mapping for sec_user upsert/update."""
+    fields = {}
+    if 'login' in sec_user_columns:
+        fields['login'] = (user.username or '').strip().lower()
+    if 'name' in sec_user_columns:
+        fields['name'] = user.display_name or user.username
+    if 'email' in sec_user_columns:
+        fields['email'] = (user.email or '').strip().lower() or None
+
+    # OHDSI/Broadsea password field - keep SEC credentials aligned with Atlas.
+    if 'password' in sec_user_columns:
+        fields['password'] = user.password
+
+    return fields
+
+
 def get_sec_user_id_by_login(cursor, login):
     """
     Get the ID of a user from sec_user by login.
@@ -209,21 +248,31 @@ def ensure_sec_user(cursor, user):
     if not login:
         raise ValueError("username cannot be blank")
 
+    sec_user_columns = get_sec_user_columns(cursor)
+    sec_fields = build_sec_user_fields(user, sec_user_columns)
+
     # Check if user already exists
     sec_user_id = get_sec_user_id_by_login(cursor, login)
 
     if sec_user_id is None:
-        # Create new sec_user
+        # Create new sec_user with schema-compatible fields
+        columns = ['id'] + list(sec_fields.keys())
+        placeholders = [f"nextval('{WEBAPI_SCHEMA}.sec_user_sequence')"] + ['%s'] * len(sec_fields)
+        values = list(sec_fields.values())
+
         cursor.execute(
             f"""
-            INSERT INTO {WEBAPI_SCHEMA}.sec_user (id, login, name)
-            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_sequence'), %s, %s)
+            INSERT INTO {WEBAPI_SCHEMA}.sec_user ({', '.join(columns)})
+            VALUES ({', '.join(placeholders)})
             RETURNING id;
             """,
-            [login, display_name],
+            values,
         )
         sec_user_id = cursor.fetchone()[0]
         logger.info(f"Created sec_user for {login} with id {sec_user_id}")
+    else:
+        # Keep profile + password in sync for existing SEC users too
+        update_sec_user(cursor, user, sec_user_id=sec_user_id, sec_user_columns=sec_user_columns)
 
     # Ensure base roles exist and are assigned
     public_role_id = ensure_sec_role(cursor, PUBLIC_ROLE_NAME)
@@ -236,23 +285,25 @@ def ensure_sec_user(cursor, user):
     return sec_user_id
 
 
-def update_sec_user(cursor, user):
-    """
-    Update sec_user record when user profile changes.
+def update_sec_user(cursor, user, sec_user_id=None, sec_user_columns=None):
+    """Update sec_user record fields when Atlas user data changes."""
+    sec_user_id = sec_user_id or _resolve_sec_user_id(cursor, user)
+    sec_user_columns = sec_user_columns or get_sec_user_columns(cursor)
+    sec_fields = build_sec_user_fields(user, sec_user_columns)
 
-    Args:
-        cursor: Database cursor
-        user: Atlas User model instance
-    """
-    sec_user_id = _resolve_sec_user_id(cursor, user)
+    if not sec_fields:
+        return
+
+    set_clause = ', '.join([f"{column} = %s" for column in sec_fields.keys()])
+    values = list(sec_fields.values()) + [sec_user_id]
 
     cursor.execute(
         f"""
         UPDATE {WEBAPI_SCHEMA}.sec_user
-        SET name = %s
+        SET {set_clause}
         WHERE id = %s;
         """,
-        [user.display_name, sec_user_id],
+        values,
     )
 
 
@@ -591,6 +642,26 @@ def get_user_roles_from_sec(user):
     except Exception as e:
         logger.exception(f"Failed to fetch roles for {user.username} from SEC: {e}")
         return []
+
+
+def sync_user_profile_to_sec(user):
+    """Sync non-role user fields (name/email) to sec_user."""
+    if not SEC_SYNC_ENABLED:
+        return True
+
+    try:
+        with transaction.atomic(using=WEBAPI_DB_ALIAS):
+            with get_webapi_connection().cursor() as cursor:
+                update_sec_user(cursor, user)
+        return True
+    except Exception as e:
+        logger.exception(f"Failed to sync profile for {user.username} to SEC: {e}")
+        return False
+
+
+def sync_user_password_to_sec(user):
+    """Sync user's bcrypt hash into sec_user.password when column exists."""
+    return sync_user_profile_to_sec(user)
 
 
 # =============================================================================

@@ -43,7 +43,14 @@ from .forms import (
     BulkRoleAssignForm, AdminCreateForm, AdminRoleChangeForm,
     MessageForm, UserSearchForm
 )
-from .sec_sync import sync_user_to_sec, sync_roles_from_sec, grant_role_to_sec, revoke_role_from_sec
+from .sec_sync import (
+    sync_user_to_sec,
+    sync_roles_from_sec,
+    grant_role_to_sec,
+    revoke_role_from_sec,
+    sync_user_profile_to_sec,
+    sync_user_password_to_sec,
+)
 from .tasks import (
     send_welcome_email, send_password_reset_email,
     send_password_changed_email
@@ -396,6 +403,8 @@ def reset_password_view(request, token):
             # Update password
             account.set_password(form.cleaned_data['password'])
             account.save()
+            if reset_token.user:
+                sync_user_password_to_sec(reset_token.user)
 
             # Mark token as used
             reset_token.use()
@@ -486,6 +495,7 @@ def user_profile_view(request):
         form = UserProfileForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
+            sync_user_profile_to_sec(user)
 
             AuditLog.log(
                 action=AuditLog.ACTION_PROFILE_UPDATED,
@@ -520,6 +530,7 @@ def user_change_password_view(request):
         form = ChangePasswordForm(user, request.POST)
         if form.is_valid():
             form.save()
+            sync_user_password_to_sec(user)
 
             AuditLog.log(
                 action=AuditLog.ACTION_PASSWORD_CHANGED,

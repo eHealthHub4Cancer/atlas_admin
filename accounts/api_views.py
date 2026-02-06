@@ -29,7 +29,7 @@ from .serializers import (
     BulkRoleAssignSerializer,
     DashboardStatsSerializer,
 )
-from .sec_sync import sync_user_to_sec, grant_role_to_sec
+from .sec_sync import sync_user_to_sec, grant_role_to_sec, sync_user_profile_to_sec, sync_user_password_to_sec
 
 
 # =============================================================================
@@ -642,6 +642,7 @@ def user_profile_api(request):
         user.prefix = None
     
     user.save()
+    sync_user_profile_to_sec(user)
 
     return Response(UserSerializer(user).data)
 
@@ -666,6 +667,7 @@ def user_change_password_api(request):
 
     user.set_password(data['new_password1'])
     user.save()
+    sync_user_password_to_sec(user)
 
     return Response({'success': True})
 
