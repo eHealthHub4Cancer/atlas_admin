@@ -93,6 +93,18 @@
                             <span>Roles</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_categories' %}active{% endif %}" href="{% url 'admin_categories' %}">
+                            <i class="bi bi-tags"></i>
+                            <span>Categories</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_prefixes' %}active{% endif %}" href="{% url 'admin_prefixes' %}">
+                            <i class="bi bi-person-vcard"></i>
+                            <span>Prefixes</span>
+                        </a>
+                    </li>
                     {% endif %}
 
                     {% if admin.is_super_admin %}

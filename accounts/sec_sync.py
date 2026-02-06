@@ -390,7 +390,7 @@ def sync_roles_from_sec():
         for external_id, name in sec_roles:
             Role.objects.update_or_create(
                 name=name,
-                defaults={'external_id': external_id}
+                defaults={}
             )
 
         logger.info(f"Synced {len(sec_roles)} roles from SEC")

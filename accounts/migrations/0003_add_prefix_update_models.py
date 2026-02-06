@@ -59,10 +59,10 @@ class Migration(migrations.Migration):
             options={'ordering': ['sort_order', 'name'], 'verbose_name': 'Role', 'verbose_name_plural': 'Roles'},
         ),
         
-        # Update User model - remove sec_user_id
-        migrations.RemoveField(
-            model_name='user',
-            name='sec_user_id',
+        # Update User model - remove sec_user_id (added via RunSQL in 0002)
+        migrations.RunSQL(
+            sql="ALTER TABLE atlas_user DROP COLUMN IF EXISTS sec_user_id;",
+            reverse_sql="ALTER TABLE atlas_user ADD COLUMN sec_user_id INTEGER NULL;",
         ),
         
         # Change User.prefix from CharField to ForeignKey

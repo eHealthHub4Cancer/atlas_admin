@@ -53,6 +53,12 @@ urlpatterns = [
     # Admin - Role Management
     path('admin/roles/', views.admin_roles_view, name='admin_roles'),
 
+    # Admin - Category Management
+    path('admin/categories/', views.admin_categories_view, name='admin_categories'),
+
+    # Admin - Prefix Management
+    path('admin/prefixes/', views.admin_prefixes_view, name='admin_prefixes'),
+
     # Admin - Administrator Management (Super Admin only)
     path('admin/admins/', views.admin_admins_view, name='admin_admins'),
     path('admin/admins/create/', views.admin_create_admin_view, name='admin_create_admin'),
@@ -90,6 +96,7 @@ urlpatterns = [
     # Public API (for forms)
     path('api/prefixes/', api_views.prefixes_list_api, name='api_prefixes_list'),
     path('api/roles/', api_views.roles_list_api, name='api_roles_list'),
+    path('api/categories/', api_views.categories_list_api, name='api_categories_list'),
     
     # User API
     path('api/user/profile/', api_views.user_profile_api, name='api_user_profile'),
@@ -103,6 +110,10 @@ urlpatterns = [
     # Admin API - Roles
     path('api/admin/roles/', api_views.admin_roles_api, name='api_admin_roles'),
     path('api/admin/roles/<int:role_id>/', api_views.admin_role_detail_api, name='api_admin_role_detail'),
+
+    # Admin API - Categories
+    path('api/admin/categories/', api_views.admin_categories_api, name='api_admin_categories'),
+    path('api/admin/categories/<int:category_id>/', api_views.admin_category_detail_api, name='api_admin_category_detail'),
     
     # Admin API - Users & Stats
     path('api/admin/stats/', api_views.admin_stats_api, name='api_admin_stats'),

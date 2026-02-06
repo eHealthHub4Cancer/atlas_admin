@@ -62,6 +62,41 @@ class Prefix(models.Model):
 
 
 # =============================================================================
+# Category Model - User categories (student, researcher, clinician, etc.)
+# =============================================================================
+
+class Category(models.Model):
+    """
+    User category options (Student, Researcher, Clinician, Module Member, etc.).
+
+    Categories define what type of user is registering.
+    Managed by super admins via the admin dashboard.
+    """
+
+    name = models.CharField(max_length=100, unique=True,
+        help_text="Category name (e.g., 'student', 'researcher')")
+    display_name = models.CharField(max_length=150,
+        help_text="Display text for the category (e.g., 'Student', 'Researcher')")
+    description = models.TextField(blank=True, default='',
+        help_text="Description of this category")
+    is_active = models.BooleanField(default=True,
+        help_text="Whether this category is available for selection")
+    sort_order = models.IntegerField(default=0,
+        help_text="Order in which to display this category")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'atlas_category'
+        ordering = ['sort_order', 'display_name']
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+
+    def __str__(self):
+        return self.display_name
+
+
+# =============================================================================
 # Role Model - Manageable user roles
 # =============================================================================
 
@@ -123,6 +158,8 @@ class User(models.Model):
     last_name = models.CharField(max_length=100)
     prefix = models.ForeignKey(Prefix, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='users', help_text="Name prefix (Mr., Dr., etc.)")
+    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='users', help_text="User category (Student, Researcher, etc.)")
     affiliation = models.CharField(max_length=255, blank=True, default='')
 
     # Roles - many-to-many through UserRole

@@ -11,13 +11,15 @@ from rest_framework.decorators import api_view
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.response import Response
 
-from .models import User, AtlasAdmin, Role, Prefix, UserRole
+from .models import User, AtlasAdmin, Role, Prefix, Category, UserRole
 from .serializers import (
     UserSerializer,
     RoleSerializer,
     RoleCreateUpdateSerializer,
     PrefixSerializer,
     PrefixCreateUpdateSerializer,
+    CategorySerializer,
+    CategoryCreateUpdateSerializer,
     LoginSerializer,
     AdminLoginSerializer,
     SignupSerializer,
@@ -204,6 +206,14 @@ def signup_api(request):
         except Prefix.DoesNotExist:
             pass
 
+    # Get category if provided
+    category = None
+    if data.get('category'):
+        try:
+            category = Category.objects.get(name=data['category'], is_active=True)
+        except Category.DoesNotExist:
+            pass
+
     # Create user
     user = User(
         username=data['username'],
@@ -211,6 +221,7 @@ def signup_api(request):
         first_name=first_name,
         last_name=last_name,
         prefix=prefix,
+        category=category,
         affiliation=data.get('affiliation', ''),
     )
     user.set_password(data['password1'])
@@ -254,6 +265,17 @@ def roles_list_api(request):
     """Get all active roles for forms."""
     roles = Role.objects.filter(is_active=True).order_by('sort_order', 'name')
     return Response(RoleSerializer(roles, many=True).data)
+
+
+# =============================================================================
+# Category API (Public - for signup form)
+# =============================================================================
+
+@api_view(['GET'])
+def categories_list_api(request):
+    """Get all active categories for forms."""
+    categories = Category.objects.filter(is_active=True).order_by('sort_order', 'display_name')
+    return Response(CategorySerializer(categories, many=True).data)
 
 
 # =============================================================================
@@ -409,6 +431,79 @@ def admin_role_detail_api(request, role_id):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         role.delete()
+        return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
+
+
+# =============================================================================
+# Admin - Category CRUD API
+# =============================================================================
+
+@api_view(['GET', 'POST'])
+def admin_categories_api(request):
+    """List all categories or create a new one (super_admin only)."""
+    admin = get_current_admin(request)
+    if not admin or not admin.is_super_admin:
+        return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if request.method == 'GET':
+        search = request.GET.get('search', '').strip()
+        page = _parse_int(request.GET.get('page'), default=1)
+        page_size = _parse_int(request.GET.get('page_size'), default=10, max_value=50)
+
+        queryset = Category.objects.annotate(user_count=Count('users'))
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(display_name__icontains=search)
+            )
+
+        queryset = queryset.order_by('sort_order', 'display_name')
+        items, meta = _paginate(queryset, page, page_size)
+
+        return Response({
+            'results': CategorySerializer(items, many=True).data,
+            **meta,
+        })
+
+    # POST - Create new category
+    serializer = CategoryCreateUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    category = serializer.save()
+    return Response(CategorySerializer(category).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def admin_category_detail_api(request, category_id):
+    """Get, update, or delete a specific category (super_admin only)."""
+    admin = get_current_admin(request)
+    if not admin or not admin.is_super_admin:
+        return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        category = Category.objects.annotate(user_count=Count('users')).get(id=category_id)
+    except Category.DoesNotExist:
+        return Response({'detail': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response(CategorySerializer(category).data)
+
+    elif request.method == 'PUT':
+        serializer = CategoryCreateUpdateSerializer(category, data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        category = serializer.save()
+        return Response(CategorySerializer(category).data)
+
+    elif request.method == 'DELETE':
+        user_count = category.users.count()
+        if user_count > 0:
+            return Response({
+                'message': f'Cannot delete category. {user_count} user(s) are using it.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        category.delete()
         return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
 
 
