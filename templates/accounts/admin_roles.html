@@ -37,8 +37,7 @@
                                 <th>Role Name</th>
                                 <th>Description</th>
                                 <th>Users</th>
-                                <th>Type</th>
-                                <th>SEC ID</th>
+                                <th>Status</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -47,8 +46,8 @@
                             <tr id="role-row-{{ role.id }}">
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="avatar-circle bg-{% if role.is_system_role %}warning{% else %}primary{% endif %} bg-opacity-10 text-{% if role.is_system_role %}warning{% else %}primary{% endif %} me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
-                                            <i class="bi bi-shield{% if role.is_system_role %}-lock{% endif %}"></i>
+                                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                            <i class="bi bi-shield"></i>
                                         </div>
                                         <strong>{{ role.name }}</strong>
                                     </div>
@@ -60,17 +59,10 @@
                                     <span class="badge bg-secondary">{{ role.users.count }}</span>
                                 </td>
                                 <td>
-                                    {% if role.is_system_role %}
-                                    <span class="badge bg-warning text-dark">System</span>
+                                    {% if role.is_active %}
+                                    <span class="badge bg-success">Active</span>
                                     {% else %}
-                                    <span class="badge bg-info">Custom</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if role.external_id %}
-                                    <code>{{ role.external_id }}</code>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="badge bg-danger">Inactive</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
@@ -93,7 +85,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="table-empty-state">
+                                <td colspan="5" class="table-empty-state">
                                     <i class="bi bi-shield-x d-block"></i>
                                     <p class="mb-0">No roles found. Click "Sync from SEC" to import roles.</p>
                                 </td>

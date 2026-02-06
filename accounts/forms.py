@@ -8,7 +8,7 @@ Supports both User (username-based) and AtlasAdmin (email-based) authentication.
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import User, AtlasAdmin, Role, UserRole, Message
+from .models import User, AtlasAdmin, Role, Category, UserRole, Message
 
 
 # =============================================================================
@@ -118,6 +118,15 @@ class UserSignupForm(forms.Form):
             'placeholder': 'University / Organization (optional)',
         })
     )
+    category = forms.ModelChoiceField(
+        label='Category',
+        queryset=Category.objects.none(),
+        required=False,
+        empty_label='Select a category',
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+        })
+    )
     role = forms.ModelChoiceField(
         label='Role',
         queryset=Role.objects.none(),
@@ -168,7 +177,8 @@ class UserSignupForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['role'].queryset = Role.objects.filter(is_system_role=False).order_by('name')
+        self.fields['role'].queryset = Role.objects.filter(is_active=True).order_by('name')
+        self.fields['category'].queryset = Category.objects.filter(is_active=True).order_by('sort_order', 'display_name')
 
     def clean_password(self):
         password = self.cleaned_data.get('password')
@@ -197,6 +207,7 @@ class UserSignupForm(forms.Form):
             first_name=self.cleaned_data['first_name'],
             last_name=self.cleaned_data['last_name'],
             affiliation=self.cleaned_data.get('affiliation', ''),
+            category=self.cleaned_data.get('category'),
         )
         user.set_password(self.cleaned_data['password'])
         user.save()
@@ -376,11 +387,12 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'prefix', 'affiliation']
+        fields = ['first_name', 'last_name', 'prefix', 'category', 'affiliation']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'prefix': forms.Select(attrs={'class': 'form-select'}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
             'affiliation': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'University / Organization',
@@ -409,12 +421,13 @@ class UserEditForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'prefix', 'affiliation', 'is_active']
+        fields = ['first_name', 'last_name', 'email', 'prefix', 'category', 'affiliation', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'prefix': forms.Select(attrs={'class': 'form-select'}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
             'affiliation': forms.TextInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -439,7 +452,7 @@ class RoleForm(forms.ModelForm):
 
     class Meta:
         model = Role
-        fields = ['name', 'description', 'is_system_role']
+        fields = ['name', 'description', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -450,7 +463,7 @@ class RoleForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Human-friendly description of this role',
             }),
-            'is_system_role': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -510,8 +523,6 @@ class UserRoleRevokeForm(forms.Form):
 
         try:
             role = Role.objects.get(id=cleaned_data['role_id'])
-            if role.is_system_role:
-                raise ValidationError('Cannot revoke system roles.')
             cleaned_data['role'] = role
         except Role.DoesNotExist:
             raise ValidationError('Role not found.')

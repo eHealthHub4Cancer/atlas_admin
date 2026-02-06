@@ -96,15 +96,28 @@
                         {% endif %}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="id_role" class="form-label">Role</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                            {{ form.role }}
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <label for="id_category" class="form-label">Category</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                {{ form.category }}
+                            </div>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                        {% if form.role.errors %}
-                            <div class="invalid-feedback d-block">{{ form.role.errors.0 }}</div>
-                        {% endif %}
+
+                        <div class="col-12 col-lg-6">
+                            <label for="id_role" class="form-label">Role</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                                {{ form.role }}
+                            </div>
+                            {% if form.role.errors %}
+                                <div class="invalid-feedback d-block">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="row g-3">

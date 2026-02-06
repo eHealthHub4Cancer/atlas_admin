@@ -23,14 +23,14 @@
     <div class="list-group-item d-flex justify-content-between align-items-center">
         <div>
             <span class="badge bg-primary me-2">{{ ur.role.name }}</span>
-            {% if ur.role.is_system_role %}
-            <span class="badge bg-secondary">System</span>
+            {% if not ur.role.is_active %}
+            <span class="badge bg-secondary">Inactive</span>
             {% endif %}
             {% if ur.role.description %}
             <small class="text-muted d-block mt-1">{{ ur.role.description|truncatewords:15 }}</small>
             {% endif %}
         </div>
-        {% if admin.is_super_admin and not ur.role.is_system_role %}
+        {% if admin.is_super_admin %}
         <form hx-post="{% url 'htmx_revoke_role' %}" hx-swap="none" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="user_id" value="{{ target_user.id }}">

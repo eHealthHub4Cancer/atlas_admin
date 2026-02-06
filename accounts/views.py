@@ -34,7 +34,7 @@ from django.db.models import Count, Q, Prefetch
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
-from .models import User, AtlasAdmin, Role, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken
+from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken
 from .forms import (
     UserLoginForm, UserSignupForm, AdminLoginForm,
     ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm,
@@ -837,6 +837,146 @@ def admin_message_create_view(request):
         'form': form,
         'page_title': 'Create Message',
     })
+
+
+# =============================================================================
+# Admin - Prefix Management Views
+# =============================================================================
+
+@super_admin_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
+def admin_prefixes_view(request):
+    """Admin view for managing prefixes."""
+    admin = request.current_admin
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        if action == 'create':
+            name = request.POST.get('name', '').lower().strip()
+            display_name = request.POST.get('display_name', '').strip()
+            sort_order = int(request.POST.get('sort_order', 0) or 0)
+
+            if not name or not display_name:
+                messages.error(request, 'Name and display name are required.')
+            elif Prefix.objects.filter(name=name).exists():
+                messages.error(request, f'A prefix with name "{name}" already exists.')
+            else:
+                Prefix.objects.create(
+                    name=name, display_name=display_name,
+                    sort_order=sort_order, is_active=True
+                )
+                messages.success(request, f'Prefix "{display_name}" created successfully.')
+
+        elif action == 'update':
+            prefix_id = request.POST.get('prefix_id')
+            try:
+                prefix = Prefix.objects.get(id=prefix_id)
+                prefix.display_name = request.POST.get('display_name', '').strip()
+                prefix.sort_order = int(request.POST.get('sort_order', 0) or 0)
+                prefix.is_active = request.POST.get('is_active') == 'on'
+                prefix.save()
+                messages.success(request, f'Prefix "{prefix.display_name}" updated.')
+            except Prefix.DoesNotExist:
+                messages.error(request, 'Prefix not found.')
+
+        elif action == 'delete':
+            prefix_id = request.POST.get('prefix_id')
+            try:
+                prefix = Prefix.objects.get(id=prefix_id)
+                user_count = prefix.users.count()
+                if user_count > 0:
+                    messages.error(request, f'Cannot delete prefix "{prefix.display_name}". {user_count} user(s) are using it.')
+                else:
+                    display = prefix.display_name
+                    prefix.delete()
+                    messages.success(request, f'Prefix "{display}" deleted.')
+            except Prefix.DoesNotExist:
+                messages.error(request, 'Prefix not found.')
+
+        return redirect('admin_prefixes')
+
+    prefixes = Prefix.objects.annotate(user_count=Count('users')).order_by('sort_order', 'display_name')
+
+    context = {
+        'admin': admin,
+        'prefixes': prefixes,
+        'page_title': 'Prefix Management',
+    }
+
+    return render(request, 'accounts/admin_prefixes.html', context)
+
+
+# =============================================================================
+# Admin - Category Management Views
+# =============================================================================
+
+@super_admin_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
+def admin_categories_view(request):
+    """Admin view for managing categories."""
+    admin = request.current_admin
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        if action == 'create':
+            name = request.POST.get('name', '').lower().strip()
+            display_name = request.POST.get('display_name', '').strip()
+            description = request.POST.get('description', '').strip()
+            sort_order = int(request.POST.get('sort_order', 0) or 0)
+
+            if not name or not display_name:
+                messages.error(request, 'Name and display name are required.')
+            elif Category.objects.filter(name=name).exists():
+                messages.error(request, f'A category with name "{name}" already exists.')
+            else:
+                Category.objects.create(
+                    name=name, display_name=display_name,
+                    description=description, sort_order=sort_order, is_active=True
+                )
+                messages.success(request, f'Category "{display_name}" created successfully.')
+
+        elif action == 'update':
+            category_id = request.POST.get('category_id')
+            try:
+                category = Category.objects.get(id=category_id)
+                category.display_name = request.POST.get('display_name', '').strip()
+                category.description = request.POST.get('description', '').strip()
+                category.sort_order = int(request.POST.get('sort_order', 0) or 0)
+                category.is_active = request.POST.get('is_active') == 'on'
+                category.save()
+                messages.success(request, f'Category "{category.display_name}" updated.')
+            except Category.DoesNotExist:
+                messages.error(request, 'Category not found.')
+
+        elif action == 'delete':
+            category_id = request.POST.get('category_id')
+            try:
+                category = Category.objects.get(id=category_id)
+                user_count = category.users.count()
+                if user_count > 0:
+                    messages.error(request, f'Cannot delete category "{category.display_name}". {user_count} user(s) are using it.')
+                else:
+                    display = category.display_name
+                    category.delete()
+                    messages.success(request, f'Category "{display}" deleted.')
+            except Category.DoesNotExist:
+                messages.error(request, 'Category not found.')
+
+        return redirect('admin_categories')
+
+    categories = Category.objects.annotate(user_count=Count('users')).order_by('sort_order', 'display_name')
+
+    context = {
+        'admin': admin,
+        'categories': categories,
+        'page_title': 'Category Management',
+    }
+
+    return render(request, 'accounts/admin_categories.html', context)
 
 
 # =============================================================================
