@@ -6,7 +6,7 @@
 {% block body %}
 <div class="dashboard-wrapper">
     <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar admin-topbar fixed-top shadow-sm">
         <div class="container-fluid">
             <!-- Brand -->
             <a class="navbar-brand fw-bold" href="{% url 'admin_dashboard' %}">
@@ -60,10 +60,10 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="offcanvas-lg offcanvas-start sidebar sidebar-dark" tabindex="-1" id="sidebarMenu">
+    <div class="offcanvas-lg offcanvas-start sidebar sidebar-admin" tabindex="-1" id="sidebarMenu">
         <div class="offcanvas-header border-bottom d-lg-none">
             <h5 class="offcanvas-title">Admin Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column p-0">
             <nav class="sidebar-nav flex-grow-1">

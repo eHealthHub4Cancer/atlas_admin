@@ -28,7 +28,6 @@ Important Notes:
 import logging
 import os
 from django.db import connections, DatabaseError, transaction
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +35,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
-# WebAPI schema name - can be configured via environment
-# Common patterns: bioc_webapi3_schema_v3, bayou_web_api_3_schema_v3, web_security
-WEBAPI_SCHEMA = os.environ.get('WEBAPI_SCHEMA', 'web_security')
+# WebAPI schema name - configured independently from Django DB search_path.
+# Keep this dedicated so Atlas app schema (e.g., web_security) can differ from
+# OHDSI WebAPI security schema (e.g., bioc_webapi3_schema_v3).
+WEBAPI_SCHEMA = os.environ.get('WEBAPI_SCHEMA', 'bioc_webapi3_schema_v3')
 
 # Database alias to use for WebAPI tables
 # If WebAPI tables are in a different database, configure DATABASES['webapi']

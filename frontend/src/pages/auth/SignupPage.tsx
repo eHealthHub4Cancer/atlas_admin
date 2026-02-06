@@ -107,7 +107,7 @@ export const SignupPage: React.FC = () => {
       maxWidthClassName="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <Select
             label="Prefix"
             options={prefixOptions}
