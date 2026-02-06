@@ -19,11 +19,11 @@ urlpatterns = [
     # Root redirect
     path('', home_redirect, name='home'),
 
-    # Django Admin (optional, can be disabled in production)
-    path('admin/', admin.site.urls),
-
     # Atlas Config routes
     path('', include('accounts.urls')),
+
+    # Django Admin (kept available on a non-conflicting route)
+    path('django-admin/', admin.site.urls),
 ]
 
 # Custom error handlers
