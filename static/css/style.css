@@ -9,12 +9,12 @@
 :root {
     --sidebar-width: 260px;
     --navbar-height: 60px;
-    --primary-color: #0d6efd;
-    --primary-dark: #0a58ca;
+    --primary-color: #5b7cfa;
+    --primary-dark: #4b64d6;
     --sidebar-bg: #212529;
     --sidebar-text: #adb5bd;
     --sidebar-hover: #343a40;
-    --sidebar-active: #0d6efd;
+    --sidebar-active: #5b7cfa;
 }
 
 /* -----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ body {
 
 /* Focus States for Accessibility */
 :focus-visible {
-    outline: 3px solid rgba(13, 110, 253, 0.5);
+    outline: 3px solid rgba(91, 124, 250, 0.42);
     outline-offset: 2px;
 }
 
@@ -533,7 +533,7 @@ body.auth-page {
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #084298 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #3f53b8 100%);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
 }

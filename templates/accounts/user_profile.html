@@ -10,47 +10,56 @@
                 <h5 class="mb-0"><i class="bi bi-person me-2"></i>Profile Information</h5>
             </div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" novalidate>
                     {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="id_first_name" class="form-label">First Name</label>
-                            <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
-                                   id="id_first_name" name="first_name" value="{{ form.first_name.value|default:'' }}" required>
+                            {{ form.first_name }}
                             {% if form.first_name.errors %}
-                                <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+                                <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
                             <label for="id_last_name" class="form-label">Last Name</label>
-                            <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
-                                   id="id_last_name" name="last_name" value="{{ form.last_name.value|default:'' }}" required>
+                            {{ form.last_name }}
                             {% if form.last_name.errors %}
-                                <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+                                <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_prefix" class="form-label">Title/Prefix</label>
+                            {{ form.prefix }}
+                            {% if form.prefix.errors %}
+                                <div class="invalid-feedback d-block">{{ form.prefix.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_category" class="form-label">Category</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
                             {% endif %}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="id_prefix" class="form-label">Title/Prefix</label>
-                        <select class="form-select" id="id_prefix" name="prefix">
-                            <option value="">-- None --</option>
-                            <option value="mr" {% if form.prefix.value == 'mr' %}selected{% endif %}>Mr.</option>
-                            <option value="mrs" {% if form.prefix.value == 'mrs' %}selected{% endif %}>Mrs.</option>
-                            <option value="ms" {% if form.prefix.value == 'ms' %}selected{% endif %}>Ms.</option>
-                            <option value="dr" {% if form.prefix.value == 'dr' %}selected{% endif %}>Dr.</option>
-                            <option value="prof" {% if form.prefix.value == 'prof' %}selected{% endif %}>Prof.</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
                         <label for="id_affiliation" class="form-label">Affiliation</label>
-                        <input type="text" class="form-control {% if form.affiliation.errors %}is-invalid{% endif %}"
-                               id="id_affiliation" name="affiliation" value="{{ form.affiliation.value|default:'' }}"
-                               placeholder="University / Organization">
+                        {{ form.affiliation }}
                         {% if form.affiliation.errors %}
-                            <div class="invalid-feedback">{{ form.affiliation.errors.0 }}</div>
+                            <div class="invalid-feedback d-block">{{ form.affiliation.errors.0 }}</div>
                         {% endif %}
                     </div>
 

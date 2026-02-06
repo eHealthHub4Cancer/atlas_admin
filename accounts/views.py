@@ -497,6 +497,8 @@ def user_profile_view(request):
 
             messages.success(request, 'Profile updated successfully.')
             return redirect('user_profile')
+
+        messages.error(request, 'Please correct the highlighted profile fields and try again.')
     else:
         form = UserProfileForm(instance=user)
 
@@ -1108,6 +1110,32 @@ def htmx_bulk_grant_roles_view(request):
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
 
+
+
+@super_admin_required
+@require_GET
+def htmx_sync_roles_view(request):
+    """HTMX endpoint to sync roles from SEC and refresh table rows."""
+    roles = sync_roles_from_sec().annotate(user_count=Count('users'))
+    html = render_to_string('accounts/partials/admin_roles_rows.html', {
+        'roles': roles,
+        'admin': request.current_admin,
+    })
+    return HttpResponse(html)
+
+
+@super_admin_required
+@require_GET
+def htmx_role_users_view(request, role_id):
+    """HTMX endpoint to show users assigned to a specific role."""
+    role = get_object_or_404(Role, id=role_id)
+    users = role.users.order_by('first_name', 'last_name', 'username')
+    html = render_to_string('accounts/partials/role_users_modal_content.html', {
+        'role': role,
+        'users': users,
+    })
+    return HttpResponse(html)
+
 @super_admin_required
 @require_POST
 @csrf_protect
@@ -1118,10 +1146,12 @@ def htmx_update_role_description_view(request):
     form = RoleDescriptionForm(request.POST)
     if form.is_valid():
         role = form.save()
-
-        return HttpResponse(
-            f'<div class="toast-message success">Description updated for "{role.name}"</div>'
-        )
+        role = Role.objects.annotate(user_count=Count('users')).get(pk=role.pk)
+        html = render_to_string('accounts/partials/admin_role_row.html', {
+            'role': role,
+            'admin': admin,
+        })
+        return HttpResponse(html)
 
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
