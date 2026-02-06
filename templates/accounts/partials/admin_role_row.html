@@ -8,7 +8,17 @@
         </div>
     </td>
     <td>
-        <span class="text-muted">{{ role.description|default:"No description" }}</span>
+        {% if role.description %}
+        <button type="button" class="btn btn-outline-secondary btn-sm" title="View Description"
+                data-bs-toggle="modal"
+                data-bs-target="#viewDescriptionModal"
+                data-role-name="{{ role.name }}"
+                data-role-description="{{ role.description }}">
+            <i class="bi bi-eye me-1"></i>View
+        </button>
+        {% else %}
+        <span class="text-muted small">No description</span>
+        {% endif %}
     </td>
     <td>
         <span class="badge bg-secondary">{{ role.user_count }}</span>

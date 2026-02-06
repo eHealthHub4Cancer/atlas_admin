@@ -10,7 +10,7 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0">
                     <i class="bi bi-shield-check me-2"></i>All Roles
                 </h5>
@@ -29,23 +29,119 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Role Name</th>
-                                <th>Description</th>
-                                <th>Users</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="roles-table-body">
-                            {% include "accounts/partials/admin_roles_rows.html" %}
-                        </tbody>
-                    </table>
+
+            <!-- Search and Filters -->
+            <div class="card-body border-bottom">
+                <form id="rolesFilterForm" class="row g-2 align-items-end"
+                      hx-get="{% url 'admin_roles' %}"
+                      hx-target="#rolesTableContent"
+                      hx-select="#rolesTableContent"
+                      hx-trigger="submit">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" name="search" value="{{ search }}"
+                                   placeholder="Search roles..."
+                                   hx-get="{% url 'admin_roles' %}"
+                                   hx-target="#rolesTableContent"
+                                   hx-select="#rolesTableContent"
+                                   hx-trigger="keyup changed delay:300ms"
+                                   hx-include="#rolesFilterForm">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="status"
+                                hx-get="{% url 'admin_roles' %}"
+                                hx-target="#rolesTableContent"
+                                hx-select="#rolesTableContent"
+                                hx-trigger="change"
+                                hx-include="#rolesFilterForm">
+                            <option value="">All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="text-muted">{{ roles.paginator.count }} role(s) found</span>
+                    </div>
+                </form>
+            </div>
+
+            <div id="rolesTableContent">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Description</th>
+                                    <th>Users</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roles-table-body">
+                                {% include "accounts/partials/admin_roles_rows.html" %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
+                {% if roles.has_other_pages %}
+                <div class="card-footer bg-transparent">
+                    <nav aria-label="Roles pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if roles.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ roles.previous_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'admin_roles' %}?page={{ roles.previous_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#rolesTableContent"
+                                   hx-select="#rolesTableContent">Previous</a>
+                            </li>
+                            {% endif %}
+                            {% for num in roles.paginator.page_range %}
+                            {% if roles.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > roles.number|add:'-3' and num < roles.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'admin_roles' %}?page={{ num }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#rolesTableContent"
+                                   hx-select="#rolesTableContent">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            {% if roles.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ roles.next_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'admin_roles' %}?page={{ roles.next_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#rolesTableContent"
+                                   hx-select="#rolesTableContent">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Description Modal -->
+<div class="modal fade" id="viewDescriptionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Role Description</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 id="view-desc-role-name" class="fw-bold mb-3"></h6>
+                <p id="view-desc-content" class="text-muted mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -76,7 +172,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"
+                    <button type="submit" class="btn btn-primary" id="editRoleSubmitBtn"
                             hx-post="{% url 'htmx_update_role_description' %}"
                             hx-target="#role-row-"
                             hx-swap="outerHTML">
@@ -151,6 +247,13 @@
 
 {% block extra_js %}
 <script>
+// View description modal
+document.getElementById('viewDescriptionModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    document.getElementById('view-desc-role-name').textContent = button.getAttribute('data-role-name');
+    document.getElementById('view-desc-content').textContent = button.getAttribute('data-role-description') || 'No description available.';
+});
+
 // Populate edit modal with role data
 document.getElementById('editRoleModal').addEventListener('show.bs.modal', function(event) {
     const button = event.relatedTarget;
@@ -163,9 +266,18 @@ document.getElementById('editRoleModal').addEventListener('show.bs.modal', funct
     document.getElementById('edit-role-description').value = roleDescription || '';
 
     // Update the hx-target to point to the correct row
-    const submitBtn = document.querySelector('#edit-role-form button[type="submit"]');
+    const submitBtn = document.getElementById('editRoleSubmitBtn');
     submitBtn.setAttribute('hx-target', '#role-row-' + roleId);
     htmx.process(submitBtn);
+});
+
+// Close edit modal after successful save
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    const editModal = document.getElementById('editRoleModal');
+    if (editModal.classList.contains('show')) {
+        const modal = bootstrap.Modal.getInstance(editModal);
+        if (modal) modal.hide();
+    }
 });
 </script>
 {% endblock %}

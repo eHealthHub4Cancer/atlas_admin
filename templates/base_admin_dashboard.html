@@ -9,7 +9,7 @@
     <nav class="navbar navbar-expand-lg navbar-light dashboard-topbar admin-topbar fixed-top shadow-sm">
         <div class="container-fluid">
             <!-- Brand -->
-            <a class="navbar-brand fw-bold" href="{% url 'admin_dashboard' %}">
+            <a class="navbar-brand fw-bold text-dark" href="{% url 'admin_dashboard' %}">
                 <i class="bi bi-shield-lock me-2"></i>Atlas Admin
             </a>
 
@@ -22,11 +22,11 @@
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if admin %}
                 <div class="dropdown">
-                    <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link text-dark text-decoration-none dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="avatar-circle bg-warning text-dark me-2">
                             {{ admin.first_name.0|upper }}{{ admin.last_name.0|upper }}
                         </div>
-                        <span class="d-none d-xl-inline">{{ admin.display_name }}</span>
+                        <span class="d-none d-xl-inline fw-semibold">{{ admin.display_name }}</span>
                         {% if admin.is_system_superadmin %}
                         <span class="badge bg-danger ms-2">System</span>
                         {% elif admin.is_super_admin %}
@@ -127,7 +127,13 @@
                     <li class="nav-item">
                         <a class="nav-link {% if 'admin_messages' in request.resolver_match.url_name or 'admin_message_create' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'admin_messages' %}">
                             <i class="bi bi-megaphone"></i>
-                            <span>Messages</span>
+                            <span>Announcements</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin_notifications' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'admin_notifications' %}">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
                         </a>
                     </li>
 
@@ -152,8 +158,8 @@
                         {{ admin.first_name.0|upper }}{{ admin.last_name.0|upper }}
                     </div>
                     <div class="flex-grow-1 overflow-hidden">
-                        <div class="fw-semibold text-truncate text-white">{{ admin.display_name }}</div>
-                        <small class="text-white-50">
+                        <div class="fw-semibold text-truncate">{{ admin.display_name }}</div>
+                        <small>
                             {% if admin.is_system_superadmin %}
                             <span class="badge bg-danger">System Super Admin</span>
                             {% elif admin.is_super_admin %}

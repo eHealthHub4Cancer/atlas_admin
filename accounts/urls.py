@@ -71,6 +71,17 @@ urlpatterns = [
     path('admin/messages/', views.admin_messages_view, name='admin_messages'),
     path('admin/messages/create/', views.admin_message_create_view, name='admin_message_create'),
 
+    # Admin - Notifications
+    path('admin/notifications/', views.admin_notifications_view, name='admin_notifications'),
+    path('admin/notifications/<int:notification_id>/edit/', views.admin_notification_edit_view, name='admin_notification_edit'),
+    path('admin/notifications/<int:notification_id>/delete/', views.admin_notification_delete_view, name='admin_notification_delete'),
+
+    # User - Notifications
+    path('dashboard/notifications/', views.user_notifications_view, name='user_notifications'),
+    path('dashboard/notifications/<int:notification_id>/read/', views.user_mark_notification_read_view, name='user_mark_notification_read'),
+    path('dashboard/notifications/mark-all-read/', views.user_mark_all_notifications_read_view, name='user_mark_all_read'),
+    path('htmx/notification-count/', views.user_notification_count_view, name='htmx_notification_count'),
+
     # =========================================================================
     # HTMX/AJAX Endpoints
     # =========================================================================

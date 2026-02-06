@@ -99,14 +99,13 @@
                         </td>
                         <td><code>@{{ u.username }}</code></td>
                         <td>
-                            {% for role in u.roles.all|slice:":3" %}
-                            <span class="badge bg-primary-subtle text-primary me-1">{{ role.name }}</span>
-                            {% empty %}
+                            {% with role_count=u.roles.count %}
+                            {% if role_count > 0 %}
+                            <span class="badge bg-primary">{{ role_count }} role{{ role_count|pluralize }}</span>
+                            {% else %}
                             <span class="text-muted small">No roles</span>
-                            {% endfor %}
-                            {% if u.roles.count > 3 %}
-                            <span class="badge bg-secondary">+{{ u.roles.count|add:"-3" }}</span>
                             {% endif %}
+                            {% endwith %}
                         </td>
                         <td>
                             {% if u.is_active %}
@@ -130,9 +129,12 @@
                                     <i class="bi bi-shield"></i>
                                 </button>
                                 {% if admin.is_super_admin %}
-                                <button type="button" class="btn btn-outline-secondary" title="Toggle Active"
+                                <button type="button" class="btn btn-outline-{% if u.is_active %}warning{% else %}success{% endif %} toggle-active-btn"
+                                        title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %} User"
                                         hx-post="{% url 'htmx_toggle_user_active' u.id %}"
-                                        hx-swap="none">
+                                        hx-swap="none"
+                                        data-user-id="{{ u.id }}"
+                                        data-active="{{ u.is_active|yesno:'true,false' }}">
                                     <i class="bi bi-toggle-{% if u.is_active %}on{% else %}off{% endif %}"></i>
                                 </button>
                                 {% endif %}
@@ -305,6 +307,41 @@ function updateBulkAssignButton() {
 document.getElementById('bulkRoleModal')?.addEventListener('hidden.bs.modal', function() {
     document.querySelectorAll('.bulk-role-checkbox').forEach(cb => cb.checked = false);
     updateBulkRoleIds();
+});
+
+// Toggle active button: show spinner and update UI on completion
+document.body.addEventListener('htmx:beforeRequest', function(evt) {
+    const btn = evt.detail.elt;
+    if (btn.classList.contains('toggle-active-btn')) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+    }
+});
+
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    const btn = evt.detail.elt;
+    if (btn.classList.contains('toggle-active-btn')) {
+        btn.disabled = false;
+        const wasActive = btn.getAttribute('data-active') === 'true';
+        const isNowActive = !wasActive;
+        btn.setAttribute('data-active', isNowActive ? 'true' : 'false');
+
+        // Update button icon and style
+        btn.innerHTML = '<i class="bi bi-toggle-' + (isNowActive ? 'on' : 'off') + '"></i>';
+        btn.classList.remove('btn-outline-warning', 'btn-outline-success');
+        btn.classList.add(isNowActive ? 'btn-outline-warning' : 'btn-outline-success');
+        btn.title = (isNowActive ? 'Deactivate' : 'Activate') + ' User';
+
+        // Update the status badge in the same row
+        const row = btn.closest('tr');
+        if (row) {
+            const statusBadge = row.querySelector('td .badge.bg-success, td .badge.bg-danger');
+            if (statusBadge) {
+                statusBadge.className = 'badge ' + (isNowActive ? 'bg-success' : 'bg-danger');
+                statusBadge.textContent = isNowActive ? 'Active' : 'Inactive';
+            }
+        }
+    }
 });
 </script>
 {% endblock %}

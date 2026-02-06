@@ -1,0 +1,157 @@
+{% extends "base_admin_dashboard.html" %}
+
+{% block title %}{{ page_title }} - Admin Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Users
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- User Info -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="avatar-circle bg-primary text-white mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                    {{ target_user.first_name.0|upper }}{{ target_user.last_name.0|upper }}
+                </div>
+                <h5 class="mb-1">{{ target_user.display_name }}</h5>
+                <p class="text-muted mb-2">@{{ target_user.username }}</p>
+                <p class="text-muted small mb-3">{{ target_user.email }}</p>
+                {% if target_user.is_active %}
+                <span class="badge bg-success fs-6">Active</span>
+                {% else %}
+                <span class="badge bg-danger fs-6">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Affiliation</td>
+                        <td>{{ target_user.affiliation|default:"-" }}</td>
+                    </tr>
+                    {% if target_user.prefix %}
+                    <tr>
+                        <td class="text-muted">Title</td>
+                        <td>{{ target_user.prefix.display_name }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if target_user.category %}
+                    <tr>
+                        <td class="text-muted">Category</td>
+                        <td>{{ target_user.category.display_name }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="text-muted">Member Since</td>
+                        <td>{{ target_user.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% if target_user.last_login %}
+                    <tr>
+                        <td class="text-muted">Last Login</td>
+                        <td>{{ target_user.last_login|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roles -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>Assigned Roles</h5>
+                <span class="badge bg-primary">{{ user_roles|length }} role(s)</span>
+            </div>
+            <div class="card-body">
+                {% if user_roles %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Granted By</th>
+                                <th>Granted At</th>
+                                <th>Origin</th>
+                                {% if admin.is_super_admin %}
+                                <th class="text-end">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ur in user_roles %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary py-2 px-3">
+                                        <i class="bi bi-shield-check me-1"></i>{{ ur.role.name }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small">
+                                    {{ ur.granted_by.display_name|default:"System" }}
+                                </td>
+                                <td class="text-muted small">
+                                    {{ ur.granted_at|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if ur.origin == 'ATLAS' %}info{% elif ur.origin == 'SEC' %}warning text-dark{% else %}secondary{% endif %}">
+                                        {{ ur.origin }}
+                                    </span>
+                                </td>
+                                {% if admin.is_super_admin %}
+                                <td class="text-end">
+                                    <form method="post" action="{% url 'htmx_revoke_role' %}" class="d-inline"
+                                          hx-post="{% url 'htmx_revoke_role' %}"
+                                          hx-swap="none"
+                                          hx-confirm="Revoke role '{{ ur.role.name }}' from {{ target_user.display_name }}?">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                                        <input type="hidden" name="role_id" value="{{ ur.role.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Revoke Role">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-shield fs-1 mb-2 d-block"></i>
+                    <p class="mb-0">No roles assigned to this user.</p>
+                </div>
+                {% endif %}
+
+                {% if admin.is_super_admin and available_roles %}
+                <hr class="my-3">
+                <h6 class="mb-3"><i class="bi bi-plus-circle me-2"></i>Assign New Role</h6>
+                <form hx-post="{% url 'htmx_grant_role' %}" hx-swap="none" class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                    <div class="col-md-8">
+                        <select name="role_id" class="form-select">
+                            <option value="">Select a role...</option>
+                            {% for role in available_roles %}
+                            <option value="{{ role.id }}">{{ role.name }}{% if role.description %} - {{ role.description|truncatewords:8 }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-lg me-1"></i>Assign Role
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

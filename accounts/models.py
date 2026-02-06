@@ -542,6 +542,89 @@ class MessageDismissal(models.Model):
 
 
 # =============================================================================
+# Notification System
+# =============================================================================
+
+class Notification(models.Model):
+    """
+    Notification system for sending targeted or bulk notifications to users.
+    Super admins can create notifications for all users, specific roles, or individual users.
+    """
+
+    PRIORITY_LOW = 'low'
+    PRIORITY_NORMAL = 'normal'
+    PRIORITY_HIGH = 'high'
+
+    PRIORITY_CHOICES = (
+        (PRIORITY_LOW, 'Low'),
+        (PRIORITY_NORMAL, 'Normal'),
+        (PRIORITY_HIGH, 'High'),
+    )
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
+
+    # Targeting
+    target_all_users = models.BooleanField(default=False)
+    target_roles = models.ManyToManyField(Role, blank=True, related_name='notifications')
+    target_users = models.ManyToManyField(User, blank=True, related_name='targeted_notifications')
+
+    # Tracking
+    created_by = models.ForeignKey(
+        AtlasAdmin,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='notifications_created'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'atlas_notification'
+        ordering = ['-created_at']
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+
+    def __str__(self):
+        return self.title
+
+    def get_target_users(self):
+        """Get all users this notification targets."""
+        if self.target_all_users:
+            return User.objects.filter(is_active=True)
+
+        user_ids = set()
+        # Users from targeted roles
+        for role in self.target_roles.all():
+            user_ids.update(role.users.filter(is_active=True).values_list('id', flat=True))
+        # Individually targeted users
+        user_ids.update(self.target_users.filter(is_active=True).values_list('id', flat=True))
+
+        return User.objects.filter(id__in=user_ids)
+
+
+class UserNotification(models.Model):
+    """Tracks notification delivery and read status per user."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='user_notifications')
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'atlas_user_notification'
+        unique_together = ['user', 'notification']
+        ordering = ['-created_at']
+        verbose_name = 'User Notification'
+        verbose_name_plural = 'User Notifications'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.notification.title} ({'Read' if self.is_read else 'Unread'})"
+
+
+# =============================================================================
 # AuditLog - Comprehensive audit trail
 # =============================================================================
 

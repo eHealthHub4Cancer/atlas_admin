@@ -1167,28 +1167,56 @@ tr.htmx-swapping {
 /* Contrast improvements for dashboard navigation */
 .sidebar .nav-link,
 .sidebar .nav-link span,
-.sidebar .nav-link i,
-.sidebar .nav-section-title,
-.sidebar .sidebar-footer .fw-semibold,
+.sidebar .nav-link i {
+    color: #1e293b !important;
+    font-weight: 500;
+}
+
+.sidebar .nav-section-title {
+    color: #334155 !important;
+    font-weight: 700;
+}
+
+.sidebar .sidebar-footer .fw-semibold {
+    color: #0f172a !important;
+}
+
 .sidebar .sidebar-footer small {
-    color: #111827 !important;
+    color: #475569 !important;
 }
 
 .sidebar-admin {
     --sidebar-bg: #fff9f3;
-    --sidebar-text: #1f2937;
+    --sidebar-text: #1e293b;
     --sidebar-hover: #ffe8d2;
     --sidebar-active: #9a3412;
 }
 
 .sidebar-user {
-    --sidebar-bg: #f6f8fc;
-    --sidebar-text: #1f2937;
-    --sidebar-hover: #e8edf5;
-    --sidebar-active: #334155;
+    --sidebar-bg: #f5f3ff;
+    --sidebar-text: #1e293b;
+    --sidebar-hover: #ede9fe;
+    --sidebar-active: #5b21b6;
 }
 
 .sidebar .nav-link.active span,
 .sidebar .nav-link.active i {
     color: inherit !important;
+    font-weight: 600;
+}
+
+.sidebar .nav-link:hover span,
+.sidebar .nav-link:hover i {
+    color: #0f172a !important;
+}
+
+/* Admin topbar dark text visibility */
+.admin-topbar .navbar-brand,
+.admin-topbar .btn-link,
+.admin-topbar .dropdown-toggle {
+    color: #1e293b !important;
+}
+
+.admin-topbar .badge {
+    font-weight: 600;
 }
