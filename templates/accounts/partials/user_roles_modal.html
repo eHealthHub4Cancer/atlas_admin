@@ -15,6 +15,10 @@
 
 <hr>
 
+<div id="rolesActionLoader" class="htmx-indicator alert alert-info py-2 mb-3" role="status">
+    <span class="spinner-border spinner-border-sm me-2"></span>Updating roles...
+</div>
+
 <!-- Current Roles -->
 <h6 class="text-muted mb-3">Current Roles</h6>
 {% if user_roles %}
@@ -31,7 +35,7 @@
             {% endif %}
         </div>
         {% if admin.is_super_admin %}
-        <form hx-post="{% url 'htmx_revoke_role' %}" hx-swap="none" class="d-inline">
+        <form hx-post="{% url 'htmx_revoke_role' %}" hx-target="#userRolesModalContent" hx-swap="innerHTML" hx-indicator="#rolesActionLoader" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="user_id" value="{{ target_user.id }}">
             <input type="hidden" name="role_id" value="{{ ur.role.id }}">
@@ -55,7 +59,7 @@
 <div class="row g-2">
     {% for role in available_roles %}
     <div class="col-md-6">
-        <form hx-post="{% url 'htmx_grant_role' %}" hx-swap="none" class="card card-body py-2">
+        <form hx-post="{% url 'htmx_grant_role' %}" hx-target="#userRolesModalContent" hx-swap="innerHTML" hx-indicator="#rolesActionLoader" class="card card-body py-2">
             {% csrf_token %}
             <input type="hidden" name="user_id" value="{{ target_user.id }}">
             <input type="hidden" name="role_id" value="{{ role.id }}">

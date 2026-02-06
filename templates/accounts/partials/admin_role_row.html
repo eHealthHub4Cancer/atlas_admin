@@ -32,7 +32,7 @@
         <button type="button" class="btn btn-outline-info btn-sm"
                 data-bs-toggle="modal"
                 data-bs-target="#viewUsersModal"
-                hx-get="{% url 'accounts:htmx_role_users' role.id %}"
+                hx-get="{% url 'htmx_role_users' role.id %}"
                 hx-target="#role-users-content">
             <i class="bi bi-people"></i>
         </button>

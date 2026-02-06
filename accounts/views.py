@@ -59,6 +59,20 @@ from .tasks import (
 logger = logging.getLogger(__name__)
 
 
+def _render_user_roles_modal(admin, user):
+    """Render role-management modal content for a specific user."""
+    user_roles = user.user_roles.select_related('role', 'granted_by').order_by('role__name')
+    all_roles = Role.objects.order_by('name')
+    user_role_ids = set(user.roles.values_list('id', flat=True))
+    available_roles = all_roles.exclude(id__in=user_role_ids)
+    return render_to_string('accounts/partials/user_roles_modal.html', {
+        'admin': admin,
+        'target_user': user,
+        'user_roles': user_roles,
+        'available_roles': available_roles,
+    })
+
+
 # =============================================================================
 # Authentication Decorators
 # =============================================================================
@@ -812,6 +826,7 @@ def admin_messages_view(request):
     context = {
         'admin': admin,
         'messages_list': messages_list,
+        'message_form': MessageForm(),
         'page_title': 'Messages',
     }
 
@@ -1029,14 +1044,9 @@ def htmx_grant_role_view(request):
                 request=request
             )
 
-            # Return toast notification
-            return HttpResponse(
-                f'<div class="toast-message success">Role "{role.name}" granted to {user.display_name}</div>'
-            )
+            return HttpResponse(_render_user_roles_modal(admin, user))
         else:
-            return HttpResponse(
-                f'<div class="toast-message warning">User already has role "{role.name}"</div>'
-            )
+            return HttpResponse(_render_user_roles_modal(admin, user))
 
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
@@ -1070,13 +1080,9 @@ def htmx_revoke_role_view(request):
                 request=request
             )
 
-            return HttpResponse(
-                f'<div class="toast-message success">Role "{role.name}" revoked from {user.display_name}</div>'
-            )
+            return HttpResponse(_render_user_roles_modal(admin, user))
         else:
-            return HttpResponse(
-                f'<div class="toast-message warning">User does not have role "{role.name}"</div>'
-            )
+            return HttpResponse(_render_user_roles_modal(admin, user))
 
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
