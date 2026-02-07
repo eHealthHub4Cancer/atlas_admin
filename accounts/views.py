@@ -1663,10 +1663,24 @@ def user_notifications_view(request):
 def user_mark_notification_read_view(request, notification_id):
     """Mark a notification as read."""
     user = request.current_user
-    user_notif = get_object_or_404(UserNotification, id=notification_id, user=user)
-    user_notif.is_read = True
-    user_notif.read_at = timezone.now()
-    user_notif.save()
+    try:
+        user_notif = get_object_or_404(UserNotification, id=notification_id, user=user)
+        user_notif.is_read = True
+        user_notif.read_at = timezone.now()
+        user_notif.save(update_fields=['is_read', 'read_at'])
+    except DatabaseError as e:
+        logger.warning('Failed marking notification %s as read for %s: %s', notification_id, user.username, e)
+        messages.error(
+            request,
+            'Unable to update notification right now. If this persists, run pending migrations and retry.'
+        )
+        if request.headers.get('HX-Request'):
+            return HttpResponse(
+                '<span class="badge bg-danger">Error</span>',
+                content_type='text/html',
+                status=500
+            )
+        return redirect('user_notifications')
 
     if request.headers.get('HX-Request'):
         return HttpResponse(
@@ -1681,8 +1695,18 @@ def user_mark_notification_read_view(request, notification_id):
 def user_mark_all_notifications_read_view(request):
     """Mark all notifications as read."""
     user = request.current_user
-    UserNotification.objects.filter(user=user, is_read=False).update(is_read=True, read_at=timezone.now())
-    messages.success(request, 'All notifications marked as read.')
+    try:
+        UserNotification.objects.filter(user=user, is_read=False).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+        messages.success(request, 'All notifications marked as read.')
+    except DatabaseError as e:
+        logger.warning('Failed marking all notifications as read for %s: %s', user.username, e)
+        messages.error(
+            request,
+            'Unable to update notifications right now. If this persists, run pending migrations and retry.'
+        )
     return redirect('user_notifications')
 
 

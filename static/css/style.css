@@ -1308,3 +1308,55 @@ tr.htmx-swapping {
 .sidebar-user .nav-link:hover i {
     color: #05070c !important;
 }
+
+/* Sidebar usability pass: dark labels, reliable scrolling, improved mobile offcanvas */
+.sidebar .nav-link,
+.sidebar .nav-link span,
+.sidebar .nav-link i,
+.sidebar .nav-section-title,
+.sidebar .sidebar-footer,
+.sidebar .sidebar-footer small {
+    color: #111827 !important;
+}
+
+.sidebar,
+.sidebar .offcanvas-body,
+.sidebar .sidebar-nav {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 991.98px) {
+    .sidebar.offcanvas {
+        top: 0 !important;
+        height: 100vh !important;
+        width: min(88vw, 320px);
+        border-right: 1px solid #d1d5db;
+    }
+
+    .sidebar .offcanvas-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--sidebar-bg);
+    }
+
+    .sidebar .offcanvas-body {
+        height: calc(100vh - 57px);
+    }
+
+    .sidebar .nav-link {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+    }
+
+    .dashboard-topbar .navbar-toggler {
+        background: #ffffff;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.4;
+    }
+}
