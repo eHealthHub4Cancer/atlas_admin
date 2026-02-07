@@ -229,7 +229,7 @@ def user_signup_view(request):
 
             # Sync to SEC tables
             try:
-                sync_user_to_sec(user)
+                sync_user_to_sec(user, raw_password=form.cleaned_data['password'])
             except Exception as e:
                 logger.warning(f'SEC sync failed for new user {user.username}: {e}')
 
@@ -419,7 +419,7 @@ def reset_password_view(request, token):
             account.set_password(form.cleaned_data['password'])
             account.save()
             if reset_token.user:
-                sync_user_password_to_sec(reset_token.user)
+                sync_user_password_to_sec(reset_token.user, raw_password=form.cleaned_data['password'])
 
             # Mark token as used
             reset_token.use()
@@ -567,7 +567,7 @@ def user_change_password_view(request):
         form = ChangePasswordForm(user, request.POST)
         if form.is_valid():
             form.save()
-            sync_user_password_to_sec(user)
+            sync_user_password_to_sec(user, raw_password=form.cleaned_data['new_password'])
 
             AuditLog.log(
                 action=AuditLog.ACTION_PASSWORD_CHANGED,
@@ -808,6 +808,7 @@ def admin_admins_view(request):
 
     context = {
         'admin': admin,
+        'admins': admins,
         'admins_list': admins,
         'search': search,
         'page_title': 'Administrator Management',

@@ -27,6 +27,7 @@ Important Notes:
 
 import logging
 import os
+import bcrypt
 from django.db import connections, DatabaseError, transaction
 
 logger = logging.getLogger(__name__)
@@ -182,7 +183,15 @@ def get_sec_user_columns(cursor):
     return _SEC_USER_COLUMNS_CACHE
 
 
-def build_sec_user_fields(user, sec_user_columns):
+def encode_sec_password(raw_password):
+    """Encode plaintext password for OHDSI sec_user.password using bcrypt."""
+    raw_password = (raw_password or "").strip()
+    if not raw_password:
+        return None
+    return bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+
+def build_sec_user_fields(user, sec_user_columns, raw_password=None):
     """Build column/value mapping for sec_user upsert/update."""
     fields = {}
     if 'login' in sec_user_columns:
@@ -192,9 +201,9 @@ def build_sec_user_fields(user, sec_user_columns):
     if 'email' in sec_user_columns:
         fields['email'] = (user.email or '').strip().lower() or None
 
-    # OHDSI/Broadsea password field - keep SEC credentials aligned with Atlas.
-    if 'password' in sec_user_columns:
-        fields['password'] = user.password
+    # OHDSI/Broadsea password field - use bcrypt hash from plaintext password.
+    if 'password' in sec_user_columns and raw_password:
+        fields['password'] = encode_sec_password(raw_password)
 
     return fields
 
@@ -223,7 +232,7 @@ def get_sec_user_id_by_login(cursor, login):
     )
 
 
-def ensure_sec_user(cursor, user):
+def ensure_sec_user(cursor, user, raw_password=None):
     """
     Ensure a user exists in sec_user and has base roles assigned.
 
@@ -249,7 +258,7 @@ def ensure_sec_user(cursor, user):
         raise ValueError("username cannot be blank")
 
     sec_user_columns = get_sec_user_columns(cursor)
-    sec_fields = build_sec_user_fields(user, sec_user_columns)
+    sec_fields = build_sec_user_fields(user, sec_user_columns, raw_password=raw_password)
 
     # Check if user already exists
     sec_user_id = get_sec_user_id_by_login(cursor, login)
@@ -272,7 +281,13 @@ def ensure_sec_user(cursor, user):
         logger.info(f"Created sec_user for {login} with id {sec_user_id}")
     else:
         # Keep profile + password in sync for existing SEC users too
-        update_sec_user(cursor, user, sec_user_id=sec_user_id, sec_user_columns=sec_user_columns)
+        update_sec_user(
+            cursor,
+            user,
+            sec_user_id=sec_user_id,
+            sec_user_columns=sec_user_columns,
+            raw_password=raw_password,
+        )
 
     # Ensure base roles exist and are assigned
     public_role_id = ensure_sec_role(cursor, PUBLIC_ROLE_NAME)
@@ -285,11 +300,11 @@ def ensure_sec_user(cursor, user):
     return sec_user_id
 
 
-def update_sec_user(cursor, user, sec_user_id=None, sec_user_columns=None):
+def update_sec_user(cursor, user, sec_user_id=None, sec_user_columns=None, raw_password=None):
     """Update sec_user record fields when Atlas user data changes."""
     sec_user_id = sec_user_id or _resolve_sec_user_id(cursor, user)
     sec_user_columns = sec_user_columns or get_sec_user_columns(cursor)
-    sec_fields = build_sec_user_fields(user, sec_user_columns)
+    sec_fields = build_sec_user_fields(user, sec_user_columns, raw_password=raw_password)
 
     if not sec_fields:
         return
@@ -459,7 +474,7 @@ def sync_roles_from_sec():
     return Role.objects.order_by('name')
 
 
-def sync_user_to_sec(user):
+def sync_user_to_sec(user, raw_password=None):
     """
     Sync a user to SEC tables (creates sec_user and assigns base roles).
 
@@ -478,7 +493,7 @@ def sync_user_to_sec(user):
     try:
         with transaction.atomic(using=WEBAPI_DB_ALIAS):
             with get_webapi_connection().cursor() as cursor:
-                sec_user_id = ensure_sec_user(cursor, user)
+                sec_user_id = ensure_sec_user(cursor, user, raw_password=raw_password)
 
         logger.info(f"Synced user {user.username} to SEC with id {sec_user_id}")
         return sec_user_id
@@ -659,9 +674,19 @@ def sync_user_profile_to_sec(user):
         return False
 
 
-def sync_user_password_to_sec(user):
+def sync_user_password_to_sec(user, raw_password):
     """Sync user's bcrypt hash into sec_user.password when column exists."""
-    return sync_user_profile_to_sec(user)
+    if not SEC_SYNC_ENABLED:
+        return True
+
+    try:
+        with transaction.atomic(using=WEBAPI_DB_ALIAS):
+            with get_webapi_connection().cursor() as cursor:
+                update_sec_user(cursor, user, raw_password=raw_password)
+        return True
+    except Exception as e:
+        logger.exception(f"Failed to sync password for {user.username} to SEC: {e}")
+        return False
 
 
 # =============================================================================
