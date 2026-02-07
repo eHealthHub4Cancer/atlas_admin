@@ -37,6 +37,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const displayName = session?.display_name || session?.username || 'User';
+  const notificationsHref = session?.is_admin ? '/admin' : '/user/activity';
+  const profileHref = session?.is_admin ? '/admin' : '/user/profile';
+  const settingsHref = session?.is_admin ? '/admin/roles' : '/user/password';
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-light-border dark:border-dark-border bg-white/80 dark:bg-dark-bg/80 backdrop-blur-xl px-4 sm:gap-x-6 sm:px-6 lg:px-8">
@@ -140,8 +143,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Notifications */}
-          <button
-            type="button"
+          <a
+            href={notificationsHref}
             className={cn(
               'relative p-2 rounded-xl',
               'text-slate-500 dark:text-slate-400',
@@ -152,9 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <span className="sr-only">View notifications</span>
             <BellIcon className="h-5 w-5" aria-hidden="true" />
-            {/* Notification badge */}
-            <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-dark-bg" />
-          </button>
+          </a>
 
           {/* Separator */}
           <div
@@ -196,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Menu.Item>
                     {({ active }) => (
                       <Link
-                        to="/user/profile"
+                        to={profileHref}
                         className={cn(
                           'flex items-center gap-2 px-4 py-2 text-sm',
                           active ? 'bg-slate-100 dark:bg-dark-elevated' : '',
@@ -211,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Menu.Item>
                     {({ active }) => (
                       <Link
-                        to="/user/settings"
+                        to={settingsHref}
                         className={cn(
                           'flex items-center gap-2 px-4 py-2 text-sm',
                           active ? 'bg-slate-100 dark:bg-dark-elevated' : '',

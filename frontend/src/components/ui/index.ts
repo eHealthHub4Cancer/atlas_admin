@@ -8,3 +8,5 @@ export { ToastContainer } from './Toast';
 export { Card, CardHeader, StatCard, type CardProps, type CardHeaderProps, type StatCardProps } from './Card';
 export { Skeleton, TableRowSkeleton, CardSkeleton, StatCardSkeleton, type SkeletonProps } from './Skeleton';
 export { EmptyState, ErrorState, NoResultsState, type EmptyStateProps } from './EmptyState';
+
+export { TopLoader } from './TopLoader';

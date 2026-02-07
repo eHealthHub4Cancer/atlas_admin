@@ -30,7 +30,7 @@ const filters: FilterConfig[] = [
 
 export const ActivityPage: React.FC = () => {
   const tableState = useTableState({
-    defaultPageSize: 10,
+    defaultPageSize: 5,
     syncWithUrl: true,
     filterKeys: ['status', 'date_from', 'date_to'],
   });

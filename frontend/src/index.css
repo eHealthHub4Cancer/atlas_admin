@@ -943,3 +943,21 @@ body {
 @media (min-width: 1024px) {
   .dark .dark\:lg\:bg-slate-700 { background-color: var(--slate-700); }
 }
+
+
+.top-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  opacity: 0;
+  z-index: 100;
+  background: linear-gradient(90deg, var(--brand-500), var(--purple-500));
+  transition: width 220ms ease, opacity 220ms ease;
+}
+
+.top-loader.active {
+  width: 72%;
+  opacity: 1;
+}

@@ -105,6 +105,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_audit_log' %}active{% endif %}" href="{% url 'user_audit_log' %}">
+                            <i class="bi bi-journal-text"></i>
+                            <span>My Audit Log</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_support' %}active{% endif %}" href="{% url 'user_support' %}">
                             <i class="bi bi-question-circle"></i>
                             <span>Support</span>

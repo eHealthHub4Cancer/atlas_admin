@@ -31,7 +31,7 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
 from django.views.decorators.csrf import csrf_protect
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Q, Prefetch, Case, When, IntegerField, Sum
 from django.db.utils import DatabaseError
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
@@ -532,6 +532,39 @@ def user_dashboard_view(request):
 
 
 @user_login_required
+def user_audit_log_view(request):
+    """User view for own audit logs only."""
+    user = request.current_user
+    logs = AuditLog.objects.filter(
+        Q(actor_user=user) | Q(target_user=user)
+    ).select_related('actor_user', 'actor_admin', 'target_user', 'target_admin').distinct().order_by('-created_at')
+
+    action_filter = request.GET.get('action', '')
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+
+    search = request.GET.get('search', '')
+    if search:
+        logs = logs.filter(
+            Q(description__icontains=search) |
+            Q(action__icontains=search)
+        )
+
+    paginator = Paginator(logs, 5)
+    page = request.GET.get('page', 1)
+    logs_page = paginator.get_page(page)
+
+    return render(request, 'accounts/user_audit_log.html', {
+        'user': user,
+        'logs': logs_page,
+        'action_choices': AuditLog.ACTION_CHOICES,
+        'action_filter': action_filter,
+        'search': search,
+        'page_title': 'My Audit Log',
+    })
+
+
+@user_login_required
 def user_roles_view(request):
     """View user's roles with descriptions."""
     user = request.current_user
@@ -902,7 +935,7 @@ def admin_audit_log_view(request):
         )
 
     # Pagination
-    paginator = Paginator(logs, 10)
+    paginator = Paginator(logs, 5)
     page = request.GET.get('page', 1)
     logs_page = paginator.get_page(page)
 
@@ -935,6 +968,8 @@ def admin_messages_view(request):
     context = {
         'admin': admin,
         'messages_list': messages_list,
+        'roles': Role.objects.filter(is_active=True).order_by('name'),
+        'users': User.objects.filter(is_active=True).order_by('username'),
         'page_title': 'Messages',
     }
 
@@ -972,6 +1007,54 @@ def admin_message_create_view(request):
             messages.error(request, 'Failed to create message. Please check the form fields.')
             return redirect('admin_messages')
 
+    return redirect('admin_messages')
+
+
+@admin_login_required
+@require_http_methods(["GET", "POST"])
+def admin_message_edit_view(request, message_id):
+    """Edit an existing announcement."""
+    admin = request.current_admin
+    message_obj = get_object_or_404(Message, id=message_id)
+
+    if request.method == 'POST':
+        form = MessageForm(request.POST, instance=message_obj)
+        if form.is_valid():
+            updated = form.save()
+            AuditLog.log(
+                action=AuditLog.ACTION_MESSAGE_UPDATED,
+                actor_admin=admin,
+                description=f'Message updated: {updated.title}',
+                request=request,
+            )
+            messages.success(request, 'Announcement updated successfully.')
+            return redirect('admin_messages')
+    else:
+        form = MessageForm(instance=message_obj)
+
+    return render(request, 'accounts/admin_message_edit.html', {
+        'admin': admin,
+        'message_obj': message_obj,
+        'form': form,
+        'page_title': f'Edit Announcement: {message_obj.title}',
+    })
+
+
+@admin_login_required
+@require_POST
+def admin_message_delete_view(request, message_id):
+    """Delete an announcement."""
+    admin = request.current_admin
+    message_obj = get_object_or_404(Message, id=message_id)
+    title = message_obj.title
+    message_obj.delete()
+    AuditLog.log(
+        action=AuditLog.ACTION_MESSAGE_UPDATED,
+        actor_admin=admin,
+        description=f'Message deleted: {title}',
+        request=request,
+    )
+    messages.success(request, 'Announcement deleted successfully.')
     return redirect('admin_messages')
 
 
@@ -1656,7 +1739,15 @@ def admin_notifications_view(request):
 
     # List existing notifications
     try:
-        notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(read_count=Count('user_notifications', filter=Q(user_notifications__is_read=True)))
+        notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(
+            read_count=Sum(
+                Case(
+                    When(user_notifications__is_read=True, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            )
+        )
 
         search = request.GET.get('search', '')
         if search:
