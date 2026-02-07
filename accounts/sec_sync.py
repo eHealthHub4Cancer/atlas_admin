@@ -20,15 +20,15 @@ The WebAPI schema is configured via DB_SEARCH_PATH in settings.py.
 Default schema name is typically like 'bioc_webapi3_schema_v3' or similar.
 
 Important Notes:
-- The SEC tables may not have unique constraints, so we avoid ON CONFLICT
-- All operations use SELECT-then-INSERT pattern for safety
+- Uses ON CONFLICT when UNIQUE constraints are available, with safe fallbacks
+- Base role links are inserted in a concurrency-safe way when constraints exist
 - Base roles (public, personal) are always preserved
 """
 
 import logging
 import os
 import bcrypt
-from django.db import connections, DatabaseError, transaction
+from django.db import connections, DatabaseError, IntegrityError, transaction
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,8 @@ SEC_SYNC_ENABLED = os.environ.get('SEC_SYNC_ENABLED', 'true').lower() == 'true'
 
 # Cache sec_user column metadata per process
 _SEC_USER_COLUMNS_CACHE = None
+_SEC_UNIQUE_CONSTRAINTS_CACHE = {}
+_SEC_USER_ROLE_ORIGIN_COLUMN_CACHE = None
 
 
 # =============================================================================
@@ -75,6 +77,61 @@ def fetchall_tuples(cursor, sql, params=None):
     """Execute SQL and return all rows as list of tuples."""
     cursor.execute(sql, params or [])
     return cursor.fetchall()
+
+
+def has_unique_constraint(cursor, table_name, required_columns):
+    """Return True if table has a UNIQUE constraint exactly on required columns."""
+    key = (table_name, tuple(sorted(required_columns)))
+    cached = _SEC_UNIQUE_CONSTRAINTS_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    rows = fetchall_tuples(
+        cursor,
+        """
+        SELECT tc.constraint_name, kcu.column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+         AND tc.table_name = kcu.table_name
+        WHERE tc.table_schema = %s
+          AND tc.table_name = %s
+          AND tc.constraint_type = 'UNIQUE';
+        """,
+        [WEBAPI_SCHEMA, table_name],
+    )
+
+    by_constraint = {}
+    for constraint_name, column_name in rows:
+        by_constraint.setdefault(constraint_name, set()).add(column_name)
+
+    expected = set(required_columns)
+    result = any(cols == expected for cols in by_constraint.values())
+    _SEC_UNIQUE_CONSTRAINTS_CACHE[key] = result
+    return result
+
+
+def sec_user_role_has_origin_column(cursor):
+    """Return True when sec_user_role has origin column."""
+    global _SEC_USER_ROLE_ORIGIN_COLUMN_CACHE
+    if _SEC_USER_ROLE_ORIGIN_COLUMN_CACHE is not None:
+        return _SEC_USER_ROLE_ORIGIN_COLUMN_CACHE
+
+    exists = fetchone_value(
+        cursor,
+        """
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = %s
+          AND table_name = 'sec_user_role'
+          AND LOWER(column_name) = 'origin'
+        LIMIT 1;
+        """,
+        [WEBAPI_SCHEMA],
+    )
+    _SEC_USER_ROLE_ORIGIN_COLUMN_CACHE = exists is not None
+    return _SEC_USER_ROLE_ORIGIN_COLUMN_CACHE
 
 
 # =============================================================================
@@ -106,41 +163,46 @@ def get_sec_role_id(cursor, role_name):
 
 
 def ensure_sec_role(cursor, role_name):
-    """
-    Ensure a role exists in sec_role and return its ID.
-
-    This function uses a SELECT-then-INSERT pattern to avoid
-    ON CONFLICT issues with schemas that lack unique constraints.
-
-    Args:
-        cursor: Database cursor
-        role_name: Name of the role to ensure exists
-
-    Returns:
-        int: The role ID (existing or newly created)
-
-    Raises:
-        ValueError: If role_name is blank
-    """
+    """Ensure a role exists in sec_role and return its ID."""
     role_name = (role_name or "").strip()
     if not role_name:
         raise ValueError("role_name cannot be blank")
 
-    # Try to find existing role
+    unique_on_name = has_unique_constraint(cursor, 'sec_role', {'name'})
+
+    if unique_on_name:
+        cursor.execute(
+            f"""
+            INSERT INTO {WEBAPI_SCHEMA}.sec_role (id, name)
+            VALUES (nextval('{WEBAPI_SCHEMA}.sec_role_sequence'), %s)
+            ON CONFLICT (name) DO NOTHING;
+            """,
+            [role_name],
+        )
+        role_id = get_sec_role_id(cursor, role_name)
+        if role_id is None:
+            raise RuntimeError(f"Could not resolve sec_role.id for role={role_name}")
+        return role_id
+
     role_id = get_sec_role_id(cursor, role_name)
     if role_id is not None:
         return role_id
 
-    # Insert new role
-    cursor.execute(
-        f"""
-        INSERT INTO {WEBAPI_SCHEMA}.sec_role (id, name)
-        VALUES (nextval('{WEBAPI_SCHEMA}.sec_role_sequence'), %s)
-        RETURNING id;
-        """,
-        [role_name],
-    )
-    return cursor.fetchone()[0]
+    try:
+        cursor.execute(
+            f"""
+            INSERT INTO {WEBAPI_SCHEMA}.sec_role (id, name)
+            VALUES (nextval('{WEBAPI_SCHEMA}.sec_role_sequence'), %s)
+            RETURNING id;
+            """,
+            [role_name],
+        )
+        return cursor.fetchone()[0]
+    except IntegrityError:
+        role_id = get_sec_role_id(cursor, role_name)
+        if role_id is None:
+            raise
+        return role_id
 
 
 def get_all_sec_roles(cursor):
@@ -188,7 +250,7 @@ def encode_sec_password(raw_password):
     raw_password = (raw_password or "").strip()
     if not raw_password:
         return None
-    return bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt(rounds=10, prefix=b"2a")).decode('utf-8')
 
 
 def build_sec_user_fields(user, sec_user_columns, raw_password=None):
@@ -252,7 +314,6 @@ def ensure_sec_user(cursor, user, raw_password=None):
         ValueError: If username is blank
     """
     login = (user.username or "").strip().lower()
-    display_name = user.display_name or user.username
 
     if not login:
         raise ValueError("username cannot be blank")
@@ -260,11 +321,9 @@ def ensure_sec_user(cursor, user, raw_password=None):
     sec_user_columns = get_sec_user_columns(cursor)
     sec_fields = build_sec_user_fields(user, sec_user_columns, raw_password=raw_password)
 
-    # Check if user already exists
-    sec_user_id = get_sec_user_id_by_login(cursor, login)
+    unique_on_login = has_unique_constraint(cursor, 'sec_user', {'login'})
 
-    if sec_user_id is None:
-        # Create new sec_user with schema-compatible fields
+    if unique_on_login and 'login' in sec_fields:
         columns = ['id'] + list(sec_fields.keys())
         placeholders = [f"nextval('{WEBAPI_SCHEMA}.sec_user_sequence')"] + ['%s'] * len(sec_fields)
         values = list(sec_fields.values())
@@ -273,21 +332,42 @@ def ensure_sec_user(cursor, user, raw_password=None):
             f"""
             INSERT INTO {WEBAPI_SCHEMA}.sec_user ({', '.join(columns)})
             VALUES ({', '.join(placeholders)})
-            RETURNING id;
+            ON CONFLICT (login) DO NOTHING;
             """,
             values,
         )
-        sec_user_id = cursor.fetchone()[0]
-        logger.info(f"Created sec_user for {login} with id {sec_user_id}")
+        sec_user_id = get_sec_user_id_by_login(cursor, login)
+        if sec_user_id is None:
+            raise RuntimeError(f"Could not resolve sec_user.id for login={login}")
     else:
-        # Keep profile + password in sync for existing SEC users too
-        update_sec_user(
-            cursor,
-            user,
-            sec_user_id=sec_user_id,
-            sec_user_columns=sec_user_columns,
-            raw_password=raw_password,
-        )
+        # Check if user already exists
+        sec_user_id = get_sec_user_id_by_login(cursor, login)
+
+        if sec_user_id is None:
+            # Create new sec_user with schema-compatible fields
+            columns = ['id'] + list(sec_fields.keys())
+            placeholders = [f"nextval('{WEBAPI_SCHEMA}.sec_user_sequence')"] + ['%s'] * len(sec_fields)
+            values = list(sec_fields.values())
+
+            cursor.execute(
+                f"""
+                INSERT INTO {WEBAPI_SCHEMA}.sec_user ({', '.join(columns)})
+                VALUES ({', '.join(placeholders)})
+                RETURNING id;
+                """,
+                values,
+            )
+            sec_user_id = cursor.fetchone()[0]
+            logger.info(f"Created sec_user for {login} with id {sec_user_id}")
+
+    # Keep profile + password in sync for existing/new SEC users too
+    update_sec_user(
+        cursor,
+        user,
+        sec_user_id=sec_user_id,
+        sec_user_columns=sec_user_columns,
+        raw_password=raw_password,
+    )
 
     # Ensure base roles exist and are assigned
     public_role_id = ensure_sec_role(cursor, PUBLIC_ROLE_NAME)
@@ -352,38 +432,54 @@ def check_sec_user_role_exists(cursor, user_id, role_id):
 
 
 def ensure_sec_user_role_link(cursor, user_id, role_id):
-    """
-    Ensure a user-role link exists in sec_user_role.
+    """Ensure a user-role link exists in sec_user_role."""
+    unique_user_role = has_unique_constraint(cursor, 'sec_user_role', {'user_id', 'role_id'})
+    has_origin = sec_user_role_has_origin_column(cursor)
 
-    This function handles schema variants with/without "origin" column.
+    if unique_user_role:
+        if has_origin:
+            cursor.execute(
+                f"""
+                INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id, origin)
+                VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s, 'SYSTEM')
+                ON CONFLICT (user_id, role_id) DO NOTHING;
+                """,
+                [user_id, role_id],
+            )
+        else:
+            cursor.execute(
+                f"""
+                INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
+                VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s)
+                ON CONFLICT (user_id, role_id) DO NOTHING;
+                """,
+                [user_id, role_id],
+            )
+        return
 
-    Args:
-        cursor: Database cursor
-        user_id: sec_user.id
-        role_id: sec_role.id
-    """
-    # Check if link already exists
     if check_sec_user_role_exists(cursor, user_id, role_id):
         return
 
-    # Try insert with origin column, fallback without
-    try:
-        cursor.execute(
-            f"""
-            INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id, origin)
-            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s, 'ATLAS');
-            """,
-            [user_id, role_id],
-        )
-    except Exception:
-        # Fallback: schema might not have origin column
-        cursor.execute(
-            f"""
-            INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
-            VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s);
-            """,
-            [user_id, role_id],
-        )
+    if has_origin:
+        try:
+            cursor.execute(
+                f"""
+                INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id, origin)
+                VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s, 'SYSTEM');
+                """,
+                [user_id, role_id],
+            )
+            return
+        except DatabaseError:
+            pass
+
+    cursor.execute(
+        f"""
+        INSERT INTO {WEBAPI_SCHEMA}.sec_user_role (id, user_id, role_id)
+        VALUES (nextval('{WEBAPI_SCHEMA}.sec_user_role_sequence'), %s, %s);
+        """,
+        [user_id, role_id],
+    )
 
 
 def remove_sec_user_role_link(cursor, user_id, role_id):

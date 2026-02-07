@@ -471,9 +471,22 @@ class Message(models.Model):
         (PRIORITY_HIGH, 'High'),
     )
 
+    TAG_INFO = 'info'
+    TAG_WARNING = 'warning'
+    TAG_SUCCESS = 'success'
+    TAG_DANGER = 'danger'
+
+    TAG_CHOICES = (
+        (TAG_INFO, 'Info'),
+        (TAG_WARNING, 'Warning'),
+        (TAG_SUCCESS, 'Success'),
+        (TAG_DANGER, 'Danger'),
+    )
+
     title = models.CharField(max_length=255)
     content = models.TextField()
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
+    tag = models.CharField(max_length=20, choices=TAG_CHOICES, default=TAG_INFO)
 
     # Targeting
     target_all_users = models.BooleanField(default=True)
@@ -561,9 +574,22 @@ class Notification(models.Model):
         (PRIORITY_HIGH, 'High'),
     )
 
+    TAG_INFO = 'info'
+    TAG_WARNING = 'warning'
+    TAG_SUCCESS = 'success'
+    TAG_DANGER = 'danger'
+
+    TAG_CHOICES = (
+        (TAG_INFO, 'Info'),
+        (TAG_WARNING, 'Warning'),
+        (TAG_SUCCESS, 'Success'),
+        (TAG_DANGER, 'Danger'),
+    )
+
     title = models.CharField(max_length=255)
     content = models.TextField()
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
+    tag = models.CharField(max_length=20, choices=TAG_CHOICES, default=TAG_INFO)
 
     # Targeting
     target_all_users = models.BooleanField(default=False)

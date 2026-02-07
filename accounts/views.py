@@ -23,6 +23,7 @@ Role grants/revokes sync via grant_role_to_sec() / revoke_role_from_sec()
 """
 
 import logging
+import os
 from functools import wraps
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -58,6 +59,32 @@ from .tasks import (
 )
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_SIGNUP_ROLE = os.environ.get('DEFAULT_SIGNUP_ROLE', 'guest').strip().lower()
+
+
+def _assign_default_signup_role(user):
+    """Assign a default role to new signup users (without exposing role in signup form)."""
+    role = Role.objects.filter(is_active=True, name__iexact=DEFAULT_SIGNUP_ROLE).first()
+    if role is None:
+        role = Role.objects.filter(is_active=True).order_by('sort_order', 'name').first()
+
+    if role is None:
+        logger.warning('No active role available to assign for signup user %s', user.username)
+        return None
+
+    UserRole.objects.get_or_create(
+        user=user,
+        role=role,
+        defaults={'origin': UserRole.ORIGIN_SYSTEM},
+    )
+
+    try:
+        grant_role_to_sec(user, role.name)
+    except Exception as e:
+        logger.warning('Failed to grant default role %s to SEC user %s: %s', role.name, user.username, e)
+
+    return role
 
 
 def _render_user_roles_modal(admin, user):
@@ -242,13 +269,18 @@ def user_signup_view(request):
                 request=request
             )
 
+            assigned_role = _assign_default_signup_role(user)
+
             # Send welcome email
             try:
                 send_welcome_email.delay(user.id)
             except Exception as e:
                 logger.warning(f'Failed to queue welcome email: {e}')
 
-            messages.success(request, 'Account created successfully! Please log in.')
+            if assigned_role:
+                messages.success(request, f'Account created successfully! Please log in. Default role assigned: {assigned_role.name}.')
+            else:
+                messages.success(request, 'Account created successfully! Please log in.')
             return redirect('user_login')
     else:
         form = UserSignupForm()
@@ -1528,12 +1560,10 @@ def user_notification_count_view(request):
     user = request.current_user
     count = UserNotification.objects.filter(user=user, is_read=False).count()
     if request.headers.get('HX-Request'):
-        if count > 0:
-            return HttpResponse(
-                f'<span class="badge bg-danger rounded-pill">{count}</span>',
-                content_type='text/html'
-            )
-        return HttpResponse('', content_type='text/html')
+        return HttpResponse(
+            f'<span class="badge bg-danger rounded-pill">{count}</span>',
+            content_type='text/html'
+        )
     return JsonResponse({'count': count})
 
 
@@ -1547,6 +1577,7 @@ def admin_notifications_view(request):
         title = request.POST.get('title', '').strip()
         content = request.POST.get('content', '').strip()
         priority = request.POST.get('priority', 'normal')
+        tag = request.POST.get('tag', Notification.TAG_INFO)
         target_type = request.POST.get('target_type', 'all')
         target_role_ids = request.POST.getlist('target_roles')
         target_user_ids = request.POST.getlist('target_users')
@@ -1559,6 +1590,7 @@ def admin_notifications_view(request):
             title=title,
             content=content,
             priority=priority,
+            tag=tag,
             target_all_users=(target_type == 'all'),
             created_by=admin,
         )
@@ -1587,7 +1619,7 @@ def admin_notifications_view(request):
         return redirect('admin_notifications')
 
     # List existing notifications
-    notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles')
+    notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(read_count=Count('user_notifications', filter=Q(user_notifications__is_read=True)))
 
     search = request.GET.get('search', '')
     if search:
@@ -1621,6 +1653,7 @@ def admin_notification_edit_view(request, notification_id):
         notification.title = request.POST.get('title', notification.title).strip()
         notification.content = request.POST.get('content', notification.content).strip()
         notification.priority = request.POST.get('priority', notification.priority)
+        notification.tag = request.POST.get('tag', notification.tag)
         notification.save()
         messages.success(request, 'Notification updated.')
         return redirect('admin_notifications')
