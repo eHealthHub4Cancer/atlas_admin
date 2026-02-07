@@ -520,11 +520,25 @@ def user_dashboard_view(request):
         logger.warning('Failed loading notifications for %s: %s', user.username, e)
         recent_notifications = []
 
+    profile_fields = {
+        'First name': bool(user.first_name and user.first_name.strip()),
+        'Last name': bool(user.last_name and user.last_name.strip()),
+        'Email': bool(user.email and user.email.strip()),
+        'Affiliation': bool(user.affiliation and user.affiliation.strip()),
+        'Prefix': bool(user.prefix_id),
+        'Category': bool(user.category_id),
+    }
+    profile_completed = sum(profile_fields.values())
+    profile_total = len(profile_fields)
+    profile_completion = int((profile_completed / profile_total) * 100) if profile_total else 0
+
     context = {
         'user': user,
         'user_roles': user_roles,
         'messages_list': visible_messages[:5],  # Show max 5 messages
         'notifications_list': recent_notifications,
+        'profile_completion': profile_completion,
+        'profile_missing_fields': [label for label, done in profile_fields.items() if not done],
         'page_title': 'Dashboard',
     }
 
