@@ -246,7 +246,6 @@ class SignupSerializer(serializers.Serializer):
     affiliation = serializers.CharField(max_length=255, required=False, allow_blank=True)
     prefix = serializers.CharField(max_length=20, required=False, allow_blank=True)
     category = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    role = serializers.CharField(max_length=50)
     password1 = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True)
     

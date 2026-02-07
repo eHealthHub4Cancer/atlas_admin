@@ -69,7 +69,7 @@
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center mb-1">
                                     {% if not un.is_read %}
-                                    <span class="badge bg-primary me-2">New</span>
+                                    <span class="badge bg-dark me-2">New</span>
                                     {% endif %}
                                     {% if un.notification.priority == 'high' %}
                                     <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
@@ -84,7 +84,7 @@
                                 <small class="text-muted">
                                     <i class="bi bi-clock me-1"></i>{{ un.notification.created_at|timesince }} ago
                                     {% if un.notification.created_by %}
-                                    &middot; From: {{ un.notification.created_by.display_name }}
+                                    &middot; From: {{ un.notification.created_by.full_name }}
                                     {% endif %}
                                 </small>
                             </div>
@@ -94,7 +94,8 @@
                                         hx-post="{% url 'user_mark_notification_read' un.id %}"
                                         hx-target="#notif-action-{{ un.id }}"
                                         hx-swap="innerHTML"
-                                        title="Mark as read">
+                                        title="Mark as read"
+                                        hx-on::after-request="htmx.ajax('GET', '{% url 'htmx_notification_count' %}', {target: '#notif-badge-count', swap: 'innerHTML'})">
                                     <i class="bi bi-check2"></i>
                                 </button>
                                 {% else %}

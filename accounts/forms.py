@@ -8,7 +8,7 @@ Supports both User (username-based) and AtlasAdmin (email-based) authentication.
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from .models import User, AtlasAdmin, Role, Category, UserRole, Message
+from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message
 
 
 # =============================================================================
@@ -127,11 +127,11 @@ class UserSignupForm(forms.Form):
             'class': 'form-select',
         })
     )
-    role = forms.ModelChoiceField(
-        label='Role',
-        queryset=Role.objects.none(),
+    prefix = forms.ModelChoiceField(
+        label='Prefix',
+        queryset=Prefix.objects.none(),
         required=False,
-        empty_label='Select a role',
+        empty_label='Select a prefix',
         widget=forms.Select(attrs={
             'class': 'form-select',
         })
@@ -177,7 +177,7 @@ class UserSignupForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['role'].queryset = Role.objects.filter(is_active=True).order_by('name')
+        self.fields['prefix'].queryset = Prefix.objects.filter(is_active=True).order_by('sort_order', 'display_name')
         self.fields['category'].queryset = Category.objects.filter(is_active=True).order_by('sort_order', 'display_name')
 
     def clean_password(self):
@@ -206,14 +206,12 @@ class UserSignupForm(forms.Form):
             email=self.cleaned_data['email'],
             first_name=self.cleaned_data['first_name'],
             last_name=self.cleaned_data['last_name'],
+            prefix=self.cleaned_data.get('prefix'),
             affiliation=self.cleaned_data.get('affiliation', ''),
             category=self.cleaned_data.get('category'),
         )
         user.set_password(self.cleaned_data['password'])
         user.save()
-        role = self.cleaned_data.get('role')
-        if role:
-            UserRole.objects.get_or_create(user=user, role=role)
         return user
 
 

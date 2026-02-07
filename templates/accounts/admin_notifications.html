@@ -27,13 +27,24 @@
                         <textarea class="form-control" id="notif-content" name="content" rows="4" required
                                   placeholder="Notification message..."></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label for="notif-priority" class="form-label">Priority</label>
-                        <select class="form-select" id="notif-priority" name="priority">
-                            <option value="low">Low</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="high">High</option>
-                        </select>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="notif-priority" class="form-label">Priority</label>
+                            <select class="form-select" id="notif-priority" name="priority">
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="notif-tag" class="form-label">Tag</label>
+                            <select class="form-select" id="notif-tag" name="tag">
+                                <option value="info" selected>Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="success">Success</option>
+                                <option value="danger">Danger</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Send To</label>
@@ -109,13 +120,14 @@
                                     {% else %}
                                     <span class="badge bg-info me-2">Low</span>
                                     {% endif %}
+                                    <span class="badge bg-{{ notif.tag }}-subtle text-{{ notif.tag }} me-2 text-uppercase">{{ notif.tag }}</span>
                                     <h6 class="mb-0">{{ notif.title }}</h6>
                                 </div>
                                 <p class="mb-1 text-muted small">{{ notif.content|truncatewords:30 }}</p>
                                 <div class="d-flex gap-3 small text-muted">
                                     <span><i class="bi bi-clock me-1"></i>{{ notif.created_at|timesince }} ago</span>
                                     <span><i class="bi bi-people me-1"></i>{{ notif.user_notifications.count }} recipient(s)</span>
-                                    <span><i class="bi bi-eye me-1"></i>{{ notif.user_notifications.filter.count|default:"0" }} read</span>
+                                    <span><i class="bi bi-eye me-1"></i>{{ notif.read_count|default:"0" }} read</span>
                                     {% if notif.target_all_users %}
                                     <span class="badge bg-primary-subtle text-primary">All Users</span>
                                     {% else %}

@@ -9,8 +9,8 @@
 :root {
     --sidebar-width: 260px;
     --navbar-height: 60px;
-    --primary-color: #6d28d9;
-    --primary-dark: #4c1d95;
+    --primary-color: #475569;
+    --primary-dark: #334155;
     --sidebar-bg: #f4f7fb;
     --sidebar-text: #1f2937;
     --sidebar-hover: #e7eef8;
@@ -265,11 +265,11 @@ body.auth-page {
 
 /* Wide container for signup form */
 .auth-container-wide {
-    max-width: 480px;
+    max-width: 860px;
 }
 
 .auth-wrapper:has(.auth-container-wide) {
-    max-width: 480px;
+    max-width: 860px;
 }
 
 /* Form text helper */
@@ -324,8 +324,8 @@ body.auth-page {
 
 
 .dashboard-page .dashboard-topbar {
-    background: linear-gradient(90deg, #f3f6fb 0%, #e8f0fb 55%, #f2f4f8 100%);
-    border-bottom: 1px solid #d8e2ef;
+    background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 55%, #cbd5e1 100%);
+    border-bottom: 1px solid #d1d5db;
 }
 
 .dashboard-page .dashboard-topbar .navbar-brand,
@@ -1193,10 +1193,10 @@ tr.htmx-swapping {
 }
 
 .sidebar-user {
-    --sidebar-bg: #f5f3ff;
-    --sidebar-text: #1e293b;
-    --sidebar-hover: #ede9fe;
-    --sidebar-active: #5b21b6;
+    --sidebar-bg: #f8fafc;
+    --sidebar-text: #0f172a;
+    --sidebar-hover: #e2e8f0;
+    --sidebar-active: #0f172a;
 }
 
 .sidebar .nav-link.active span,

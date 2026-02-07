@@ -36,7 +36,7 @@
                     {% csrf_token %}
 
                     <div class="row g-3">
-                        <div class="col-12 col-lg-6">
+                        <div class="col-12">
                             <label for="id_username" class="form-label">Username <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-at"></i></span>
@@ -109,13 +109,13 @@
                         </div>
 
                         <div class="col-12 col-lg-6">
-                            <label for="id_role" class="form-label">Role</label>
+                            <label for="id_prefix" class="form-label">Prefix</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                                {{ form.role }}
+                                <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                                {{ form.prefix }}
                             </div>
-                            {% if form.role.errors %}
-                                <div class="invalid-feedback d-block">{{ form.role.errors.0 }}</div>
+                            {% if form.prefix.errors %}
+                                <div class="invalid-feedback d-block">{{ form.prefix.errors.0 }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -136,7 +136,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-12 col-lg-6">
+                        <div class="col-12">
                             <label for="id_password_confirm" class="form-label">Confirm Password <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock"></i></span>

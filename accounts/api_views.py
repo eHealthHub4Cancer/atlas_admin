@@ -5,6 +5,8 @@ API endpoints for authentication, user management, roles, and prefixes.
 """
 
 import math
+import os
+import logging
 from django.db.models import Q, Count
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -29,7 +31,7 @@ from .serializers import (
     BulkRoleAssignSerializer,
     DashboardStatsSerializer,
 )
-from .sec_sync import sync_user_to_sec, grant_role_to_sec, sync_user_profile_to_sec, sync_user_password_to_sec
+from .sec_sync import sync_user_to_sec, sync_user_profile_to_sec, sync_user_password_to_sec, grant_role_to_sec
 
 
 # =============================================================================
@@ -83,6 +85,34 @@ def _paginate(queryset, page, page_size):
         'page_size': page_size,
         'total_pages': total_pages,
     }
+
+
+logger = logging.getLogger(__name__)
+DEFAULT_SIGNUP_ROLE = os.environ.get('DEFAULT_SIGNUP_ROLE', 'guest').strip().lower()
+
+
+def _assign_default_signup_role(user):
+    """Assign a default role after API signup and sync to SEC."""
+    role = Role.objects.filter(is_active=True, name__iexact=DEFAULT_SIGNUP_ROLE).first()
+    if role is None:
+        role = Role.objects.filter(is_active=True).order_by('sort_order', 'name').first()
+
+    if role is None:
+        logger.warning('No active role available for API signup user %s', user.username)
+        return None
+
+    UserRole.objects.get_or_create(
+        user=user,
+        role=role,
+        defaults={'origin': UserRole.ORIGIN_SYSTEM},
+    )
+
+    try:
+        grant_role_to_sec(user, role.name)
+    except Exception as e:
+        logger.warning('Failed to grant default role %s to SEC user %s: %s', role.name, user.username, e)
+
+    return role
 
 
 # =============================================================================
@@ -230,17 +260,12 @@ def signup_api(request):
 
     # Sync user into SEC tables (sec_user + base roles)
     sync_user_to_sec(user, raw_password=data['password1'])
+    assigned_role = _assign_default_signup_role(user)
 
-    # Assign role if provided
-    if data.get('role'):
-        try:
-            role = Role.objects.get(name=data['role'], is_active=True)
-            UserRole.objects.create(user=user, role=role, origin=UserRole.ORIGIN_ATLAS)
-            grant_role_to_sec(user, role.name)
-        except Role.DoesNotExist:
-            pass
-
-    return Response({'success': True, 'redirect': '/login'})
+    response = {'success': True, 'redirect': '/login'}
+    if assigned_role:
+        response['default_role'] = assigned_role.name
+    return Response(response)
 
 
 @api_view(['POST'])
