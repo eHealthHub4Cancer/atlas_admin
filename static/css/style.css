@@ -9,8 +9,8 @@
 :root {
     --sidebar-width: 260px;
     --navbar-height: 60px;
-    --primary-color: #475569;
-    --primary-dark: #334155;
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
     --sidebar-bg: #f4f7fb;
     --sidebar-text: #1f2937;
     --sidebar-hover: #e7eef8;
@@ -573,9 +573,9 @@ body.auth-page {
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #3f53b8 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #4338ca 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 
 /* Action buttons in tables */
