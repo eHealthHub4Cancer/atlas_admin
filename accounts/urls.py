@@ -20,7 +20,7 @@ urlpatterns = [
     # =========================================================================
     # Admin Authentication (Separate)
     # =========================================================================
-    path('admin-login/', views.admin_login_view, name='admin_login'),
+    path('restricted-access/', views.admin_login_view, name='admin_login'),
     path('admin-logout/', views.admin_logout_view, name='admin_logout'),
 
     # =========================================================================
