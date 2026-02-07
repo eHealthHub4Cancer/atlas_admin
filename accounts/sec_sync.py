@@ -654,13 +654,15 @@ def sync_user_roles_to_sec(user, role_names):
         logger.exception(f"Failed to sync roles for {user.username} to SEC: {e}")
 
 
-def grant_role_to_sec(user, role_name):
+def grant_role_to_sec(user, role_name, create_missing_role=True):
     """
     Grant a single role to a user in SEC.
 
     Args:
         user: Atlas User model instance
         role_name: Name of the role to grant
+        create_missing_role: When True, create role in sec_role if missing.
+            Keep False for admin-side grants so SEC roles are not auto-created.
 
     Returns:
         bool: True if successful
@@ -672,7 +674,17 @@ def grant_role_to_sec(user, role_name):
         with transaction.atomic(using=WEBAPI_DB_ALIAS):
             with get_webapi_connection().cursor() as cursor:
                 sec_user_id = _resolve_sec_user_id(cursor, user)
-                role_id = ensure_sec_role(cursor, role_name)
+                if create_missing_role:
+                    role_id = ensure_sec_role(cursor, role_name)
+                else:
+                    role_id = get_sec_role_id(cursor, role_name)
+                    if not role_id:
+                        logger.warning(
+                            "Skipping SEC role grant for %s: role '%s' does not exist in sec_role",
+                            user.username,
+                            role_name,
+                        )
+                        return False
                 ensure_sec_user_role_link(cursor, sec_user_id, role_id)
 
         logger.info(f"Granted role '{role_name}' to {user.username} in SEC")

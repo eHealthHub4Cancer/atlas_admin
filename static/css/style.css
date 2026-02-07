@@ -377,10 +377,16 @@ body.auth-page {
     border-right: 1px solid #dbe3ee;
     z-index: 1020;
     transition: transform 0.3s ease;
+    overflow-y: auto;
 }
 
 .sidebar-nav {
     padding: 1rem 0;
+    overflow-y: visible;
+}
+
+.sidebar .offcanvas-body {
+    height: 100%;
     overflow-y: auto;
 }
 
@@ -848,7 +854,7 @@ body.auth-page {
    ----------------------------------------------------------------------------- */
 .sidebar-admin {
     --sidebar-bg: #fff7ed;
-    --sidebar-text: #3f3f46;
+    --sidebar-text: #111827;
     --sidebar-hover: #ffedd5;
     --sidebar-active: #9a3412;
     background-color: var(--sidebar-bg);

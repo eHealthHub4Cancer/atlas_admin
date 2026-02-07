@@ -500,16 +500,26 @@ def user_dashboard_view(request):
 
     # Get visible messages for this user
     visible_messages = []
-    for msg in Message.objects.filter(is_active=True):
-        if msg.is_visible_to_user(user):
-            # Check if dismissed
-            if not MessageDismissal.objects.filter(user=user, message=msg).exists():
-                visible_messages.append(msg)
+    try:
+        for msg in Message.objects.filter(is_active=True):
+            if msg.is_visible_to_user(user):
+                # Check if dismissed
+                if not MessageDismissal.objects.filter(user=user, message=msg).exists():
+                    visible_messages.append(msg)
+    except Exception as e:
+        logger.warning('Failed loading announcements for %s: %s', user.username, e)
+
+    try:
+        recent_notifications = UserNotification.objects.filter(user=user).select_related('notification').order_by('-created_at')[:5]
+    except Exception as e:
+        logger.warning('Failed loading notifications for %s: %s', user.username, e)
+        recent_notifications = []
 
     context = {
         'user': user,
         'user_roles': user_roles,
         'messages_list': visible_messages[:5],  # Show max 5 messages
+        'notifications_list': recent_notifications,
         'page_title': 'Dashboard',
     }
 
@@ -716,7 +726,7 @@ def admin_users_view(request):
         users = users.filter(is_active=False)
 
     # Pagination
-    paginator = Paginator(users.distinct(), 25)
+    paginator = Paginator(users.distinct(), 10)
     page = request.GET.get('page', 1)
     users_page = paginator.get_page(page)
 
@@ -792,7 +802,7 @@ def admin_roles_view(request):
         roles_with_counts = roles_with_counts.filter(is_active=False)
 
     # Pagination
-    paginator = Paginator(roles_with_counts, 15)
+    paginator = Paginator(roles_with_counts, 10)
     page = request.GET.get('page', 1)
     roles_page = paginator.get_page(page)
 
@@ -879,7 +889,7 @@ def admin_audit_log_view(request):
         )
 
     # Pagination
-    paginator = Paginator(logs, 50)
+    paginator = Paginator(logs, 10)
     page = request.GET.get('page', 1)
     logs_page = paginator.get_page(page)
 
@@ -1113,7 +1123,7 @@ def htmx_grant_role_view(request):
 
         if created:
             # Sync to SEC
-            grant_role_to_sec(user, role.name)
+            grant_role_to_sec(user, role.name, create_missing_role=False)
 
             # Log
             AuditLog.log(
@@ -1189,7 +1199,7 @@ def htmx_bulk_grant_roles_view(request):
                     defaults={'granted_by': admin, 'origin': UserRole.ORIGIN_ATLAS}
                 )
                 if created:
-                    grant_role_to_sec(user, role.name)
+                    grant_role_to_sec(user, role.name, create_missing_role=False)
                     granted_count += 1
 
         # Log bulk operation
@@ -1511,7 +1521,7 @@ def user_notifications_view(request):
     elif status_filter == 'read':
         user_notifs = user_notifs.filter(is_read=True)
 
-    paginator = Paginator(user_notifs, 15)
+    paginator = Paginator(user_notifs, 10)
     page = request.GET.get('page', 1)
     notifs_page = paginator.get_page(page)
 
@@ -1558,7 +1568,11 @@ def user_mark_all_notifications_read_view(request):
 def user_notification_count_view(request):
     """Get unread notification count (for AJAX polling)."""
     user = request.current_user
-    count = UserNotification.objects.filter(user=user, is_read=False).count()
+    try:
+        count = UserNotification.objects.filter(user=user, is_read=False).count()
+    except Exception as e:
+        logger.warning('Failed counting notifications for %s: %s', user.username, e)
+        count = 0
     if request.headers.get('HX-Request'):
         return HttpResponse(
             f'<span class="badge bg-danger rounded-pill">{count}</span>',
@@ -1627,7 +1641,7 @@ def admin_notifications_view(request):
             Q(title__icontains=search) | Q(content__icontains=search)
         )
 
-    paginator = Paginator(notifications, 15)
+    paginator = Paginator(notifications, 10)
     page = request.GET.get('page', 1)
     notifs_page = paginator.get_page(page)
 
