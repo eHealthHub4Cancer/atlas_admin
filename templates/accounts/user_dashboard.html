@@ -21,6 +21,33 @@
         </div>
     </div>
 
+
+
+    {% if profile_completion < 100 %}
+    <div class="col-12 mb-4">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" id="profileCompletionAlert">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                <div class="flex-grow-1">
+                    <div class="fw-semibold mb-1">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Profile {{ profile_completion }}% complete
+                    </div>
+                    <p class="mb-2 small">Complete your profile to unlock a better experience.</p>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ profile_completion }}%;"
+                             aria-valuenow="{{ profile_completion }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    {% if profile_missing_fields %}
+                    <small class="d-block mt-2 text-muted">Missing: {{ profile_missing_fields|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <a href="{% url 'user_profile' %}" class="btn btn-sm btn-primary">Complete Profile</a>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Messages/Announcements -->
     {% if messages_list %}
     <div class="col-12 mb-4">
@@ -202,4 +229,21 @@
         </div>
     </div>
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const profileAlert = document.getElementById('profileCompletionAlert');
+    if (!profileAlert) return;
+
+    window.setTimeout(function () {
+        profileAlert.classList.remove('show');
+        profileAlert.classList.add('fade');
+        window.setTimeout(function () {
+            profileAlert.remove();
+        }, 400);
+    }, 8000);
+});
+</script>
+
 {% endblock %}

@@ -9,8 +9,8 @@
 :root {
     --sidebar-width: 260px;
     --navbar-height: 60px;
-    --primary-color: #475569;
-    --primary-dark: #334155;
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
     --sidebar-bg: #f4f7fb;
     --sidebar-text: #1f2937;
     --sidebar-hover: #e7eef8;
@@ -573,9 +573,9 @@ body.auth-page {
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #3f53b8 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #4338ca 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 
 /* Action buttons in tables */
@@ -1307,4 +1307,56 @@ tr.htmx-swapping {
 .sidebar-user .nav-link:hover span,
 .sidebar-user .nav-link:hover i {
     color: #05070c !important;
+}
+
+/* Sidebar usability pass: dark labels, reliable scrolling, improved mobile offcanvas */
+.sidebar .nav-link,
+.sidebar .nav-link span,
+.sidebar .nav-link i,
+.sidebar .nav-section-title,
+.sidebar .sidebar-footer,
+.sidebar .sidebar-footer small {
+    color: #111827 !important;
+}
+
+.sidebar,
+.sidebar .offcanvas-body,
+.sidebar .sidebar-nav {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 991.98px) {
+    .sidebar.offcanvas {
+        top: 0 !important;
+        height: 100vh !important;
+        width: min(88vw, 320px);
+        border-right: 1px solid #d1d5db;
+    }
+
+    .sidebar .offcanvas-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--sidebar-bg);
+    }
+
+    .sidebar .offcanvas-body {
+        height: calc(100vh - 57px);
+    }
+
+    .sidebar .nav-link {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+    }
+
+    .dashboard-topbar .navbar-toggler {
+        background: #ffffff;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.4;
+    }
 }
