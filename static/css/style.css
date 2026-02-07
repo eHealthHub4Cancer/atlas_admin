@@ -388,7 +388,8 @@ body.auth-page {
 
 .sidebar .offcanvas-body {
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .sidebar-nav .nav-item {
@@ -1171,39 +1172,39 @@ tr.htmx-swapping {
 }
 
 
-/* Contrast improvements for dashboard navigation */
+/* Contrast improvements for dashboard navigation - dark readable text */
 .sidebar .nav-link,
 .sidebar .nav-link span,
 .sidebar .nav-link i {
-    color: #1e293b !important;
+    color: #111827 !important;
     font-weight: 500;
 }
 
 .sidebar .nav-section-title {
-    color: #334155 !important;
+    color: #1f2937 !important;
     font-weight: 700;
 }
 
 .sidebar .sidebar-footer .fw-semibold {
-    color: #0f172a !important;
+    color: #111827 !important;
 }
 
 .sidebar .sidebar-footer small {
-    color: #475569 !important;
+    color: #374151 !important;
 }
 
 .sidebar-admin {
     --sidebar-bg: #fff9f3;
-    --sidebar-text: #1e293b;
+    --sidebar-text: #111827;
     --sidebar-hover: #ffe8d2;
     --sidebar-active: #9a3412;
 }
 
 .sidebar-user {
     --sidebar-bg: #f8fafc;
-    --sidebar-text: #0f172a;
+    --sidebar-text: #111827;
     --sidebar-hover: #e2e8f0;
-    --sidebar-active: #0f172a;
+    --sidebar-active: #1e1b4b;
 }
 
 .sidebar .nav-link.active span,
@@ -1214,40 +1215,42 @@ tr.htmx-swapping {
 
 .sidebar .nav-link:hover span,
 .sidebar .nav-link:hover i {
-    color: #0f172a !important;
+    color: #000000 !important;
 }
 
 /* Admin topbar dark text visibility */
 .admin-topbar .navbar-brand,
 .admin-topbar .btn-link,
 .admin-topbar .dropdown-toggle {
-    color: #1e293b !important;
+    color: #111827 !important;
 }
 
 .admin-topbar .badge {
     font-weight: 600;
 }
 
+/* User topbar dark text visibility */
+.user-topbar .navbar-brand,
+.user-topbar .btn-link,
+.user-topbar .dropdown-toggle {
+    color: #111827 !important;
+}
 
-/* Ensure dashboard sidebar content stays scrollable and legible */
+/* Sidebar scrollable with stable scrollbar gutter */
 .sidebar .offcanvas-body {
     scrollbar-gutter: stable;
 }
 
-.sidebar .nav-link,
-.sidebar .nav-link span,
-.sidebar .nav-link i {
-    color: #0f172a !important;
-}
-
+/* Admin sidebar - very dark text for readability */
 .sidebar-admin .nav-link,
 .sidebar-admin .nav-link span,
 .sidebar-admin .nav-link i {
-    color: #1e293b !important;
+    color: #111827 !important;
 }
 
+/* User sidebar - very dark text for readability */
 .sidebar-user .nav-link,
 .sidebar-user .nav-link span,
 .sidebar-user .nav-link i {
-    color: #0f172a !important;
+    color: #111827 !important;
 }
