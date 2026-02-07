@@ -138,6 +138,22 @@
         });
     }
 
+    
+    function showGlobalLoading() {
+        const bar = document.getElementById('global-loading-bar');
+        if (!bar) return;
+        bar.classList.remove('done');
+        bar.classList.add('active');
+    }
+
+    function hideGlobalLoading() {
+        const bar = document.getElementById('global-loading-bar');
+        if (!bar) return;
+        bar.classList.remove('active');
+        bar.classList.add('done');
+        setTimeout(() => bar.classList.remove('done'), 220);
+    }
+
     // ==========================================================================
     // HTMX Events
     // ==========================================================================
@@ -148,6 +164,7 @@
     });
 
     document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        showGlobalLoading();
         // Add loading state
         const target = evt.detail.elt;
         if (target.tagName === 'BUTTON') {
@@ -159,6 +176,7 @@
     });
 
     document.body.addEventListener('htmx:afterRequest', function(evt) {
+        hideGlobalLoading();
         // Remove loading state
         const target = evt.detail.elt;
         if (target.tagName === 'BUTTON' && target.dataset.originalText) {
@@ -166,6 +184,14 @@
             target.innerHTML = target.dataset.originalText;
             delete target.dataset.originalText;
         }
+    });
+
+    document.addEventListener('submit', function() {
+        showGlobalLoading();
+    });
+
+    window.addEventListener('pageshow', function() {
+        hideGlobalLoading();
     });
 
     // ==========================================================================

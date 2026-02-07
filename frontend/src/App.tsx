@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { ToastContainer } from './components/ui';
+import { ToastContainer, TopLoader } from './components/ui';
 import { useAuthStore } from './store/auth';
 
 // Auth pages
@@ -96,6 +96,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <TopLoader />
       <BrowserRouter>
         <Routes>
           {/* Public routes */}

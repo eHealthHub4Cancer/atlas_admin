@@ -28,13 +28,13 @@ const NavLink: React.FC<{ item: NavItem; isCurrent: boolean }> = ({ item, isCurr
         'group flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
         isCurrent
           ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30'
-          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-elevated hover:text-slate-900 dark:hover:text-slate-100'
+          : 'text-black dark:text-white hover:bg-slate-100 dark:hover:bg-dark-elevated hover:text-black dark:hover:text-white'
       )}
     >
       <item.icon
         className={cn(
           'h-5 w-5 shrink-0 transition-colors',
-          isCurrent ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+          isCurrent ? 'text-white' : 'text-black dark:text-white group-hover:text-black dark:group-hover:text-white'
         )}
         aria-hidden="true"
       />
@@ -42,10 +42,10 @@ const NavLink: React.FC<{ item: NavItem; isCurrent: boolean }> = ({ item, isCurr
       {item.badge !== undefined && (
         <span
           className={cn(
-            'ml-auto text-xs font-medium px-2 py-0.5 rounded-full',
+            'ml-auto text-xs font-semibold px-2 py-0.5 rounded-full',
             isCurrent
               ? 'bg-white/20 text-white'
-              : 'bg-slate-100 dark:bg-dark-elevated text-slate-600 dark:text-slate-400'
+              : 'bg-slate-200 dark:bg-dark-elevated text-black dark:text-white'
           )}
         >
           {item.badge}
@@ -63,7 +63,7 @@ const SidebarContent: React.FC<{
   pathname: string;
 }> = ({ navigation, logo, title, subtitle, pathname }) => {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto px-4 py-6">
+    <div className="flex grow min-h-0 flex-col gap-y-5 overflow-y-auto px-4 py-6">
       {/* Logo */}
       <div className="flex h-12 shrink-0 items-center gap-3 px-2">
         {logo || (
@@ -82,8 +82,8 @@ const SidebarContent: React.FC<{
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-1 flex-col">
-        <ul role="list" className="flex flex-1 flex-col gap-y-1">
+      <nav className="flex min-h-0 flex-1 flex-col">
+        <ul role="list" className="flex min-h-0 flex-1 flex-col gap-y-1">
           {navigation.map((item) => (
             <li key={item.name}>
               <NavLink item={item} isCurrent={pathname === item.href} />
@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               leaveFrom="translate-x-0"
               leaveTo="-translate-x-full"
             >
-              <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
+              <Dialog.Panel className="relative mr-16 flex h-full w-full max-w-xs flex-1">
                 <Transition.Child
                   as={Fragment}
                   enter="ease-in-out duration-300"
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </button>
                   </div>
                 </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-dark-card border-r border-light-border dark:border-dark-border">
+                <div className="flex h-full min-h-0 grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-dark-card border-r border-light-border dark:border-dark-border">
                   <SidebarContent
                     navigation={navigation}
                     logo={logo}
@@ -169,8 +169,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </Transition.Root>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-light-border dark:border-dark-border bg-white dark:bg-dark-card">
+      <div className="app-sidebar hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:h-screen lg:w-64 lg:flex-col">
+        <div className="flex h-full min-h-0 grow flex-col gap-y-5 overflow-y-auto border-r border-light-border dark:border-dark-border bg-white dark:bg-dark-card">
           <SidebarContent
             navigation={navigation}
             logo={logo}

@@ -1,0 +1,12 @@
+{% extends "base_admin_dashboard.html" %}
+{% block title %}Edit Announcement{% endblock %}
+{% block page_title %}Edit Announcement{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary" type="submit">Save</button>
+  <a class="btn btn-outline-secondary" href="{% url 'admin_messages' %}">Cancel</a>
+</form>
+</div></div>
+{% endblock %}

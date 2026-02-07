@@ -1,0 +1,15 @@
+{% extends "base_admin_dashboard.html" %}
+{% block title %}Edit Notification{% endblock %}
+{% block page_title %}Edit Notification{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+  <div class="mb-3"><label class="form-label">Title</label><input class="form-control" name="title" value="{{ notification.title }}" required></div>
+  <div class="mb-3"><label class="form-label">Content</label><textarea class="form-control" name="content" rows="4" required>{{ notification.content }}</textarea></div>
+  <div class="row g-3"><div class="col-md-6"><label class="form-label">Priority</label><select class="form-select" name="priority">{% for val,label in notification.PRIORITY_CHOICES %}<option value="{{ val }}" {% if notification.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-md-6"><label class="form-label">Tag</label><select class="form-select" name="tag">{% for val,label in notification.TAG_CHOICES %}<option value="{{ val }}" {% if notification.tag == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div></div>
+  <button class="btn btn-primary mt-3" type="submit">Save</button>
+  <a class="btn btn-outline-secondary mt-3" href="{% url 'admin_notifications' %}">Cancel</a>
+</form>
+</div></div>
+{% endblock %}

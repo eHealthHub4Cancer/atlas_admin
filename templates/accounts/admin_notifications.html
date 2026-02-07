@@ -136,6 +136,9 @@
                                 </div>
                             </div>
                             <div class="btn-group btn-group-sm">
+                                <a href="{% url 'admin_notification_edit' notif.id %}" class="btn btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
                                 <form method="post" action="{% url 'admin_notification_delete' notif.id %}" class="d-inline"
                                       onsubmit="return confirm('Delete this notification?');">
                                     {% csrf_token %}

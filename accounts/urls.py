@@ -37,6 +37,7 @@ urlpatterns = [
     path('dashboard/profile/', views.user_profile_view, name='user_profile'),
     path('dashboard/change-password/', views.user_change_password_view, name='user_change_password'),
     path('dashboard/support/', views.user_support_view, name='user_support'),
+    path('dashboard/audit-log/', views.user_audit_log_view, name='user_audit_log'),
     path('dashboard/dismiss-message/<int:message_id>/', views.user_dismiss_message_view, name='user_dismiss_message'),
 
     # =========================================================================
@@ -70,6 +71,8 @@ urlpatterns = [
     # Admin - Messages
     path('admin/messages/', views.admin_messages_view, name='admin_messages'),
     path('admin/messages/create/', views.admin_message_create_view, name='admin_message_create'),
+    path('admin/messages/<int:message_id>/edit/', views.admin_message_edit_view, name='admin_message_edit'),
+    path('admin/messages/<int:message_id>/delete/', views.admin_message_delete_view, name='admin_message_delete'),
 
     # Admin - Notifications
     path('admin/notifications/', views.admin_notifications_view, name='admin_notifications'),

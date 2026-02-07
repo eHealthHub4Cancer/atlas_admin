@@ -726,7 +726,7 @@ class MessageForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        fields = ['title', 'content', 'priority', 'target_all_users', 'target_roles',
+        fields = ['title', 'content', 'priority', 'target_all_users', 'target_roles', 'target_users',
                   'is_active', 'starts_at', 'expires_at']
         widgets = {
             'title': forms.TextInput(attrs={
@@ -744,6 +744,10 @@ class MessageForm(forms.ModelForm):
                 'class': 'form-select',
                 'size': 5,
             }),
+            'target_users': forms.SelectMultiple(attrs={
+                'class': 'form-select',
+                'size': 6,
+            }),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'starts_at': forms.DateTimeInput(attrs={
                 'class': 'form-control',
@@ -757,10 +761,19 @@ class MessageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['target_roles'].queryset = Role.objects.all()
+        self.fields['target_roles'].queryset = Role.objects.filter(is_active=True).order_by('name')
+        self.fields['target_users'].queryset = User.objects.filter(is_active=True).order_by('username')
         self.fields['target_roles'].required = False
+        self.fields['target_users'].required = False
         self.fields['expires_at'].required = False
         self.fields['starts_at'].required = False
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('target_all_users') and not cleaned_data.get('target_roles') and not cleaned_data.get('target_users'):
+            raise ValidationError('Please target all users, at least one role, or at least one user.')
+        return cleaned_data
 
 
 # =============================================================================

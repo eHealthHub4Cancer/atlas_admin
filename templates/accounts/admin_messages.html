@@ -1,139 +1,74 @@
 {% extends "base_admin_dashboard.html" %}
-{% load static %}
 
 {% block title %}Messages - Admin Dashboard{% endblock %}
-
 {% block page_title %}Announcements & Messages{% endblock %}
-{% block page_description %}Create and manage system-wide announcements for users{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
-    <!-- Create New Message -->
     <div class="col-lg-4">
         <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-megaphone me-2"></i>New Announcement
-                </h5>
-            </div>
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-megaphone me-2"></i>New Announcement</h5></div>
             <div class="card-body">
                 <form method="post" action="{% url 'admin_message_create' %}">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="message-title" class="form-label">Title</label>
-                        <input type="text" class="form-control" id="message-title" name="title" required
-                               placeholder="Announcement title">
+                    <input class="form-control mb-3" name="title" placeholder="Announcement title" required>
+                    <textarea class="form-control mb-3" name="content" rows="4" placeholder="Write your announcement..." required></textarea>
+                    <select class="form-select mb-3" name="priority">
+                        <option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option>
+                    </select>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="msg-target-all" name="target_all_users" checked>
+                        <label class="form-check-label" for="msg-target-all">Show to all users</label>
                     </div>
                     <div class="mb-3">
-                        <label for="message-content" class="form-label">Content</label>
-                        <textarea class="form-control" id="message-content" name="content" rows="4" required
-                                  placeholder="Write your announcement here..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="message-type" class="form-label">Type</label>
-                        <select class="form-select" id="message-type" name="priority">
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
+                        <label class="form-label small">Target roles (optional)</label>
+                        <select class="form-select" name="target_roles" multiple size="4">
+                            {% for role in roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="message-expires" class="form-label">Expires At (Optional)</label>
-                        <input type="datetime-local" class="form-control" id="message-expires" name="expires_at">
-                        <div class="form-text">Leave empty for no expiration.</div>
+                        <label class="form-label small">Target users (optional)</label>
+                        <select class="form-select" name="target_users" multiple size="4">
+                            {% for u in users %}<option value="{{ u.id }}">{{ u.display_name }} (@{{ u.username }})</option>{% endfor %}
+                        </select>
                     </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="message-target-all" name="target_all_users" checked>
-                        <label class="form-check-label" for="message-target-all">
-                            Show this message to all users
-                        </label>
-                    </div>
-                    <input type="hidden" name="is_active" value="on">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-send me-1"></i>Publish Announcement
-                    </button>
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-send me-1"></i>Publish</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Existing Messages -->
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-chat-square-text me-2"></i>Active Announcements
-                </h5>
-                <span class="badge bg-primary">{{ messages_list|length }} active</span>
+                <h5 class="mb-0"><i class="bi bi-chat-square-text me-2"></i>Announcements</h5>
+                <span class="badge bg-primary">{{ messages_list|length }}</span>
             </div>
             <div class="card-body">
                 {% for message in messages_list %}
-                <div class="message-card card message-{{ message.priority }}" id="message-{{ message.id }}">
+                <div class="card mb-3">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <h6 class="mb-1">
-                                    {% if message.priority == 'high' %}
-                                    <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
-                                    {% elif message.priority == 'normal' %}
-                                    <i class="bi bi-exclamation-circle-fill text-warning me-1"></i>
-                                    {% else %}
-                                    <i class="bi bi-info-circle-fill text-info me-1"></i>
-                                    {% endif %}
-                                    {{ message.title }}
-                                </h6>
-                                <span class="badge bg-{{ message.priority }}">{{ message.priority|title }}</span>
-                                {% if not message.is_active %}
-                                <span class="badge bg-secondary">Inactive</span>
-                                {% endif %}
+                                <h6 class="mb-1">{{ message.title }}</h6>
+                                <p class="mb-2 text-muted small">{{ message.content }}</p>
+                                <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
                             </div>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <span class="dropdown-item-text text-muted small">Announcement management options coming soon</span>
-                                    </li>
-                                </ul>
+                            <div class="btn-group btn-group-sm">
+                                <a class="btn btn-outline-primary" href="{% url 'admin_message_edit' message.id %}" title="Edit"><i class="bi bi-pencil"></i></a>
+                                <form method="post" action="{% url 'admin_message_delete' message.id %}" onsubmit="return confirm('Delete this announcement?');">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
                             </div>
-                        </div>
-                        <p class="mb-2 mt-2">{{ message.content }}</p>
-                        <div class="message-meta d-flex gap-3">
-                            <span>
-                                <i class="bi bi-person me-1"></i>
-                                {{ message.created_by.email|default:"System" }}
-                            </span>
-                            <span>
-                                <i class="bi bi-calendar me-1"></i>
-                                {{ message.created_at|date:"M d, Y H:i" }}
-                            </span>
-                            {% if message.expires_at %}
-                            <span>
-                                <i class="bi bi-clock me-1"></i>
-                                Expires: {{ message.expires_at|date:"M d, Y H:i" }}
-                            </span>
-                            {% endif %}
-                            <span>
-                                <i class="bi bi-eye-slash me-1"></i>
-                                {{ message.dismissals.count }} dismissed
-                            </span>
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-5">
-                    <i class="bi bi-megaphone display-4 text-muted d-block mb-3"></i>
-                    <p class="text-muted mb-0">No announcements yet. Create one to communicate with your users.</p>
-                </div>
+                <p class="text-muted mb-0">No announcements yet.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
-
-{% endblock %}
-
-{% block extra_js %}
-{{ block.super }}
 {% endblock %}
