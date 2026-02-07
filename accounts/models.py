@@ -598,6 +598,8 @@ class Notification(models.Model):
     target_all_users = models.BooleanField(default=False)
     target_roles = models.ManyToManyField(Role, blank=True, related_name='notifications')
     target_users = models.ManyToManyField(User, blank=True, related_name='targeted_notifications')
+    target_all_admins = models.BooleanField(default=False)
+    target_admins = models.ManyToManyField('AtlasAdmin', blank=True, related_name='targeted_notifications')
 
     # Tracking
     created_by = models.ForeignKey(
@@ -632,6 +634,12 @@ class Notification(models.Model):
 
         return User.objects.filter(id__in=user_ids)
 
+    def get_target_admins(self):
+        """Get all admins this notification targets."""
+        if self.target_all_admins:
+            return AtlasAdmin.objects.filter(is_active=True)
+        return self.target_admins.filter(is_active=True)
+
 
 class UserNotification(models.Model):
     """Tracks notification delivery and read status per user."""
@@ -651,6 +659,26 @@ class UserNotification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.notification.title} ({'Read' if self.is_read else 'Unread'})"
+
+
+class AdminNotification(models.Model):
+    """Tracks notification delivery and read status per admin."""
+
+    admin = models.ForeignKey(AtlasAdmin, on_delete=models.CASCADE, related_name='notifications')
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='admin_notifications')
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'atlas_admin_notification'
+        unique_together = ['admin', 'notification']
+        ordering = ['-created_at']
+        verbose_name = 'Admin Notification'
+        verbose_name_plural = 'Admin Notifications'
+
+    def __str__(self):
+        return f"{self.admin.email} - {self.notification.title} ({'Read' if self.is_read else 'Unread'})"
 
 
 # =============================================================================

@@ -4,11 +4,12 @@
 {% block title %}Notifications - Admin Dashboard{% endblock %}
 
 {% block page_title %}Notifications{% endblock %}
-{% block page_description %}Send and manage notifications for users{% endblock %}
+{% block page_description %}{% if admin.is_super_admin %}Send and manage notifications for users and admins{% else %}View notifications sent to you{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <!-- Send Notification -->
+    {% if admin.is_super_admin %}
     <div class="col-lg-4">
         <div class="card h-100">
             <div class="card-header">
@@ -52,6 +53,8 @@
                             <option value="all">All Users</option>
                             <option value="roles">Specific Roles</option>
                             <option value="users">Specific Users</option>
+                            <option value="all_admins">All Admins</option>
+                            <option value="admins">Specific Admins</option>
                         </select>
                     </div>
                     <div class="mb-3 d-none" id="target-roles-group">
@@ -72,6 +75,16 @@
                         </select>
                         <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
                     </div>
+
+                    <div class="mb-3 d-none" id="target-admins-group">
+                        <label class="form-label">Select Admins</label>
+                        <select class="form-select" name="target_admins" multiple size="4">
+                            {% for a in admins %}
+                            <option value="{{ a.id }}">{{ a.display_name }} ({{ a.email }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
+                    </div>
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-send me-1"></i>Send Notification
                     </button>
@@ -79,12 +92,13 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Sent Notifications -->
-    <div class="col-lg-8">
+    <div class="{% if admin.is_super_admin %}col-lg-8{% else %}col-12{% endif %}">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-bell-fill me-2"></i>Sent Notifications</h5>
+                <h5 class="mb-0"><i class="bi bi-bell-fill me-2"></i>{% if admin.is_super_admin %}Sent Notifications{% else %}Notifications Received{% endif %}</h5>
                 <span class="badge bg-secondary">{{ notifications.paginator.count }} total</span>
             </div>
 
@@ -135,7 +149,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="btn-group btn-group-sm">
+                            {% if admin.is_super_admin %}<div class="btn-group btn-group-sm">
                                 <a href="{% url 'admin_notification_edit' notif.id %}" class="btn btn-outline-primary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -146,13 +160,13 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
-                            </div>
+                            </div>{% endif %}
                         </div>
                     </div>
                     {% empty %}
                     <div class="text-center py-5">
                         <i class="bi bi-bell-slash display-4 text-muted d-block mb-3"></i>
-                        <p class="text-muted mb-0">No notifications sent yet.</p>
+                        <p class="text-muted mb-0">{% if admin.is_super_admin %}No notifications sent yet.{% else %}No notifications received yet.{% endif %}</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -197,6 +211,26 @@
         </div>
     </div>
 </div>
+
+{% if not admin.is_super_admin %}
+<div class="card mt-4">
+    <div class="card-header"><h6 class="mb-0"><i class="bi bi-inbox me-2"></i>Latest Notifications For You</h6></div>
+    <div class="list-group list-group-flush">
+        {% for admin_notif in received_notifications %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+                <strong>{{ admin_notif.notification.title }}</strong>
+                <small class="text-muted">{{ admin_notif.created_at|timesince }} ago</small>
+            </div>
+            <div class="small text-muted">{{ admin_notif.notification.content|truncatewords:30 }}</div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-muted">No notifications received yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -205,6 +239,7 @@ function toggleTargetFields() {
     const targetType = document.getElementById('notif-target-type').value;
     document.getElementById('target-roles-group').classList.toggle('d-none', targetType !== 'roles');
     document.getElementById('target-users-group').classList.toggle('d-none', targetType !== 'users');
+    document.getElementById('target-admins-group').classList.toggle('d-none', targetType !== 'admins');
 }
 </script>
 {% endblock %}

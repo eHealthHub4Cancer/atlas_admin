@@ -34,7 +34,7 @@
             <small class="text-muted d-block mt-1">{{ ur.role.description|truncatewords:15 }}</small>
             {% endif %}
         </div>
-        {% if admin.is_super_admin %}
+        {% if admin.is_admin %}
         <form hx-post="{% url 'htmx_revoke_role' %}" hx-target="#userRolesModalContent" hx-swap="innerHTML" hx-indicator="#rolesActionLoader" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="user_id" value="{{ target_user.id }}">
@@ -53,7 +53,7 @@
 </div>
 {% endif %}
 
-{% if admin.is_super_admin and available_roles %}
+{% if admin.is_admin and available_roles %}
 <!-- Available Roles -->
 <h6 class="text-muted mb-3">Assign New Role</h6>
 <div class="row g-2">
@@ -78,8 +78,8 @@
     </div>
     {% endfor %}
 </div>
-{% elif not admin.is_super_admin %}
+{% elif not admin.is_admin %}
 <div class="alert alert-warning">
-    <i class="bi bi-exclamation-triangle me-2"></i>Only Super Admins can modify user roles.
+    <i class="bi bi-exclamation-triangle me-2"></i>Only administrators can modify user roles.
 </div>
 {% endif %}

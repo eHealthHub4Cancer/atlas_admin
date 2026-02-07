@@ -64,6 +64,7 @@ urlpatterns = [
     path('admin/admins/', views.admin_admins_view, name='admin_admins'),
     path('admin/admins/create/', views.admin_create_admin_view, name='admin_create_admin'),
     path('admin/admins/change-role/', views.admin_change_admin_role_view, name='admin_change_admin_role'),
+    path('admin/admins/remove/', views.admin_remove_admin_view, name='admin_remove_admin'),
 
     # Admin - Audit Log
     path('admin/audit-log/', views.admin_audit_log_view, name='admin_audit_log'),
