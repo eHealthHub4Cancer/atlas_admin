@@ -2,6 +2,22 @@
 {% block title %}My Audit Log{% endblock %}
 {% block page_title %}My Audit Log{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+  /* Make primary buttons purple on this page */
+  .btn-primary {
+    background-color: #6d28d9;
+    border-color: #6d28d9;
+  }
+  .btn-primary:hover,
+  .btn-primary:focus {
+    background-color: #5b21b6;
+    border-color: #5b21b6;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
   <div class="col-12">
