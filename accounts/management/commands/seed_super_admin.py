@@ -12,6 +12,7 @@ Usage:
 
 import os
 from django.core.management.base import BaseCommand, CommandError
+from django.urls import reverse
 from accounts.models import AtlasAdmin, AuditLog
 
 
@@ -144,6 +145,6 @@ class Command(BaseCommand):
                 f'  Name:       {first_name} {last_name}\n'
                 f'  Role:       System Superadmin\n'
                 f'{"="*50}\n'
-                f'\nYou can now log in at /accounts/admin-login/\n'
+                f"\nYou can now log in at {reverse('admin_login')}\n"
             )
         )

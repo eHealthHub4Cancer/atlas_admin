@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ def send_password_reset_email(account_id, reset_token, account_type='user'):
     try:
         if account_type == 'admin':
             account = AtlasAdmin.objects.get(id=account_id)
-            login_url = f"{settings.SITE_URL}/admin-login/"
+            login_url = f"{settings.SITE_URL.rstrip('/')}{reverse('admin_login')}"
         else:
             account = User.objects.get(id=account_id)
             login_url = f"{settings.SITE_URL}/login/"
@@ -150,7 +151,7 @@ def send_password_changed_email(account_id, account_type='user'):
     try:
         if account_type == 'admin':
             account = AtlasAdmin.objects.get(id=account_id)
-            login_url = f"{settings.SITE_URL}/admin-login/"
+            login_url = f"{settings.SITE_URL.rstrip('/')}{reverse('admin_login')}"
         else:
             account = User.objects.get(id=account_id)
             login_url = f"{settings.SITE_URL}/login/"
