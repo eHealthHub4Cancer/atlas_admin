@@ -61,6 +61,37 @@
     </div>
     {% endif %}
 
+    <!-- Recent Notifications -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Recent Notifications</h5>
+                <a href="{% url 'user_notifications' %}" class="btn btn-sm btn-outline-primary">View all</a>
+            </div>
+            <div class="card-body p-0">
+                {% if notifications_list %}
+                <ul class="list-group list-group-flush">
+                    {% for user_notif in notifications_list %}
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="me-3">
+                            <div class="fw-semibold">{{ user_notif.notification.title }}</div>
+                            <div class="text-muted small">{{ user_notif.notification.content|truncatewords:18 }}</div>
+                        </div>
+                        {% if user_notif.is_read %}
+                        <span class="badge bg-secondary">Read</span>
+                        {% else %}
+                        <span class="badge bg-danger">Unread</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="p-3 text-muted">No notifications yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- Account Information -->
     <div class="col-lg-6 mb-4">
         <div class="card h-100">

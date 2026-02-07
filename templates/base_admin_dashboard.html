@@ -120,6 +120,7 @@
                     </li>
                     {% endif %}
 
+                    {% if admin.is_super_admin %}
                     <!-- Communications -->
                     <li class="nav-section">
                         <span class="nav-section-title">Communications</span>
@@ -136,6 +137,7 @@
                             <span>Notifications</span>
                         </a>
                     </li>
+                    {% endif %}
 
                     <!-- System -->
                     <li class="nav-section">
