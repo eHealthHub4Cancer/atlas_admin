@@ -498,8 +498,8 @@ def user_dashboard_view(request):
 
     # Get user's roles with descriptions
     try:
-        user_roles = user.roles.all().order_by('name')
-    except DatabaseError as e:
+        user_roles = list(user.roles.all().order_by('name'))
+    except Exception as e:
         logger.warning('Failed loading roles for %s: %s', user.username, e)
         user_roles = []
 
@@ -515,7 +515,7 @@ def user_dashboard_view(request):
         logger.warning('Failed loading announcements for %s: %s', user.username, e)
 
     try:
-        recent_notifications = UserNotification.objects.filter(user=user).select_related('notification').order_by('-created_at')[:5]
+        recent_notifications = list(UserNotification.objects.filter(user=user).select_related('notification').order_by('-created_at')[:5])
     except Exception as e:
         logger.warning('Failed loading notifications for %s: %s', user.username, e)
         recent_notifications = []
@@ -675,17 +675,25 @@ def admin_dashboard_view(request):
     admin = request.current_admin
 
     # Stats
-    stats = {
-        'total_users': User.objects.count(),
-        'active_users': User.objects.filter(is_active=True).count(),
-        'total_roles': Role.objects.count(),
-        'recent_logins': AuditLog.objects.filter(action=AuditLog.ACTION_LOGIN).count(),
-    }
+    try:
+        stats = {
+            'total_users': User.objects.count(),
+            'active_users': User.objects.filter(is_active=True).count(),
+            'total_roles': Role.objects.count(),
+            'recent_logins': AuditLog.objects.filter(action=AuditLog.ACTION_LOGIN).count(),
+        }
+    except Exception as e:
+        logger.warning('Failed loading dashboard stats: %s', e)
+        stats = {'total_users': 0, 'active_users': 0, 'total_roles': 0, 'recent_logins': 0}
 
     # Recent activity
-    recent_logs = AuditLog.objects.select_related(
-        'actor_user', 'actor_admin', 'target_user', 'target_admin'
-    ).order_by('-created_at')[:10]
+    try:
+        recent_logs = list(AuditLog.objects.select_related(
+            'actor_user', 'actor_admin', 'target_user', 'target_admin'
+        ).order_by('-created_at')[:10])
+    except Exception as e:
+        logger.warning('Failed loading recent activity: %s', e)
+        recent_logs = []
 
     context = {
         'admin': admin,
@@ -918,8 +926,8 @@ def admin_messages_view(request):
     admin = request.current_admin
 
     try:
-        messages_list = Message.objects.select_related('created_by').order_by('-created_at')
-    except DatabaseError as e:
+        messages_list = list(Message.objects.select_related('created_by').order_by('-created_at'))
+    except Exception as e:
         logger.warning('Failed loading admin messages for %s: %s', admin.email, e)
         messages.error(request, 'Announcements are temporarily unavailable. Please try again shortly.')
         messages_list = []
@@ -927,7 +935,6 @@ def admin_messages_view(request):
     context = {
         'admin': admin,
         'messages_list': messages_list,
-        'message_form': MessageForm(),
         'page_title': 'Messages',
     }
 
@@ -1650,32 +1657,33 @@ def admin_notifications_view(request):
     # List existing notifications
     try:
         notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(read_count=Count('user_notifications', filter=Q(user_notifications__is_read=True)))
-    except DatabaseError as e:
+
+        search = request.GET.get('search', '')
+        if search:
+            notifications = notifications.filter(
+                Q(title__icontains=search) | Q(content__icontains=search)
+            )
+
+        paginator = Paginator(notifications, 10)
+        page = request.GET.get('page', 1)
+        notifs_page = paginator.get_page(page)
+    except Exception as e:
         logger.warning('Failed loading notifications for %s: %s', admin.email, e)
         messages.error(request, 'Notifications are temporarily unavailable. Please try again shortly.')
-        notifications = Notification.objects.none()
-
-    search = request.GET.get('search', '')
-    if search:
-        notifications = notifications.filter(
-            Q(title__icontains=search) | Q(content__icontains=search)
-        )
-
-    paginator = Paginator(notifications, 10)
-    page = request.GET.get('page', 1)
-    notifs_page = paginator.get_page(page)
+        search = request.GET.get('search', '')
+        notifs_page = Paginator(Notification.objects.none(), 10).get_page(1)
 
     try:
-        active_roles = Role.objects.filter(is_active=True).order_by('name')
-    except DatabaseError as e:
+        active_roles = list(Role.objects.filter(is_active=True).order_by('name'))
+    except Exception as e:
         logger.warning('Failed loading active roles for notifications page: %s', e)
-        active_roles = Role.objects.none()
+        active_roles = []
 
     try:
-        active_users = User.objects.filter(is_active=True).order_by('username')
-    except DatabaseError as e:
+        active_users = list(User.objects.filter(is_active=True).order_by('username'))
+    except Exception as e:
         logger.warning('Failed loading active users for notifications page: %s', e)
-        active_users = User.objects.none()
+        active_users = []
 
     context = {
         'admin': admin,

@@ -22,11 +22,6 @@
                         <span id="sync-spinner" class="spinner-border spinner-border-sm htmx-indicator me-1"></span>
                         <i class="bi bi-arrow-repeat me-1"></i>Sync from SEC
                     </button>
-                    {% if admin.role == 'system_superadmin' %}
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createRoleModal">
-                        <i class="bi bi-plus-lg me-1"></i>Create Role
-                    </button>
-                    {% endif %}
                 </div>
             </div>
 
@@ -206,43 +201,6 @@
     </div>
 </div>
 
-{% if admin.role == 'system_superadmin' %}
-<!-- Create Role Modal (System Superadmin only) -->
-<div class="modal fade" id="createRoleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Create New Role</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{% url 'admin_roles' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Note:</strong> This will create a local role. To sync with SEC, the role must also be created in the SEC database.
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-role-name" class="form-label">Role Name</label>
-                        <input type="text" class="form-control" id="new-role-name" name="name" required
-                               pattern="[a-zA-Z0-9_\-]+" title="Only letters, numbers, underscores, and hyphens allowed">
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-role-description" class="form-label">Description</label>
-                        <textarea class="form-control" id="new-role-description" name="description" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i>Create Role
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
