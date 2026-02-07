@@ -961,3 +961,21 @@ body {
   width: 72%;
   opacity: 1;
 }
+
+
+/* Hard fallback to keep sidebar text dark and menu scrollable */
+.app-sidebar {
+  height: 100vh;
+}
+
+.app-sidebar a {
+  color: #020617;
+}
+
+.dark .app-sidebar a {
+  color: #f8fafc;
+}
+
+.app-sidebar ul {
+  overflow-y: auto;
+}

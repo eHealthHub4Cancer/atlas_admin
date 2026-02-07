@@ -550,6 +550,13 @@ def user_audit_log_view(request):
             Q(action__icontains=search)
         )
 
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        logs = logs.filter(created_at__date__gte=date_from)
+    if date_to:
+        logs = logs.filter(created_at__date__lte=date_to)
+
     paginator = Paginator(logs, 5)
     page = request.GET.get('page', 1)
     logs_page = paginator.get_page(page)
@@ -560,6 +567,8 @@ def user_audit_log_view(request):
         'action_choices': AuditLog.ACTION_CHOICES,
         'action_filter': action_filter,
         'search': search,
+        'date_from': date_from,
+        'date_to': date_to,
         'page_title': 'My Audit Log',
     })
 
@@ -1604,33 +1613,46 @@ def handler500(request):
 def user_notifications_view(request):
     """User's notification list."""
     user = request.current_user
-    user_notifs = UserNotification.objects.filter(user=user).select_related('notification', 'notification__created_by')
 
-    # Search
     search = request.GET.get('search', '')
-    if search:
-        user_notifs = user_notifs.filter(
-            Q(notification__title__icontains=search) |
-            Q(notification__content__icontains=search)
+    status_filter = request.GET.get('status', '')
+
+    try:
+        user_notifs = UserNotification.objects.filter(user=user).select_related(
+            'notification', 'notification__created_by'
         )
 
-    # Filter by read status
-    status_filter = request.GET.get('status', '')
-    if status_filter == 'unread':
-        user_notifs = user_notifs.filter(is_read=False)
-    elif status_filter == 'read':
-        user_notifs = user_notifs.filter(is_read=True)
+        if search:
+            user_notifs = user_notifs.filter(
+                Q(notification__title__icontains=search) |
+                Q(notification__content__icontains=search)
+            )
 
-    paginator = Paginator(user_notifs, 10)
-    page = request.GET.get('page', 1)
-    notifs_page = paginator.get_page(page)
+        if status_filter == 'unread':
+            user_notifs = user_notifs.filter(is_read=False)
+        elif status_filter == 'read':
+            user_notifs = user_notifs.filter(is_read=True)
+
+        paginator = Paginator(user_notifs, 10)
+        page = request.GET.get('page', 1)
+        notifs_page = paginator.get_page(page)
+
+        unread_count = UserNotification.objects.filter(user=user, is_read=False).count()
+    except Exception as e:
+        logger.warning('Failed loading notifications for %s: %s', user.username, e)
+        messages.error(
+            request,
+            'Notifications are temporarily unavailable. If this persists, run pending migrations and retry.'
+        )
+        notifs_page = Paginator(UserNotification.objects.none(), 10).get_page(1)
+        unread_count = 0
 
     context = {
         'user': user,
         'notifications': notifs_page,
         'search': search,
         'status_filter': status_filter,
-        'unread_count': UserNotification.objects.filter(user=user, is_read=False).count(),
+        'unread_count': unread_count,
         'page_title': 'Notifications',
     }
     return render(request, 'accounts/user_notifications.html', context)

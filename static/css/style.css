@@ -1276,3 +1276,35 @@ tr.htmx-swapping {
 }
 #global-loading-bar.active { opacity: 1; width: 70%; }
 #global-loading-bar.done { width: 100%; opacity: 0; }
+
+
+/* User sidebar hard-fixes: force scroll + deep dark link text */
+.sidebar {
+    overflow: hidden;
+}
+
+.sidebar .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto !important;
+}
+
+.sidebar .sidebar-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sidebar-user .nav-link,
+.sidebar-user .nav-link span,
+.sidebar-user .nav-link i {
+    color: #0b1020 !important;
+}
+
+.sidebar-user .nav-link:hover,
+.sidebar-user .nav-link:hover span,
+.sidebar-user .nav-link:hover i {
+    color: #05070c !important;
+}
