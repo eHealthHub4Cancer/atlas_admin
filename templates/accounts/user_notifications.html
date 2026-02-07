@@ -1,0 +1,160 @@
+{% extends "base_user_dashboard.html" %}
+
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">
+                    <i class="bi bi-bell me-2"></i>Notifications
+                    {% if unread_count > 0 %}
+                    <span class="badge bg-danger">{{ unread_count }} unread</span>
+                    {% endif %}
+                </h5>
+                {% if unread_count > 0 %}
+                <form method="post" action="{% url 'user_mark_all_read' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-check-all me-1"></i>Mark All as Read
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="card-body border-bottom py-3">
+                <form id="notifFilterForm" class="row g-2 align-items-end"
+                      hx-get="{% url 'user_notifications' %}"
+                      hx-target="#notificationsContent"
+                      hx-select="#notificationsContent"
+                      hx-trigger="submit">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" name="search" value="{{ search }}"
+                                   placeholder="Search notifications..."
+                                   hx-get="{% url 'user_notifications' %}"
+                                   hx-target="#notificationsContent"
+                                   hx-select="#notificationsContent"
+                                   hx-trigger="keyup changed delay:300ms"
+                                   hx-include="#notifFilterForm">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="status"
+                                hx-get="{% url 'user_notifications' %}"
+                                hx-target="#notificationsContent"
+                                hx-select="#notificationsContent"
+                                hx-trigger="change"
+                                hx-include="#notifFilterForm">
+                            <option value="">All</option>
+                            <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>Unread</option>
+                            <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Read</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary me-1"><i class="bi bi-funnel me-1"></i>Filter</button>
+                        <a href="{% url 'user_notifications' %}" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </form>
+            </div>
+
+            <div id="notificationsContent">
+                <div class="list-group list-group-flush">
+                    {% for un in notifications %}
+                    <div class="list-group-item {% if not un.is_read %}bg-light{% endif %} py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    {% if not un.is_read %}
+                                    <span class="badge bg-primary me-2">New</span>
+                                    {% endif %}
+                                    {% if un.notification.priority == 'high' %}
+                                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                                    {% elif un.notification.priority == 'normal' %}
+                                    <i class="bi bi-bell-fill text-warning me-2"></i>
+                                    {% else %}
+                                    <i class="bi bi-info-circle-fill text-info me-2"></i>
+                                    {% endif %}
+                                    <h6 class="mb-0 {% if not un.is_read %}fw-bold{% endif %}">{{ un.notification.title }}</h6>
+                                </div>
+                                <p class="mb-1 text-muted">{{ un.notification.content }}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>{{ un.notification.created_at|timesince }} ago
+                                    {% if un.notification.created_by %}
+                                    &middot; From: {{ un.notification.created_by.display_name }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="ms-3" id="notif-action-{{ un.id }}">
+                                {% if not un.is_read %}
+                                <button class="btn btn-outline-primary btn-sm"
+                                        hx-post="{% url 'user_mark_notification_read' un.id %}"
+                                        hx-target="#notif-action-{{ un.id }}"
+                                        hx-swap="innerHTML"
+                                        title="Mark as read">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                                {% else %}
+                                <span class="badge bg-secondary">Read</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-bell-slash text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3 mb-0">
+                            {% if search or status_filter %}
+                            No notifications matching your criteria.
+                            {% else %}
+                            No notifications yet.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if notifications.has_other_pages %}
+                <div class="card-footer bg-transparent">
+                    <nav>
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if notifications.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ notifications.previous_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'user_notifications' %}?page={{ notifications.previous_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#notificationsContent"
+                                   hx-select="#notificationsContent">Previous</a>
+                            </li>
+                            {% endif %}
+                            {% for num in notifications.paginator.page_range %}
+                            {% if notifications.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'user_notifications' %}?page={{ num }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#notificationsContent"
+                                   hx-select="#notificationsContent">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            {% if notifications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ notifications.next_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-get="{% url 'user_notifications' %}?page={{ notifications.next_page_number }}&search={{ search }}&status={{ status_filter }}"
+                                   hx-target="#notificationsContent"
+                                   hx-select="#notificationsContent">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

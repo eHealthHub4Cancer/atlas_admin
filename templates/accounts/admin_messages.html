@@ -43,11 +43,12 @@
                         <div class="form-text">Leave empty for no expiration.</div>
                     </div>
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="message-dismissible" name="target_all_users" checked>
-                        <label class="form-check-label" for="message-dismissible">
+                        <input class="form-check-input" type="checkbox" id="message-target-all" name="target_all_users" checked>
+                        <label class="form-check-label" for="message-target-all">
                             Show this message to all users
                         </label>
                     </div>
+                    <input type="hidden" name="is_active" value="on">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-send me-1"></i>Publish Announcement
                     </button>

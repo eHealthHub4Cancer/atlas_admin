@@ -6,7 +6,7 @@
 {% block body %}
 <div class="dashboard-wrapper">
     <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm" style="background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);"  >
         <div class="container-fluid">
             <!-- Brand -->
             <a class="navbar-brand fw-bold" href="{% url 'user_dashboard' %}">
@@ -21,6 +21,15 @@
             <!-- Right Side -->
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if user %}
+                <!-- Notification Bell -->
+                <a href="{% url 'user_notifications' %}" class="btn btn-link text-white position-relative me-3" title="Notifications"
+                   hx-get="{% url 'htmx_notification_count' %}"
+                   hx-target="#notif-badge-count"
+                   hx-trigger="load, every 30s"
+                   hx-swap="innerHTML">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span id="notif-badge-count"></span>
+                </a>
                 <div class="dropdown">
                     <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="avatar-circle bg-white text-primary me-2">
@@ -56,7 +65,7 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="offcanvas-lg offcanvas-start sidebar" tabindex="-1" id="sidebarMenu">
+    <div class="offcanvas-lg offcanvas-start sidebar sidebar-user" tabindex="-1" id="sidebarMenu">
         <div class="offcanvas-header border-bottom d-lg-none">
             <h5 class="offcanvas-title">Menu</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
@@ -75,6 +84,12 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_roles' %}active{% endif %}" href="{% url 'user_roles' %}">
                             <i class="bi bi-shield"></i>
                             <span>My Roles</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_notifications' %}active{% endif %}" href="{% url 'user_notifications' %}">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
                         </a>
                     </li>
                     <li class="nav-item">

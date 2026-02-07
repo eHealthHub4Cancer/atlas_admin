@@ -762,6 +762,7 @@ class MessageForm(forms.ModelForm):
         self.fields['target_roles'].queryset = Role.objects.all()
         self.fields['target_roles'].required = False
         self.fields['expires_at'].required = False
+        self.fields['starts_at'].required = False
 
 
 # =============================================================================

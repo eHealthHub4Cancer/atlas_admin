@@ -34,7 +34,8 @@ from django.db.models import Count, Q, Prefetch
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
-from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken
+from django.utils import timezone
+from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken, Notification, UserNotification
 from .forms import (
     UserLoginForm, UserSignupForm, AdminLoginForm,
     ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm,
@@ -489,9 +490,31 @@ def user_roles_view(request):
     user = request.current_user
     user_roles = user.user_roles.select_related('role').order_by('role__name')
 
+    # Search
+    search = request.GET.get('search', '')
+    if search:
+        user_roles = user_roles.filter(
+            Q(role__name__icontains=search) |
+            Q(role__description__icontains=search)
+        )
+
+    # Status filter
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'active':
+        user_roles = user_roles.filter(role__is_active=True)
+    elif status_filter == 'inactive':
+        user_roles = user_roles.filter(role__is_active=False)
+
+    # Pagination
+    paginator = Paginator(user_roles, 10)
+    page = request.GET.get('page', 1)
+    user_roles_page = paginator.get_page(page)
+
     context = {
         'user': user,
-        'user_roles': user_roles,
+        'user_roles': user_roles_page,
+        'search': search,
+        'status_filter': status_filter,
         'page_title': 'My Roles',
     }
 
@@ -721,11 +744,36 @@ def admin_roles_view(request):
     # Add user counts
     roles_with_counts = roles.annotate(user_count=Count('users'))
 
+    # Search
+    search = request.GET.get('search', '')
+    if search:
+        roles_with_counts = roles_with_counts.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search)
+        )
+
+    # Status filter
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'active':
+        roles_with_counts = roles_with_counts.filter(is_active=True)
+    elif status_filter == 'inactive':
+        roles_with_counts = roles_with_counts.filter(is_active=False)
+
+    # Pagination
+    paginator = Paginator(roles_with_counts, 15)
+    page = request.GET.get('page', 1)
+    roles_page = paginator.get_page(page)
+
     context = {
         'admin': admin,
-        'roles': roles_with_counts,
+        'roles': roles_page,
+        'search': search,
+        'status_filter': status_filter,
         'page_title': 'Role Management',
     }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'accounts/admin_roles.html', context)
 
     return render(request, 'accounts/admin_roles.html', context)
 
@@ -845,6 +893,8 @@ def admin_message_create_view(request):
         if form.is_valid():
             message = form.save(commit=False)
             message.created_by = admin
+            if not message.starts_at:
+                message.starts_at = timezone.now()
             message.save()
             form.save_m2m()
 
@@ -857,14 +907,12 @@ def admin_message_create_view(request):
 
             messages.success(request, 'Message created successfully.')
             return redirect('admin_messages')
-    else:
-        form = MessageForm()
+        else:
+            # If form is invalid, redirect back with error
+            messages.error(request, 'Failed to create message. Please check the form fields.')
+            return redirect('admin_messages')
 
-    return render(request, 'accounts/admin_message_form.html', {
-        'admin': admin,
-        'form': form,
-        'page_title': 'Create Message',
-    })
+    return redirect('admin_messages')
 
 
 # =============================================================================
@@ -1403,6 +1451,195 @@ def handler404(request, exception):
 def handler500(request):
     """Custom 500 page."""
     return render(request, 'errors/500.html', status=500)
+
+
+# =============================================================================
+# Notification Views
+# =============================================================================
+
+@user_login_required
+def user_notifications_view(request):
+    """User's notification list."""
+    user = request.current_user
+    user_notifs = UserNotification.objects.filter(user=user).select_related('notification', 'notification__created_by')
+
+    # Search
+    search = request.GET.get('search', '')
+    if search:
+        user_notifs = user_notifs.filter(
+            Q(notification__title__icontains=search) |
+            Q(notification__content__icontains=search)
+        )
+
+    # Filter by read status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'unread':
+        user_notifs = user_notifs.filter(is_read=False)
+    elif status_filter == 'read':
+        user_notifs = user_notifs.filter(is_read=True)
+
+    paginator = Paginator(user_notifs, 15)
+    page = request.GET.get('page', 1)
+    notifs_page = paginator.get_page(page)
+
+    context = {
+        'user': user,
+        'notifications': notifs_page,
+        'search': search,
+        'status_filter': status_filter,
+        'unread_count': UserNotification.objects.filter(user=user, is_read=False).count(),
+        'page_title': 'Notifications',
+    }
+    return render(request, 'accounts/user_notifications.html', context)
+
+
+@user_login_required
+@require_POST
+def user_mark_notification_read_view(request, notification_id):
+    """Mark a notification as read."""
+    user = request.current_user
+    user_notif = get_object_or_404(UserNotification, id=notification_id, user=user)
+    user_notif.is_read = True
+    user_notif.read_at = timezone.now()
+    user_notif.save()
+
+    if request.headers.get('HX-Request'):
+        return HttpResponse(
+            f'<span class="badge bg-secondary">Read</span>',
+            content_type='text/html'
+        )
+    return redirect('user_notifications')
+
+
+@user_login_required
+@require_POST
+def user_mark_all_notifications_read_view(request):
+    """Mark all notifications as read."""
+    user = request.current_user
+    UserNotification.objects.filter(user=user, is_read=False).update(is_read=True, read_at=timezone.now())
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('user_notifications')
+
+
+@user_login_required
+def user_notification_count_view(request):
+    """Get unread notification count (for AJAX polling)."""
+    user = request.current_user
+    count = UserNotification.objects.filter(user=user, is_read=False).count()
+    if request.headers.get('HX-Request'):
+        if count > 0:
+            return HttpResponse(
+                f'<span class="badge bg-danger rounded-pill">{count}</span>',
+                content_type='text/html'
+            )
+        return HttpResponse('', content_type='text/html')
+    return JsonResponse({'count': count})
+
+
+@super_admin_required
+@require_http_methods(["GET", "POST"])
+def admin_notifications_view(request):
+    """Admin view for managing notifications."""
+    admin = request.current_admin
+
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        content = request.POST.get('content', '').strip()
+        priority = request.POST.get('priority', 'normal')
+        target_type = request.POST.get('target_type', 'all')
+        target_role_ids = request.POST.getlist('target_roles')
+        target_user_ids = request.POST.getlist('target_users')
+
+        if not title or not content:
+            messages.error(request, 'Title and content are required.')
+            return redirect('admin_notifications')
+
+        notification = Notification.objects.create(
+            title=title,
+            content=content,
+            priority=priority,
+            target_all_users=(target_type == 'all'),
+            created_by=admin,
+        )
+
+        if target_type == 'roles' and target_role_ids:
+            notification.target_roles.set(target_role_ids)
+        elif target_type == 'users' and target_user_ids:
+            notification.target_users.set(target_user_ids)
+
+        # Create UserNotification entries for all targeted users
+        target_users = notification.get_target_users()
+        user_notifications = [
+            UserNotification(user=u, notification=notification)
+            for u in target_users
+        ]
+        UserNotification.objects.bulk_create(user_notifications, ignore_conflicts=True)
+
+        AuditLog.log(
+            action=AuditLog.ACTION_MESSAGE_CREATED,
+            actor_admin=admin,
+            description=f'Notification sent: "{title}" to {len(user_notifications)} user(s)',
+            request=request
+        )
+
+        messages.success(request, f'Notification sent to {len(user_notifications)} user(s).')
+        return redirect('admin_notifications')
+
+    # List existing notifications
+    notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles')
+
+    search = request.GET.get('search', '')
+    if search:
+        notifications = notifications.filter(
+            Q(title__icontains=search) | Q(content__icontains=search)
+        )
+
+    paginator = Paginator(notifications, 15)
+    page = request.GET.get('page', 1)
+    notifs_page = paginator.get_page(page)
+
+    context = {
+        'admin': admin,
+        'notifications': notifs_page,
+        'search': search,
+        'roles': Role.objects.filter(is_active=True).order_by('name'),
+        'users': User.objects.filter(is_active=True).order_by('username'),
+        'page_title': 'Notifications',
+    }
+    return render(request, 'accounts/admin_notifications.html', context)
+
+
+@super_admin_required
+@require_http_methods(["GET", "POST"])
+def admin_notification_edit_view(request, notification_id):
+    """Edit an existing notification."""
+    admin = request.current_admin
+    notification = get_object_or_404(Notification, id=notification_id)
+
+    if request.method == 'POST':
+        notification.title = request.POST.get('title', notification.title).strip()
+        notification.content = request.POST.get('content', notification.content).strip()
+        notification.priority = request.POST.get('priority', notification.priority)
+        notification.save()
+        messages.success(request, 'Notification updated.')
+        return redirect('admin_notifications')
+
+    context = {
+        'admin': admin,
+        'notification': notification,
+        'page_title': f'Edit Notification: {notification.title}',
+    }
+    return render(request, 'accounts/admin_notification_edit.html', context)
+
+
+@super_admin_required
+@require_POST
+def admin_notification_delete_view(request, notification_id):
+    """Delete a notification."""
+    notification = get_object_or_404(Notification, id=notification_id)
+    notification.delete()
+    messages.success(request, 'Notification deleted.')
+    return redirect('admin_notifications')
 
 
 # =============================================================================
