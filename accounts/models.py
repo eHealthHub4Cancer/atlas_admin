@@ -491,6 +491,7 @@ class Message(models.Model):
     # Targeting
     target_all_users = models.BooleanField(default=True)
     target_roles = models.ManyToManyField(Role, blank=True, related_name='messages')
+    target_users = models.ManyToManyField(User, blank=True, related_name='messages_targeted')
 
     # Status
     is_active = models.BooleanField(default=True)
@@ -533,6 +534,8 @@ class Message(models.Model):
         if not self.is_visible:
             return False
         if self.target_all_users:
+            return True
+        if self.target_users.filter(id=user.id).exists():
             return True
         # Check if user has any of the target roles
         user_role_ids = set(user.roles.values_list('id', flat=True))
