@@ -229,7 +229,7 @@ def signup_api(request):
     user.save()
 
     # Sync user into SEC tables (sec_user + base roles)
-    sync_user_to_sec(user)
+    sync_user_to_sec(user, raw_password=data['password1'])
 
     # Assign role if provided
     if data.get('role'):
@@ -667,7 +667,7 @@ def user_change_password_api(request):
 
     user.set_password(data['new_password1'])
     user.save()
-    sync_user_password_to_sec(user)
+    sync_user_password_to_sec(user, raw_password=data['new_password1'])
 
     return Response({'success': True})
 
