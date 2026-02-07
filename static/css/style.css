@@ -382,12 +382,13 @@ body.auth-page {
 
 .sidebar-nav {
     padding: 1rem 0;
-    overflow-y: visible;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .sidebar .offcanvas-body {
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .sidebar-nav .nav-item {
@@ -1225,4 +1226,28 @@ tr.htmx-swapping {
 
 .admin-topbar .badge {
     font-weight: 600;
+}
+
+
+/* Ensure dashboard sidebar content stays scrollable and legible */
+.sidebar .offcanvas-body {
+    scrollbar-gutter: stable;
+}
+
+.sidebar .nav-link,
+.sidebar .nav-link span,
+.sidebar .nav-link i {
+    color: #0f172a !important;
+}
+
+.sidebar-admin .nav-link,
+.sidebar-admin .nav-link span,
+.sidebar-admin .nav-link i {
+    color: #1e293b !important;
+}
+
+.sidebar-user .nav-link,
+.sidebar-user .nav-link span,
+.sidebar-user .nav-link i {
+    color: #0f172a !important;
 }

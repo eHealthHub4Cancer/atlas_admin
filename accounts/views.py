@@ -32,6 +32,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
 from django.views.decorators.csrf import csrf_protect
 from django.db.models import Count, Q, Prefetch
+from django.db.utils import DatabaseError
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
@@ -496,7 +497,11 @@ def user_dashboard_view(request):
     user = request.current_user
 
     # Get user's roles with descriptions
-    user_roles = user.roles.all().order_by('name')
+    try:
+        user_roles = user.roles.all().order_by('name')
+    except DatabaseError as e:
+        logger.warning('Failed loading roles for %s: %s', user.username, e)
+        user_roles = []
 
     # Get visible messages for this user
     visible_messages = []
@@ -912,7 +917,12 @@ def admin_messages_view(request):
     """Admin view for managing messages/announcements."""
     admin = request.current_admin
 
-    messages_list = Message.objects.select_related('created_by').order_by('-created_at')
+    try:
+        messages_list = Message.objects.select_related('created_by').order_by('-created_at')
+    except DatabaseError as e:
+        logger.warning('Failed loading admin messages for %s: %s', admin.email, e)
+        messages.error(request, 'Announcements are temporarily unavailable. Please try again shortly.')
+        messages_list = []
 
     context = {
         'admin': admin,
@@ -1600,27 +1610,32 @@ def admin_notifications_view(request):
             messages.error(request, 'Title and content are required.')
             return redirect('admin_notifications')
 
-        notification = Notification.objects.create(
-            title=title,
-            content=content,
-            priority=priority,
-            tag=tag,
-            target_all_users=(target_type == 'all'),
-            created_by=admin,
-        )
+        try:
+            notification = Notification.objects.create(
+                title=title,
+                content=content,
+                priority=priority,
+                tag=tag,
+                target_all_users=(target_type == 'all'),
+                created_by=admin,
+            )
 
-        if target_type == 'roles' and target_role_ids:
-            notification.target_roles.set(target_role_ids)
-        elif target_type == 'users' and target_user_ids:
-            notification.target_users.set(target_user_ids)
+            if target_type == 'roles' and target_role_ids:
+                notification.target_roles.set(target_role_ids)
+            elif target_type == 'users' and target_user_ids:
+                notification.target_users.set(target_user_ids)
 
-        # Create UserNotification entries for all targeted users
-        target_users = notification.get_target_users()
-        user_notifications = [
-            UserNotification(user=u, notification=notification)
-            for u in target_users
-        ]
-        UserNotification.objects.bulk_create(user_notifications, ignore_conflicts=True)
+            # Create UserNotification entries for all targeted users
+            target_users = notification.get_target_users()
+            user_notifications = [
+                UserNotification(user=u, notification=notification)
+                for u in target_users
+            ]
+            UserNotification.objects.bulk_create(user_notifications, ignore_conflicts=True)
+        except DatabaseError as e:
+            logger.warning('Failed creating notification for %s: %s', admin.email, e)
+            messages.error(request, 'Unable to send notification right now. Please try again shortly.')
+            return redirect('admin_notifications')
 
         AuditLog.log(
             action=AuditLog.ACTION_MESSAGE_CREATED,
@@ -1633,7 +1648,12 @@ def admin_notifications_view(request):
         return redirect('admin_notifications')
 
     # List existing notifications
-    notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(read_count=Count('user_notifications', filter=Q(user_notifications__is_read=True)))
+    try:
+        notifications = Notification.objects.select_related('created_by').prefetch_related('target_roles').annotate(read_count=Count('user_notifications', filter=Q(user_notifications__is_read=True)))
+    except DatabaseError as e:
+        logger.warning('Failed loading notifications for %s: %s', admin.email, e)
+        messages.error(request, 'Notifications are temporarily unavailable. Please try again shortly.')
+        notifications = Notification.objects.none()
 
     search = request.GET.get('search', '')
     if search:
@@ -1645,12 +1665,24 @@ def admin_notifications_view(request):
     page = request.GET.get('page', 1)
     notifs_page = paginator.get_page(page)
 
+    try:
+        active_roles = Role.objects.filter(is_active=True).order_by('name')
+    except DatabaseError as e:
+        logger.warning('Failed loading active roles for notifications page: %s', e)
+        active_roles = Role.objects.none()
+
+    try:
+        active_users = User.objects.filter(is_active=True).order_by('username')
+    except DatabaseError as e:
+        logger.warning('Failed loading active users for notifications page: %s', e)
+        active_users = User.objects.none()
+
     context = {
         'admin': admin,
         'notifications': notifs_page,
         'search': search,
-        'roles': Role.objects.filter(is_active=True).order_by('name'),
-        'users': User.objects.filter(is_active=True).order_by('username'),
+        'roles': active_roles,
+        'users': active_users,
         'page_title': 'Notifications',
     }
     return render(request, 'accounts/admin_notifications.html', context)
