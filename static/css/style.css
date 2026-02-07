@@ -1278,9 +1278,10 @@ tr.htmx-swapping {
 #global-loading-bar.done { width: 100%; opacity: 0; }
 
 
-/* User sidebar hard-fixes: force scroll + deep dark link text */
+/* Sidebar usability pass: dark labels, reliable scrolling, improved mobile offcanvas */
 .sidebar {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .sidebar .offcanvas-body {
@@ -1288,13 +1289,32 @@ tr.htmx-swapping {
     flex-direction: column;
     min-height: 0;
     height: 100%;
-    overflow-y: auto !important;
+    max-height: 100%;
+    overflow: hidden;
 }
 
 .sidebar .sidebar-nav {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+
+.sidebar .nav-link,
+.sidebar .nav-link span,
+.sidebar .nav-link i,
+.sidebar .nav-section-title,
+.sidebar .sidebar-footer,
+.sidebar .sidebar-footer small {
+    color: #111827 !important;
+}
+
+.sidebar .nav-link {
+    position: relative;
+    z-index: 1;
+    min-height: 44px;
 }
 
 .sidebar-user .nav-link,
@@ -1309,29 +1329,13 @@ tr.htmx-swapping {
     color: #05070c !important;
 }
 
-/* Sidebar usability pass: dark labels, reliable scrolling, improved mobile offcanvas */
-.sidebar .nav-link,
-.sidebar .nav-link span,
-.sidebar .nav-link i,
-.sidebar .nav-section-title,
-.sidebar .sidebar-footer,
-.sidebar .sidebar-footer small {
-    color: #111827 !important;
-}
-
-.sidebar,
-.sidebar .offcanvas-body,
-.sidebar .sidebar-nav {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
 @media (max-width: 991.98px) {
     .sidebar.offcanvas {
         top: 0 !important;
         height: 100vh !important;
         width: min(88vw, 320px);
         border-right: 1px solid #d1d5db;
+        overflow: hidden !important;
     }
 
     .sidebar .offcanvas-header {
@@ -1343,10 +1347,19 @@ tr.htmx-swapping {
 
     .sidebar .offcanvas-body {
         height: calc(100vh - 57px);
+        max-height: calc(100vh - 57px);
+        overflow: hidden !important;
+    }
+
+    .sidebar .sidebar-nav {
+        height: 100%;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 1rem;
     }
 
     .sidebar .nav-link {
-        padding: 0.875rem 1rem;
+        padding: 0.9rem 1rem;
         font-size: 1rem;
     }
 
