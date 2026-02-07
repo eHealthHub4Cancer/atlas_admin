@@ -120,7 +120,6 @@
                     </li>
                     {% endif %}
 
-                    {% if admin.is_super_admin %}
                     <!-- Communications -->
                     <li class="nav-section">
                         <span class="nav-section-title">Communications</span>
@@ -128,7 +127,7 @@
                     <li class="nav-item">
                         <a class="nav-link {% if 'admin_messages' in request.resolver_match.url_name or 'admin_message_create' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'admin_messages' %}">
                             <i class="bi bi-megaphone"></i>
-                            <span>Announcements</span>
+                            <span>{% if admin.is_super_admin %}Announcements{% else %}Messages{% endif %}</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -137,7 +136,7 @@
                             <span>Notifications</span>
                         </a>
                     </li>
-                    {% endif %}
+                    
 
                     <!-- System -->
                     <li class="nav-section">

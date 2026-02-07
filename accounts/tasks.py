@@ -273,3 +273,34 @@ def send_role_granted_email(user_id, role_name):
 
     except User.DoesNotExist:
         logger.error(f"User {user_id} not found for role granted email")
+
+
+@shared_task
+def send_announcement_email(user_id, message_id):
+    """Send announcement email to a targeted user."""
+    from accounts.models import User, Message
+
+    try:
+        user = User.objects.get(id=user_id, is_active=True)
+        announcement = Message.objects.get(id=message_id, is_active=True)
+
+        context = {
+            'user_name': user.first_name,
+            'announcement_title': announcement.title,
+            'announcement_content': announcement.content,
+            'priority': announcement.get_priority_display(),
+            'dashboard_url': f"{settings.SITE_URL}/dashboard/",
+            'site_url': settings.SITE_URL,
+            'site_name': 'Atlas Config',
+        }
+
+        send_email_task.delay(
+            subject=f'New Announcement: {announcement.title} - Atlas Config',
+            template_name='announcement',
+            context=context,
+            recipient_email=user.email,
+        )
+
+        logger.info('Announcement email queued for %s (%s)', user.email, announcement.title)
+    except (User.DoesNotExist, Message.DoesNotExist):
+        logger.warning('Unable to queue announcement email user=%s message=%s', user_id, message_id)

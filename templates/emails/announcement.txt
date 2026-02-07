@@ -1,0 +1,15 @@
+New Announcement - Atlas Config
+
+Hello {{ user_name }},
+
+A new announcement has been published on Atlas Config.
+
+Title: {{ announcement_title }}
+Priority: {{ priority }}
+
+{{ announcement_content }}
+
+Open your dashboard: {{ dashboard_url }}
+
+Best regards,
+The Atlas Config Team

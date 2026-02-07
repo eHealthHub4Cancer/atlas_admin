@@ -1,0 +1,22 @@
+{% extends "emails/base.html" %}
+
+{% block title %}New Announcement - Atlas Config{% endblock %}
+{% block header_subtitle %}Announcement{% endblock %}
+
+{% block content %}
+<p>Hello {{ user_name }},</p>
+
+<p>A new announcement has been published on Atlas Config.</p>
+
+<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 18px 0; background: #f8fafc;">
+    <h3 style="margin: 0 0 10px 0; color: #1f2937;">{{ announcement_title }}</h3>
+    <p style="margin: 0 0 12px 0; color: #4b5563;"><strong>Priority:</strong> {{ priority }}</p>
+    <p style="margin: 0; color: #374151; white-space: pre-line;">{{ announcement_content }}</p>
+</div>
+
+<p style="text-align:center; margin:24px 0;">
+    <a href="{{ dashboard_url }}" class="btn">Open Dashboard</a>
+</p>
+
+<p>Best regards,<br>The Atlas Config Team</p>
+{% endblock %}

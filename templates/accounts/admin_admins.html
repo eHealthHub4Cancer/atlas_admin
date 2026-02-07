@@ -96,20 +96,17 @@
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         {% if adm.is_active %}
-                                        <button type="button" class="btn btn-outline-warning btn-sm"
-                                                disabled
-                                                hx-target="#admin-row-{{ adm.id }}"
-                                                hx-swap="outerHTML"
-                                                hx-confirm="Are you sure you want to deactivate this administrator?">
-                                            <i class="bi bi-pause"></i>
-                                        </button>
+                                        <form method="post" action="{% url 'admin_remove_admin' %}" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this administrator?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="admin_id" value="{{ adm.id }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove Admin Access">
+                                                <i class="bi bi-person-dash"></i>
+                                            </button>
+                                        </form>
                                         {% else %}
-                                        <button type="button" class="btn btn-outline-success btn-sm"
-                                                disabled
-                                                hx-target="#admin-row-{{ adm.id }}"
-                                                hx-swap="outerHTML">
-                                            <i class="bi bi-play"></i>
-                                        </button>
+                                        <span class="btn btn-outline-secondary btn-sm disabled" title="Already removed">
+                                            <i class="bi bi-person-x"></i>
+                                        </span>
                                         {% endif %}
                                         {% endif %}
                                     {% else %}
@@ -152,8 +149,8 @@
                             <ul class="mb-0 small">
                                 <li>View users and roles</li>
                                 <li>Grant/revoke user roles</li>
-                                <li>View audit logs</li>
-                                <li>Send messages to users</li>
+                                <li>View own audit logs</li>
+                                <li>View messages/notifications</li>
                             </ul>
                         </div>
                     </div>
@@ -162,7 +159,7 @@
                             <span class="badge badge-super-admin mb-2">Super Admin</span>
                             <ul class="mb-0 small">
                                 <li>All Admin permissions</li>
-                                <li>Create/edit Admin accounts</li>
+                                <li>Create/edit/remove Admin accounts</li>
                                 <li>Manage role descriptions</li>
                                 <li>Bulk role operations</li>
                             </ul>

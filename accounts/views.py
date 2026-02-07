@@ -37,7 +37,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
 from django.utils import timezone
-from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken, Notification, UserNotification
+from .models import User, AtlasAdmin, Role, Category, Prefix, UserRole, Message, MessageDismissal, AuditLog, PasswordResetToken, Notification, UserNotification, AdminNotification
 from .forms import (
     UserLoginForm, UserSignupForm, AdminLoginForm,
     ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm,
@@ -56,7 +56,8 @@ from .sec_sync import (
 )
 from .tasks import (
     send_welcome_email, send_password_reset_email,
-    send_password_changed_email
+    send_password_changed_email,
+    send_announcement_email
 )
 
 logger = logging.getLogger(__name__)
@@ -746,7 +747,7 @@ def admin_dashboard_view(request):
     try:
         recent_logs = list(AuditLog.objects.select_related(
             'actor_user', 'actor_admin', 'target_user', 'target_admin'
-        ).order_by('-created_at')[:10])
+        ).filter(Q(actor_admin=admin) | Q(target_admin=admin)).order_by('-created_at')[:10])
     except Exception as e:
         logger.warning('Failed loading recent activity: %s', e)
         recent_logs = []
@@ -935,6 +936,8 @@ def admin_audit_log_view(request):
 
     logs = AuditLog.objects.select_related(
         'actor_user', 'actor_admin', 'target_user', 'target_admin'
+    ).filter(
+        Q(actor_admin=admin) | Q(target_admin=admin)
     ).order_by('-created_at')
 
     # Filters
@@ -1016,6 +1019,16 @@ def admin_message_create_view(request):
             message.save()
             form.save_m2m()
 
+            recipient_ids = set(message.target_users.filter(is_active=True).values_list('id', flat=True))
+            if message.target_all_users:
+                recipient_ids.update(User.objects.filter(is_active=True).values_list('id', flat=True))
+            else:
+                for role in message.target_roles.all():
+                    recipient_ids.update(role.users.filter(is_active=True).values_list('id', flat=True))
+
+            for user_id in recipient_ids:
+                send_announcement_email.delay(user_id, message.id)
+
             AuditLog.log(
                 action=AuditLog.ACTION_MESSAGE_CREATED,
                 actor_admin=admin,
@@ -1033,7 +1046,7 @@ def admin_message_create_view(request):
     return redirect('admin_messages')
 
 
-@admin_login_required
+@super_admin_required
 @require_http_methods(["GET", "POST"])
 def admin_message_edit_view(request, message_id):
     """Edit an existing announcement."""
@@ -1063,7 +1076,7 @@ def admin_message_edit_view(request, message_id):
     })
 
 
-@admin_login_required
+@super_admin_required
 @require_POST
 def admin_message_delete_view(request, message_id):
     """Delete an announcement."""
@@ -1225,7 +1238,7 @@ def admin_categories_view(request):
 # HTMX/AJAX Views for Async Operations
 # =============================================================================
 
-@super_admin_required
+@admin_login_required
 @require_POST
 @csrf_protect
 def htmx_grant_role_view(request):
@@ -1265,7 +1278,7 @@ def htmx_grant_role_view(request):
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
 
-@super_admin_required
+@admin_login_required
 @require_POST
 @csrf_protect
 def htmx_revoke_role_view(request):
@@ -1498,6 +1511,41 @@ def admin_create_admin_view(request):
         'page_title': 'Create Administrator',
     })
 
+
+
+
+@super_admin_required
+@require_POST
+@csrf_protect
+def admin_remove_admin_view(request):
+    """Deactivate an admin account (super_admin and system_superadmin)."""
+    admin = request.current_admin
+    target_id = request.POST.get('admin_id')
+    target_admin = get_object_or_404(AtlasAdmin, id=target_id)
+
+    if target_admin.id == admin.id:
+        messages.error(request, 'You cannot remove your own admin access.')
+        return redirect('admin_admins')
+
+    if target_admin.is_system_superadmin and not admin.is_system_superadmin:
+        messages.error(request, 'Only System Super Admin can remove a System Super Admin.')
+        return redirect('admin_admins')
+
+    target_admin.is_active = False
+    target_admin.save(update_fields=['is_active'])
+
+    AuditLog.log(
+        action=AuditLog.ACTION_ADMIN_ROLE_CHANGED,
+        actor_admin=admin,
+        target_admin=target_admin,
+        description=f'Admin access removed for {target_admin.email}',
+        previous_state='is_active=True',
+        new_state='is_active=False',
+        request=request,
+    )
+
+    messages.success(request, f'{target_admin.email} has been removed from active admins.')
+    return redirect('admin_admins')
 
 @system_superadmin_required
 @require_POST
@@ -1741,13 +1789,17 @@ def user_notification_count_view(request):
     return JsonResponse({'count': count})
 
 
-@super_admin_required
+@admin_login_required
 @require_http_methods(["GET", "POST"])
 def admin_notifications_view(request):
     """Admin view for managing notifications."""
     admin = request.current_admin
 
     if request.method == 'POST':
+        if not admin.is_super_admin:
+            messages.error(request, 'Only Super Admins can send notifications.')
+            return redirect('admin_notifications')
+
         title = request.POST.get('title', '').strip()
         content = request.POST.get('content', '').strip()
         priority = request.POST.get('priority', 'normal')
@@ -1755,6 +1807,7 @@ def admin_notifications_view(request):
         target_type = request.POST.get('target_type', 'all')
         target_role_ids = request.POST.getlist('target_roles')
         target_user_ids = request.POST.getlist('target_users')
+        target_admin_ids = request.POST.getlist('target_admins')
 
         if not title or not content:
             messages.error(request, 'Title and content are required.')
@@ -1774,14 +1827,21 @@ def admin_notifications_view(request):
                 notification.target_roles.set(target_role_ids)
             elif target_type == 'users' and target_user_ids:
                 notification.target_users.set(target_user_ids)
+            elif target_type == 'all_admins':
+                notification.target_all_admins = True
+                notification.save(update_fields=['target_all_admins'])
+            elif target_type == 'admins' and target_admin_ids:
+                notification.target_admins.set(target_admin_ids)
 
-            # Create UserNotification entries for all targeted users
+            # Create UserNotification entries for targeted users
             target_users = notification.get_target_users()
-            user_notifications = [
-                UserNotification(user=u, notification=notification)
-                for u in target_users
-            ]
+            user_notifications = [UserNotification(user=u, notification=notification) for u in target_users]
             UserNotification.objects.bulk_create(user_notifications, ignore_conflicts=True)
+
+            # Create AdminNotification entries for targeted admins
+            target_admins = notification.get_target_admins()
+            admin_notifications = [AdminNotification(admin=a, notification=notification) for a in target_admins]
+            AdminNotification.objects.bulk_create(admin_notifications, ignore_conflicts=True)
         except DatabaseError as e:
             logger.warning('Failed creating notification for %s: %s', admin.email, e)
             messages.error(request, 'Unable to send notification right now. Please try again shortly.')
@@ -1790,11 +1850,11 @@ def admin_notifications_view(request):
         AuditLog.log(
             action=AuditLog.ACTION_MESSAGE_CREATED,
             actor_admin=admin,
-            description=f'Notification sent: "{title}" to {len(user_notifications)} user(s)',
+            description=f'Notification sent: "{title}" to {len(user_notifications)} user(s) and {len(admin_notifications)} admin(s)',
             request=request
         )
 
-        messages.success(request, f'Notification sent to {len(user_notifications)} user(s).')
+        messages.success(request, f'Notification sent to {len(user_notifications)} user(s) and {len(admin_notifications)} admin(s).')
         return redirect('admin_notifications')
 
     # List existing notifications
@@ -1808,6 +1868,9 @@ def admin_notifications_view(request):
                 )
             )
         )
+
+        if not admin.is_super_admin:
+            notifications = notifications.filter(admin_notifications__admin=admin)
 
         search = request.GET.get('search', '')
         if search:
@@ -1836,12 +1899,18 @@ def admin_notifications_view(request):
         logger.warning('Failed loading active users for notifications page: %s', e)
         active_users = []
 
+    received_notifications = AdminNotification.objects.filter(admin=admin).select_related(
+        'notification', 'notification__created_by'
+    ).order_by('-created_at')[:20]
+
     context = {
         'admin': admin,
         'notifications': notifs_page,
+        'received_notifications': received_notifications,
         'search': search,
         'roles': active_roles,
         'users': active_users,
+        'admins': AtlasAdmin.objects.filter(is_active=True).order_by('email'),
         'page_title': 'Notifications',
     }
     return render(request, 'accounts/admin_notifications.html', context)
