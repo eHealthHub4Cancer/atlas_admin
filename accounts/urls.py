@@ -5,6 +5,7 @@ URL patterns for authentication, dashboard, and admin views.
 Supports dual login: User (username) and AtlasAdmin (email).
 """
 
+from django.conf import settings
 from django.urls import path
 from . import views
 from . import api_views
@@ -20,7 +21,7 @@ urlpatterns = [
     # =========================================================================
     # Admin Authentication (Separate)
     # =========================================================================
-    path('admin-login/', views.admin_login_view, name='admin_login'),
+    path(f"{settings.ADMIN_LOGIN_PATH}/", views.admin_login_view, name='admin_login'),
     path('admin-logout/', views.admin_logout_view, name='admin_logout'),
 
     # =========================================================================

@@ -98,6 +98,7 @@ To connect to an external PostgreSQL database (RDS, Azure, Supabase, etc.):
 | `DJANGO_SECRET_KEY` | Django secret key | (required) |
 | `DJANGO_DEBUG` | Debug mode | `false` |
 | `DJANGO_ALLOWED_HOSTS` | Allowed hosts | `localhost,127.0.0.1` |
+| `ADMIN_LOGIN_PATH` | Admin login path segment (no leading slash) | `restricted-access` |
 
 ### Database
 

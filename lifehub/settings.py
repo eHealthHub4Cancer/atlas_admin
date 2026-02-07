@@ -25,6 +25,7 @@ ALLOWED_HOSTS = [
 
 # Site URL for email links
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+ADMIN_LOGIN_PATH = os.environ.get('ADMIN_LOGIN_PATH', 'restricted-access').strip('/ ') or 'restricted-access'
 
 # =============================================================================
 # Application Definition
