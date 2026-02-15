@@ -1329,9 +1329,8 @@ def htmx_revoke_role_view(request):
                 request=request
             )
 
-            return HttpResponse(_render_user_roles_modal(admin, user))
-        else:
-            return HttpResponse(_render_user_roles_modal(admin, user))
+        # Return the appropriate partial based on HTMX target
+        return HttpResponse(_render_user_roles_partial(request, admin, user))
 
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
