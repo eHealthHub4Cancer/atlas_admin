@@ -98,7 +98,7 @@
                             </div>
                         </td>
                         <td><code>@{{ u.username }}</code></td>
-                        <td>
+                        <td id="user-{{ u.id }}-role-count">
                             {% with role_count=u.roles.count %}
                             {% if role_count > 0 %}
                             <span class="badge bg-primary">{{ role_count }} role{{ role_count|pluralize }}</span>
