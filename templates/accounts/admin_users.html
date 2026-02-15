@@ -311,16 +311,25 @@ document.getElementById('bulkRoleModal')?.addEventListener('hidden.bs.modal', fu
 
 // Track role changes in modal and refresh page when modal closes
 var rolesChanged = false;
-document.getElementById('userRolesModalContent')?.addEventListener('htmx:afterSwap', function() {
-    rolesChanged = true;
-});
 
-document.getElementById('userRolesModal')?.addEventListener('hidden.bs.modal', function() {
-    if (rolesChanged) {
-        rolesChanged = false;
-        window.location.reload();
+// Use event delegation on body for HTMX events - works for all admin types
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    // Check if the swap occurred inside the user roles modal
+    if (evt.detail.target && evt.detail.target.id === 'userRolesModalContent') {
+        rolesChanged = true;
     }
 });
+
+// Listen for modal close event
+var userRolesModal = document.getElementById('userRolesModal');
+if (userRolesModal) {
+    userRolesModal.addEventListener('hidden.bs.modal', function() {
+        if (rolesChanged) {
+            rolesChanged = false;
+            window.location.reload();
+        }
+    });
+}
 
 // Toggle active button: show spinner and update UI on completion
 document.body.addEventListener('htmx:beforeRequest', function(evt) {
