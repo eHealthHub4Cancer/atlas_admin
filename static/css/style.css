@@ -2340,3 +2340,614 @@ tr.htmx-swapping {
         font-size: 0.625rem;
     }
 }
+
+/* =============================================================================
+   ENHANCED MOBILE NAVIGATION FOR ALL ADMIN TYPES
+   Supports: Admin, Super Admin, and System Super Admin
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Mobile Navigation Base Styles (991px and below)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    /* Enhanced mobile sidebar */
+    .sidebar.sidebar-admin {
+        background: var(--sidebar-bg, #fff9f3);
+        border-right: none;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Mobile offcanvas header */
+    .sidebar .offcanvas-header {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        color: #fff;
+        padding: 1rem;
+    }
+
+    .sidebar .offcanvas-header .offcanvas-title {
+        font-weight: 600;
+        font-size: 1.125rem;
+    }
+
+    .sidebar .offcanvas-header .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+    }
+
+    .sidebar .offcanvas-header .btn-close:hover {
+        opacity: 1;
+    }
+
+    /* Navigation items - larger touch targets */
+    .sidebar .nav-link {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        padding: 0.875rem 1.25rem;
+        margin: 0.125rem 0.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar .nav-link i {
+        font-size: 1.25rem;
+        width: 28px;
+        text-align: center;
+        margin-right: 0.75rem;
+    }
+
+    .sidebar .nav-link span {
+        font-size: 0.9375rem;
+        font-weight: 500;
+    }
+
+    /* Active state for mobile */
+    .sidebar .nav-link.active {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        color: #fff;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+    }
+
+    .sidebar .nav-link.active i {
+        color: #fff;
+    }
+
+    /* Hover state for mobile */
+    .sidebar .nav-link:not(.active):hover {
+        background: rgba(234, 88, 12, 0.1);
+        color: #c2410c;
+    }
+
+    /* Navigation section titles */
+    .sidebar .nav-section {
+        margin-top: 1rem;
+    }
+
+    .sidebar .nav-section-title {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #9a3412;
+        padding: 0.75rem 1.25rem 0.5rem;
+        margin-top: 0.5rem;
+        border-top: 1px solid rgba(154, 52, 18, 0.1);
+    }
+
+    .sidebar .nav-section:first-child .nav-section-title {
+        border-top: none;
+        margin-top: 0;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Sidebar Footer - Admin Role Display (991px and below)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    .sidebar-footer {
+        background: linear-gradient(180deg, transparent 0%, rgba(154, 52, 18, 0.05) 100%);
+        border-top: 1px solid rgba(154, 52, 18, 0.15) !important;
+        padding: 1rem !important;
+    }
+
+    /* Admin info container */
+    .sidebar-footer .d-flex.align-items-center {
+        padding: 0.75rem;
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Avatar styling */
+    .sidebar-footer .avatar-circle {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1rem !important;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Admin name */
+    .sidebar-footer .fw-semibold {
+        font-size: 0.9375rem;
+        color: #1f2937;
+    }
+
+    /* Role badges - enhanced visibility */
+    .sidebar-footer .badge {
+        font-size: 0.6875rem;
+        padding: 0.35em 0.65em;
+        font-weight: 600;
+    }
+
+    .sidebar-footer .badge.bg-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%) !important;
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3);
+    }
+
+    .sidebar-footer .badge.bg-warning {
+        background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 1px 3px rgba(253, 126, 20, 0.3);
+    }
+
+    .sidebar-footer .badge.bg-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+        box-shadow: 0 1px 3px rgba(108, 117, 125, 0.3);
+    }
+
+    /* Mobile action buttons */
+    .sidebar-footer .d-lg-none.d-grid {
+        gap: 0.5rem !important;
+    }
+
+    .sidebar-footer .d-lg-none .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-footer .d-lg-none .btn i {
+        font-size: 1rem;
+    }
+
+    .sidebar-footer .d-lg-none .btn-outline-secondary:hover {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: #fff;
+    }
+
+    .sidebar-footer .d-lg-none .btn-outline-danger:hover {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Navbar Enhancement (991px and below)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    /* Admin topbar */
+    .admin-topbar {
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .admin-topbar .navbar-brand {
+        font-size: 1.125rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .admin-topbar .navbar-brand i {
+        font-size: 1.5rem;
+        color: #ea580c;
+    }
+
+    /* Mobile menu toggle - enhanced touch target */
+    .admin-topbar .navbar-toggler {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0.5rem;
+        background: #f9fafb;
+        transition: all 0.2s ease;
+    }
+
+    .admin-topbar .navbar-toggler:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af !important;
+    }
+
+    .admin-topbar .navbar-toggler:focus {
+        box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2);
+    }
+
+    .admin-topbar .navbar-toggler-icon {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Quick Actions - Dashboard (768px and below)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Quick action cards */
+    .d-grid.gap-2 .btn {
+        min-height: 48px;
+        font-size: 0.9375rem;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .d-grid.gap-2 .btn i {
+        font-size: 1.125rem;
+    }
+
+    /* Admin info card on dashboard */
+    .card.bg-dark .card-body {
+        padding: 1.25rem;
+    }
+
+    .card.bg-dark .row.align-items-center {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .card.bg-dark .col-auto {
+        margin-top: 1rem;
+    }
+
+    .card.bg-dark .col-auto i {
+        font-size: 2.5rem !important;
+    }
+
+    /* Stat cards - 2 per row on tablet */
+    .col-md-6.col-xl-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Stat cards - full width on mobile */
+    .col-md-6.col-xl-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Quick actions full width */
+    .col-lg-6.mb-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Admin welcome card adjustments */
+    .card.bg-dark h5 {
+        font-size: 1.125rem;
+    }
+
+    .card.bg-dark .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Admin-Specific Page Layouts (768px and below)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Card headers with flex layout - stack on mobile */
+    .card-header.d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    .card-header.d-flex.justify-content-between.align-items-center h5 {
+        text-align: center;
+    }
+
+    .card-header.d-flex.justify-content-between.align-items-center .btn,
+    .card-header.d-flex.justify-content-between.align-items-center > a {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Card headers with flex-wrap - improve spacing */
+    .card-header.d-flex.flex-wrap {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    .card-header.d-flex.flex-wrap h5 {
+        margin-bottom: 0;
+    }
+
+    .card-header.d-flex.flex-wrap .d-flex.gap-2 {
+        width: 100%;
+    }
+
+    .card-header.d-flex.flex-wrap .d-flex.gap-2 .btn {
+        flex: 1;
+    }
+
+    /* Admin management page table */
+    .table-responsive {
+        margin: 0 -0.25rem;
+        border-radius: 0;
+    }
+
+    /* Ensure table scrolls horizontally */
+    .table {
+        min-width: 650px;
+    }
+
+    /* Roles management page */
+    .card-header .btn {
+        min-height: 40px;
+    }
+
+    /* Filter forms stack on mobile */
+    .card-body .row.g-2.align-items-end {
+        flex-direction: column;
+    }
+
+    .card-body .row.g-2.align-items-end > [class*="col-md"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-body .row.g-2.align-items-end > [class*="col-md"]:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Categories/Prefixes list items */
+    .list-group-item.d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.75rem;
+    }
+
+    .list-group-item .btn-group {
+        width: 100%;
+    }
+
+    .list-group-item .btn-group .btn {
+        flex: 1;
+    }
+
+    /* Messages/Announcements page */
+    .row > .col-lg-4,
+    .row > .col-lg-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .row > .col-lg-4 {
+        margin-bottom: 1rem;
+    }
+
+    /* Audit log table */
+    .table thead th,
+    .table tbody td {
+        white-space: nowrap;
+    }
+}
+
+/* Additional mobile styles for 576px and below */
+@media (max-width: 576px) {
+    /* Even smaller card headers */
+    .card-header h5 {
+        font-size: 1rem;
+    }
+
+    .card-header h5 i {
+        font-size: 1rem;
+    }
+
+    /* Table action buttons - stack vertically if needed */
+    .table td .btn-group {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+
+    .table td .btn-group .btn {
+        padding: 0.25rem 0.375rem;
+    }
+
+    .table td .btn-group .btn i {
+        font-size: 0.75rem;
+    }
+
+    /* Improve badge visibility in tables */
+    .table .badge {
+        display: inline-block;
+        margin-bottom: 0.125rem;
+    }
+
+    /* Avatar circles in tables */
+    .table .avatar-circle {
+        width: 28px;
+        height: 28px;
+        font-size: 0.625rem;
+        flex-shrink: 0;
+    }
+
+    /* User info in table cells */
+    .table td .d-flex.align-items-center {
+        flex-wrap: nowrap;
+    }
+
+    .table td .d-flex.align-items-center > div:last-child {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .table td .d-flex.align-items-center strong {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+    }
+
+    /* Pagination in card footers */
+    .card-footer .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .card-footer .page-link {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8125rem;
+    }
+
+    /* Results count text */
+    .card-footer .text-muted {
+        display: block;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.8125rem;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Role-Based Visual Indicators
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    /* System Super Admin indicator */
+    .sidebar-admin[data-admin-role="system_superadmin"] .offcanvas-header {
+        background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+    }
+
+    /* Super Admin indicator */
+    .sidebar-admin[data-admin-role="super_admin"] .offcanvas-header {
+        background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+    }
+
+    /* Regular Admin indicator */
+    .sidebar-admin[data-admin-role="admin"] .offcanvas-header {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+
+    /* Mobile role badge in header */
+    .mobile-role-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 1rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+        margin-left: 0.5rem;
+    }
+}
+
+/* Hide mobile role indicator on desktop */
+@media (min-width: 992px) {
+    .mobile-role-indicator {
+        display: none;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Mobile Touch Interaction Enhancements
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    /* Ensure all clickable elements have proper touch targets */
+    .sidebar .nav-link,
+    .sidebar-footer .btn,
+    .admin-topbar .navbar-toggler,
+    .admin-topbar .dropdown-toggle {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    /* Prevent text selection on navigation */
+    .sidebar .nav-link,
+    .sidebar .nav-section-title {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    /* Smooth scrolling for sidebar */
+    .sidebar .sidebar-nav {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    /* Active tap state */
+    .sidebar .nav-link:active {
+        transform: scale(0.98);
+    }
+
+    .sidebar-footer .btn:active {
+        transform: scale(0.98);
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Landscape Mobile Orientation (max-height: 500px)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 991.98px) and (max-height: 500px) {
+    .sidebar .offcanvas-body {
+        padding-top: 0;
+    }
+
+    .sidebar .nav-link {
+        min-height: 40px;
+        padding: 0.5rem 1rem;
+    }
+
+    .sidebar .nav-section-title {
+        padding: 0.5rem 1rem 0.25rem;
+    }
+
+    .sidebar-footer {
+        padding: 0.75rem !important;
+    }
+
+    .sidebar-footer .d-flex.align-items-center {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .sidebar-footer .d-lg-none.d-grid {
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 0.375rem !important;
+    }
+
+    .sidebar-footer .d-lg-none .btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-height: 36px;
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+
+    .sidebar-footer .d-lg-none form {
+        flex: 1 1 100%;
+    }
+}

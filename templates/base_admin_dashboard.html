@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block body_class %}dashboard-page admin-dashboard{% endblock %}
+{% block body_class %}dashboard-page admin-dashboard {% if admin.is_system_superadmin %}role-system-superadmin{% elif admin.is_super_admin %}role-super-admin{% else %}role-admin{% endif %}{% endblock %}
 
 {% block body %}
 <div class="dashboard-wrapper">
@@ -60,9 +60,14 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="offcanvas-lg offcanvas-start sidebar sidebar-admin" tabindex="-1" id="sidebarMenu">
+    <div class="offcanvas-lg offcanvas-start sidebar sidebar-admin" tabindex="-1" id="sidebarMenu" data-admin-role="{% if admin.is_system_superadmin %}system_superadmin{% elif admin.is_super_admin %}super_admin{% else %}admin{% endif %}">
         <div class="offcanvas-header border-bottom d-lg-none">
-            <h5 class="offcanvas-title">Admin Menu</h5>
+            <div class="d-flex align-items-center">
+                <h5 class="offcanvas-title mb-0">Admin Menu</h5>
+                <span class="mobile-role-indicator">
+                    {% if admin.is_system_superadmin %}System{% elif admin.is_super_admin %}Super{% else %}Admin{% endif %}
+                </span>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column p-0">
