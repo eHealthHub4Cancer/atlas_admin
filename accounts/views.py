@@ -103,6 +103,29 @@ def _render_user_roles_modal(admin, user):
     })
 
 
+def _render_user_roles_section(admin, user):
+    """Render user roles section partial for HTMX updates."""
+    user_roles = user.user_roles.select_related('role', 'granted_by').order_by('role__name')
+    all_roles = Role.objects.order_by('name')
+    user_role_ids = set(user.roles.values_list('id', flat=True))
+    available_roles = all_roles.exclude(id__in=user_role_ids)
+    return render_to_string('accounts/partials/user_roles_section.html', {
+        'admin': admin,
+        'target_user': user,
+        'user_roles': user_roles,
+        'available_roles': available_roles,
+    })
+
+
+def _render_user_roles_partial(request, admin, user):
+    """Render appropriate user roles partial based on HTMX target."""
+    hx_target = request.headers.get('HX-Target', '')
+    if hx_target == 'userRolesModalContent':
+        return _render_user_roles_modal(admin, user)
+    else:
+        return _render_user_roles_section(admin, user)
+
+
 # =============================================================================
 # Authentication Decorators
 # =============================================================================
@@ -1271,9 +1294,8 @@ def htmx_grant_role_view(request):
                 request=request
             )
 
-            return HttpResponse(_render_user_roles_modal(admin, user))
-        else:
-            return HttpResponse(_render_user_roles_modal(admin, user))
+        # Return the appropriate partial based on HTMX target
+        return HttpResponse(_render_user_roles_partial(request, admin, user))
 
     return HttpResponse('<div class="toast-message error">Invalid request</div>', status=400)
 
