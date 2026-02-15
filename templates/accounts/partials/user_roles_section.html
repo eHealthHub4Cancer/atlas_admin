@@ -33,11 +33,15 @@
                 </td>
                 {% if admin.is_super_admin %}
                 <td class="text-end">
-                    <form method="post" action="{% url 'htmx_revoke_role' %}" class="d-inline revoke-role-form">
+                    <form method="post" action="{% url 'htmx_revoke_role' %}" class="d-inline"
+                          hx-post="{% url 'htmx_revoke_role' %}"
+                          hx-target="#user-roles-section"
+                          hx-swap="innerHTML"
+                          hx-confirm="Revoke role '{{ ur.role.name }}' from {{ target_user.display_name }}?">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ target_user.id }}">
                         <input type="hidden" name="role_id" value="{{ ur.role.id }}">
-                        <button type="submit" class="btn btn-outline-danger btn-sm revoke-btn" title="Revoke Role" data-role-name="{{ ur.role.name }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Revoke Role">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </form>
@@ -58,11 +62,14 @@
 {% if admin.is_super_admin and available_roles %}
 <hr class="my-3">
 <h6 class="mb-3"><i class="bi bi-plus-circle me-2"></i>Assign New Role</h6>
-<form id="grant-role-form" method="post" action="{% url 'htmx_grant_role' %}" class="row g-2 align-items-end">
+<form hx-post="{% url 'htmx_grant_role' %}"
+      hx-target="#user-roles-section"
+      hx-swap="innerHTML"
+      class="row g-2 align-items-end">
     {% csrf_token %}
     <input type="hidden" name="user_id" value="{{ target_user.id }}">
     <div class="col-md-8">
-        <select name="role_id" class="form-select" id="role-select">
+        <select name="role_id" class="form-select" required>
             <option value="">Select a role...</option>
             {% for role in available_roles %}
             <option value="{{ role.id }}">{{ role.name }}{% if role.description %} - {{ role.description|truncatewords:8 }}{% endif %}</option>
@@ -70,83 +77,12 @@
         </select>
     </div>
     <div class="col-md-4">
-        <button type="submit" class="btn btn-primary w-100" id="assign-role-btn">
+        <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-plus-lg me-1"></i>Assign Role
         </button>
     </div>
 </form>
-
-<script>
-// Grant role form handler
-document.getElementById('grant-role-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    var form = this;
-    var btn = document.getElementById('assign-role-btn');
-    var select = document.getElementById('role-select');
-
-    if (!select.value) {
-        alert('Please select a role');
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-    fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    }).then(function(response) {
-        if (response.ok) {
-            window.location.reload();
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Assign Role';
-            alert('Error assigning role');
-        }
-    }).catch(function() {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Assign Role';
-        alert('Error assigning role');
-    });
-});
-
-// Revoke role form handlers
-document.querySelectorAll('.revoke-role-form').forEach(function(form) {
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var btn = form.querySelector('.revoke-btn');
-        var roleName = btn.getAttribute('data-role-name');
-
-        if (!confirm('Revoke role "' + roleName + '"?')) {
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        fetch(form.action, {
-            method: 'POST',
-            body: new FormData(form),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(function(response) {
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-x-lg"></i>';
-                alert('Error revoking role');
-            }
-        }).catch(function() {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-x-lg"></i>';
-            alert('Error revoking role');
-        });
-    });
-});
-</script>
 {% endif %}
+
+<!-- Out-of-band swap for role count badge -->
+<span id="role-count-badge" hx-swap-oob="true" class="badge bg-primary">{{ user_roles|length }} role(s)</span>
