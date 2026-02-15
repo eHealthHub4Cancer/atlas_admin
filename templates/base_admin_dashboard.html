@@ -151,10 +151,10 @@
                 </ul>
             </nav>
 
-            <!-- Sidebar Footer -->
+            <!-- Sidebar Footer with Mobile User Actions -->
             <div class="sidebar-footer border-top p-3">
                 {% if admin %}
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center mb-2">
                     <div class="avatar-circle bg-warning text-dark me-2">
                         {{ admin.first_name.0|upper }}{{ admin.last_name.0|upper }}
                     </div>
@@ -170,6 +170,21 @@
                             {% endif %}
                         </small>
                     </div>
+                </div>
+                <!-- Mobile-only user actions -->
+                <div class="d-lg-none d-grid gap-2 mt-2">
+                    <a href="{% url 'admin_profile' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-person me-1"></i>Profile
+                    </a>
+                    <a href="{% url 'admin_change_password' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-key me-1"></i>Change Password
+                    </a>
+                    <form method="post" action="{% url 'admin_logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-box-arrow-right me-1"></i>Logout
+                        </button>
+                    </form>
                 </div>
                 {% endif %}
             </div>
