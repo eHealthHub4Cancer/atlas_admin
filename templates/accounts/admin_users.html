@@ -309,6 +309,19 @@ document.getElementById('bulkRoleModal')?.addEventListener('hidden.bs.modal', fu
     updateBulkRoleIds();
 });
 
+// Track role changes in modal and refresh page when modal closes
+var rolesChanged = false;
+document.getElementById('userRolesModalContent')?.addEventListener('htmx:afterSwap', function() {
+    rolesChanged = true;
+});
+
+document.getElementById('userRolesModal')?.addEventListener('hidden.bs.modal', function() {
+    if (rolesChanged) {
+        rolesChanged = false;
+        window.location.reload();
+    }
+});
+
 // Toggle active button: show spinner and update UI on completion
 document.body.addEventListener('htmx:beforeRequest', function(evt) {
     const btn = evt.detail.elt;
