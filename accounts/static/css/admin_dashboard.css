@@ -230,4 +230,69 @@
   .admin-dashboard .card-header .btn {
     width: 100%;
   }
+
+  /* Admin badges responsive */
+  .admin-dashboard .badge-admin,
+  .admin-dashboard .badge-super-admin,
+  .admin-dashboard .badge-system-superadmin {
+    font-size: 0.625rem;
+    padding: 0.25em 0.5em;
+  }
+
+  /* Permission hierarchy cards stack */
+  .admin-dashboard .col-md-4 .border.rounded {
+    margin-bottom: 0.75rem;
+  }
+
+  .admin-dashboard .col-md-4 .border.rounded ul {
+    font-size: 0.8125rem;
+    padding-left: 1.25rem;
+  }
+
+  /* Admin table specific */
+  .admin-dashboard .table .avatar-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.625rem;
+  }
+
+  /* Audit log mobile */
+  .admin-dashboard .audit-entry {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Modal role list items */
+  .admin-dashboard .list-group-item .badge {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Form in modals */
+  .admin-dashboard .modal .form-check {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Extra Small Mobile (360px and below) for Admin Dashboard
+   ----------------------------------------------------------------------------- */
+@media (max-width: 360px) {
+  .admin-dashboard .pagination {
+    gap: 0.25rem;
+  }
+
+  .admin-dashboard .page-number {
+    min-width: 24px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.6875rem;
+  }
+
+  .admin-dashboard .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+
+  .admin-dashboard .card-header h5 {
+    font-size: 0.9375rem;
+  }
 }
