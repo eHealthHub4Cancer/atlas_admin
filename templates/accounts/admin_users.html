@@ -98,7 +98,7 @@
                             </div>
                         </td>
                         <td><code>@{{ u.username }}</code></td>
-                        <td>
+                        <td id="user-{{ u.id }}-role-count">
                             {% with role_count=u.roles.count %}
                             {% if role_count > 0 %}
                             <span class="badge bg-primary">{{ role_count }} role{{ role_count|pluralize }}</span>
@@ -308,6 +308,28 @@ document.getElementById('bulkRoleModal')?.addEventListener('hidden.bs.modal', fu
     document.querySelectorAll('.bulk-role-checkbox').forEach(cb => cb.checked = false);
     updateBulkRoleIds();
 });
+
+// Track role changes in modal and refresh page when modal closes
+var rolesChanged = false;
+
+// Use event delegation on body for HTMX events - works for all admin types
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    // Check if the swap occurred inside the user roles modal
+    if (evt.detail.target && evt.detail.target.id === 'userRolesModalContent') {
+        rolesChanged = true;
+    }
+});
+
+// Listen for modal close event
+var userRolesModal = document.getElementById('userRolesModal');
+if (userRolesModal) {
+    userRolesModal.addEventListener('hidden.bs.modal', function() {
+        if (rolesChanged) {
+            rolesChanged = false;
+            window.location.reload();
+        }
+    });
+}
 
 // Toggle active button: show spinner and update UI on completion
 document.body.addEventListener('htmx:beforeRequest', function(evt) {

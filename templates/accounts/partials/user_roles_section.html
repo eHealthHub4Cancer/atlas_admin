@@ -1,0 +1,88 @@
+{% if user_roles %}
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Role</th>
+                <th>Granted By</th>
+                <th>Granted At</th>
+                <th>Origin</th>
+                {% if admin.is_super_admin %}
+                <th class="text-end">Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for ur in user_roles %}
+            <tr>
+                <td>
+                    <span class="badge bg-primary-subtle text-primary py-2 px-3">
+                        <i class="bi bi-shield-check me-1"></i>{{ ur.role.name }}
+                    </span>
+                </td>
+                <td class="text-muted small">
+                    {{ ur.granted_by.display_name|default:"System" }}
+                </td>
+                <td class="text-muted small">
+                    {{ ur.granted_at|date:"M d, Y" }}
+                </td>
+                <td>
+                    <span class="badge bg-{% if ur.origin == 'ATLAS' %}info{% elif ur.origin == 'SEC' %}warning text-dark{% else %}secondary{% endif %}">
+                        {{ ur.origin }}
+                    </span>
+                </td>
+                {% if admin.is_super_admin %}
+                <td class="text-end">
+                    <form method="post" action="{% url 'htmx_revoke_role' %}" class="d-inline"
+                          hx-post="{% url 'htmx_revoke_role' %}"
+                          hx-target="#user-roles-section"
+                          hx-swap="innerHTML"
+                          hx-confirm="Revoke role '{{ ur.role.name }}' from {{ target_user.display_name }}?">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                        <input type="hidden" name="role_id" value="{{ ur.role.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Revoke Role">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-shield fs-1 mb-2 d-block"></i>
+    <p class="mb-0">No roles assigned to this user.</p>
+</div>
+{% endif %}
+
+{% if admin.is_super_admin and available_roles %}
+<hr class="my-3">
+<h6 class="mb-3"><i class="bi bi-plus-circle me-2"></i>Assign New Role</h6>
+<form hx-post="{% url 'htmx_grant_role' %}"
+      hx-target="#user-roles-section"
+      hx-swap="innerHTML"
+      class="row g-2 align-items-end">
+    {% csrf_token %}
+    <input type="hidden" name="user_id" value="{{ target_user.id }}">
+    <div class="col-md-8">
+        <select name="role_id" class="form-select" required>
+            <option value="">Select a role...</option>
+            {% for role in available_roles %}
+            <option value="{{ role.id }}">{{ role.name }}{% if role.description %} - {{ role.description|truncatewords:8 }}{% endif %}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg me-1"></i>Assign Role
+        </button>
+    </div>
+</form>
+{% endif %}
+
+<!-- Out-of-band swap for role count badge -->
+<span id="role-count-badge" hx-swap-oob="true" class="badge bg-primary">{{ user_roles|length }} role(s)</span>

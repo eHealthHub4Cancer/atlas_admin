@@ -83,3 +83,14 @@
     <i class="bi bi-exclamation-triangle me-2"></i>Only administrators can modify user roles.
 </div>
 {% endif %}
+
+<!-- Out-of-band swap for role count in users list table -->
+<td id="user-{{ target_user.id }}-role-count" hx-swap-oob="true">
+    {% with role_count=user_roles|length %}
+    {% if role_count > 0 %}
+    <span class="badge bg-primary">{{ role_count }} role{{ role_count|pluralize }}</span>
+    {% else %}
+    <span class="text-muted small">No roles</span>
+    {% endif %}
+    {% endwith %}
+</td>
