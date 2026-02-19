@@ -103,7 +103,7 @@ class Category(models.Model):
 class Role(models.Model):
     """
     User role definitions (guest, student, researcher, clinician, etc.).
-    
+
     Managed by super admins. Roles define user access levels and permissions.
     """
 
@@ -113,6 +113,9 @@ class Role(models.Model):
         help_text="Description of what this role represents")
     is_active = models.BooleanField(default=True,
         help_text="Whether this role is available for assignment")
+    is_system_role = models.BooleanField(default=False,
+        help_text="System/personal roles (public, user logins) that shouldn't be manually assigned. "
+                  "Set to False to make a role assignable even if it matches a username.")
     sort_order = models.IntegerField(default=0,
         help_text="Order in which to display this role")
     created_at = models.DateTimeField(auto_now_add=True)

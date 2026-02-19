@@ -543,10 +543,14 @@ def sync_roles_from_sec():
     creates/updates corresponding local Role records. It preserves
     any descriptions that have been set locally.
 
+    Roles matching usernames or 'public' are automatically marked as
+    is_system_role=True (not assignable). Admins can override this
+    in the Roles management page if needed.
+
     Returns:
         QuerySet: All local Role objects, ordered by name
     """
-    from .models import Role
+    from .models import Role, User
 
     if not SEC_SYNC_ENABLED:
         logger.debug("SEC sync disabled, returning local roles only")
@@ -556,11 +560,23 @@ def sync_roles_from_sec():
         with get_webapi_connection().cursor() as cursor:
             sec_roles = get_all_sec_roles(cursor)
 
+        # Get all usernames to identify personal/system roles
+        user_logins = set(User.objects.values_list('username', flat=True))
+        system_role_names = user_logins | {PUBLIC_ROLE_NAME}
+
         for external_id, name in sec_roles:
-            Role.objects.update_or_create(
+            # Only set is_system_role on creation, preserve admin overrides on update
+            role, created = Role.objects.get_or_create(
                 name=name,
-                defaults={}
+                defaults={'is_system_role': name.lower() in {n.lower() for n in system_role_names}}
             )
+            # If role already exists, update is_system_role only if it's a new system role
+            # (don't override admin's manual changes)
+            if not created and name.lower() in {n.lower() for n in system_role_names}:
+                # Only mark as system role if not explicitly unmarked by admin
+                if not role.description:  # Assume roles with descriptions are intentionally configured
+                    role.is_system_role = True
+                    role.save(update_fields=['is_system_role'])
 
         logger.info(f"Synced {len(sec_roles)} roles from SEC")
 

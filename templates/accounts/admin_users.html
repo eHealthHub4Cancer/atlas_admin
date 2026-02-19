@@ -228,7 +228,7 @@
                     <div class="mb-3">
                         <label class="form-label">Roles to Assign</label>
                         <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
-                            {% for role in all_roles %}
+                            {% for role in assignable_roles %}
                             <div class="form-check">
                                 <input class="form-check-input bulk-role-checkbox" type="checkbox" value="{{ role.id }}" id="bulkRole{{ role.id }}">
                                 <label class="form-check-label" for="bulkRole{{ role.id }}">

@@ -89,10 +89,26 @@ def _assign_default_signup_role(user):
     return role
 
 
+def _get_assignable_roles():
+    """
+    Get roles that can be assigned to users by admins.
+
+    Excludes:
+    - Roles marked as is_system_role=True (public, personal/user login roles)
+
+    Note: Admins can override is_system_role in the Roles management page
+    if a legitimate permission role happens to match a username.
+
+    Returns:
+        QuerySet: Assignable Role objects ordered by name
+    """
+    return Role.objects.filter(is_system_role=False).order_by('name')
+
+
 def _render_user_roles_modal(admin, user):
     """Render role-management modal content for a specific user."""
     user_roles = user.user_roles.select_related('role', 'granted_by').order_by('role__name')
-    all_roles = Role.objects.order_by('name')
+    all_roles = _get_assignable_roles()
     user_role_ids = set(user.roles.values_list('id', flat=True))
     available_roles = all_roles.exclude(id__in=user_role_ids)
     return render_to_string('accounts/partials/user_roles_modal.html', {
@@ -106,7 +122,7 @@ def _render_user_roles_modal(admin, user):
 def _render_user_roles_section(admin, user):
     """Render user roles section partial for HTMX updates."""
     user_roles = user.user_roles.select_related('role', 'granted_by').order_by('role__name')
-    all_roles = Role.objects.order_by('name')
+    all_roles = _get_assignable_roles()
     user_role_ids = set(user.roles.values_list('id', flat=True))
     available_roles = all_roles.exclude(id__in=user_role_ids)
     return render_to_string('accounts/partials/user_roles_section.html', {
@@ -823,13 +839,15 @@ def admin_users_view(request):
     page = request.GET.get('page', 1)
     users_page = paginator.get_page(page)
 
-    # All roles for filter dropdown and assignment
+    # All roles for filter dropdown, assignable roles for assignment
     all_roles = Role.objects.order_by('name')
+    assignable_roles = _get_assignable_roles()
 
     context = {
         'admin': admin,
         'users_list': users_page,
         'all_roles': all_roles,
+        'assignable_roles': assignable_roles,
         'search': search,
         'role_filter': role_filter,
         'is_active_filter': is_active_filter,
@@ -852,8 +870,8 @@ def admin_user_detail_view(request, user_id):
     # Get user's roles
     user_roles = target_user.user_roles.select_related('role', 'granted_by').order_by('role__name')
 
-    # Get all available roles for assignment
-    all_roles = Role.objects.order_by('name')
+    # Get all available roles for assignment (excludes public and personal roles)
+    all_roles = _get_assignable_roles()
     user_role_ids = set(target_user.roles.values_list('id', flat=True))
     available_roles = all_roles.exclude(id__in=user_role_ids)
 
@@ -1401,6 +1419,36 @@ def htmx_role_users_view(request, role_id):
     })
     return HttpResponse(html)
 
+
+@super_admin_required
+@require_POST
+@csrf_protect
+def htmx_toggle_role_assignable_view(request, role_id):
+    """HTMX endpoint to toggle role's is_system_role flag (assignable status)."""
+    admin = request.current_admin
+    role = get_object_or_404(Role, id=role_id)
+
+    # Toggle the is_system_role flag
+    role.is_system_role = not role.is_system_role
+    role.save(update_fields=['is_system_role'])
+
+    # Log the action
+    AuditLog.objects.create(
+        actor_type=AuditLog.ACTOR_ADMIN,
+        actor_id=admin.id,
+        actor_email=admin.email,
+        action=AuditLog.ACTION_ROLE_CHANGED,
+        target_type='role',
+        target_id=role.id,
+        description=f'Role "{role.name}" marked as {"system/non-assignable" if role.is_system_role else "assignable"}',
+    )
+
+    # Return updated row
+    role = Role.objects.annotate(user_count=Count('users')).get(pk=role.pk)
+    html = render_to_string('accounts/partials/admin_role_row.html', {'role': role})
+    return HttpResponse(html)
+
+
 @super_admin_required
 @require_POST
 @csrf_protect
@@ -1482,7 +1530,7 @@ def htmx_user_roles_view(request, user_id):
     """HTMX endpoint to get user's roles for modal display."""
     user = get_object_or_404(User, id=user_id)
     user_roles = user.user_roles.select_related('role', 'granted_by').order_by('role__name')
-    all_roles = Role.objects.order_by('name')
+    all_roles = _get_assignable_roles()
     user_role_ids = set(user.roles.values_list('id', flat=True))
     available_roles = all_roles.exclude(id__in=user_role_ids)
 
