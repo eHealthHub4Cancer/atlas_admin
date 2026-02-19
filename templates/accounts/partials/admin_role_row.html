@@ -4,7 +4,12 @@
             <div class="avatar-circle bg-primary bg-opacity-10 text-primary me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
                 <i class="bi bi-shield"></i>
             </div>
-            <strong>{{ role.name }}</strong>
+            <div>
+                <strong>{{ role.name }}</strong>
+                {% if role.is_system_role %}
+                <small class="text-muted d-block">System/Personal role</small>
+                {% endif %}
+            </div>
         </div>
     </td>
     <td>
@@ -22,6 +27,20 @@
     </td>
     <td>
         <span class="badge bg-secondary">{{ role.user_count }}</span>
+    </td>
+    <td>
+        <button type="button"
+                class="btn btn-sm {% if role.is_system_role %}btn-outline-secondary{% else %}btn-outline-success{% endif %}"
+                hx-post="{% url 'htmx_toggle_role_assignable' role.id %}"
+                hx-target="#role-row-{{ role.id }}"
+                hx-swap="outerHTML"
+                title="{% if role.is_system_role %}Click to make assignable{% else %}Click to mark as system role{% endif %}">
+            {% if role.is_system_role %}
+            <i class="bi bi-x-circle me-1"></i>No
+            {% else %}
+            <i class="bi bi-check-circle me-1"></i>Yes
+            {% endif %}
+        </button>
     </td>
     <td>
         {% if role.is_active %}
